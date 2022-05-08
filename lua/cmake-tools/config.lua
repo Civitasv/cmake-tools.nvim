@@ -99,7 +99,7 @@ function Config:check_launch_target()
   end
 
   local codemodel_targets = self:get_codemodel_targets()
-  if not codemodel_targets.code == Types.SUCCESS then
+  if codemodel_targets.code ~= Types.SUCCESS then
     return codemodel_targets
   end
   codemodel_targets = codemodel_targets.data
@@ -170,7 +170,7 @@ local function get_targets(config, opt)
     table.insert(display_targets, "all")
   end
   local codemodel_targets = config:get_codemodel_targets()
-  if not codemodel_targets.code == Types.SUCCESS then
+  if codemodel_targets.code ~= Types.SUCCESS then
     return codemodel_targets
   end
 
@@ -183,7 +183,7 @@ local function get_targets(config, opt)
     if target_name:find("_autogen") == nil then
       local type = target_info["type"]:lower():gsub("_", " ")
       local display_name = target_name .. " (" .. type .. ")"
-      if opt.only_executable and type ~= "executable" then
+      if opt.only_executable and (type ~= "executable") then
       else
         if target_name == config.build_target then
           table.insert(targets, 1, target_name)
