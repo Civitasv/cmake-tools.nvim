@@ -21,14 +21,14 @@ local function append_to_cmake_console(error, data)
   end
 end
 
-function dump(o)
+function utils.dump(o)
   if type(o) == "table" then
     local s = "{ "
     for k, v in pairs(o) do
       if type(k) ~= "number" then
         k = '"' .. k .. '"'
       end
-      s = s .. "[" .. k .. "] = " .. dump(v) .. ","
+      s = s .. "[" .. k .. "] = " .. utils.dump(v) .. ","
     end
     return s .. "} "
   else

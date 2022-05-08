@@ -23,7 +23,7 @@ function cmake.generate(opt, callback)
   end
 
   local result = utils.get_cmake_configuration()
-  if not result.code == Types.SUCCESS then
+  if result.code ~= Types.SUCCESS then
     return utils.error(result.message)
   end
 
