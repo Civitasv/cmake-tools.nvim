@@ -8,7 +8,8 @@ local function enum(tbl)
   return tbl
 end
 
-local ErrorTypes = enum({
+local Types = enum({
+  "SUCCESS",
   "NOT_CONFIGURED",
   "NOT_SELECT_LAUNCH_TARGET",
   "SELECTED_LAUNCH_TARGET_NOT_BUILT",
@@ -16,13 +17,9 @@ local ErrorTypes = enum({
   "NOT_EXECUTABLE",
   "CANNOT_FIND_CMAKE_CONFIGURATION_FILE",
   "CANNOT_FIND_CODEMODEL_FILE",
+  "CANNOT_CREATE_CODEMODEL_QUERY_FILE",
   "CANNOT_DEBUG_LAUNCH_TARGET",
+  "CANNOT_CREATE_DIRECTORY"
 })
 
-local SuccessTypes = enum({
-  "SUCCESS",
-})
-
-return function()
-  return ErrorTypes, SuccessTypes
-end
+return Types

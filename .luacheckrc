@@ -6,4 +6,4 @@ ignore = {
 
 globals = {
   'vim',
-
+}

@@ -2,7 +2,7 @@ local Job = require("plenary.job")
 local Path = require("plenary.path")
 local const = require("cmake-tools.const")
 local Result = require("cmake-tools.result")
-local ErrorTypes, SuccessTypes = require("cmake-tools.types")()
+local Types = require("cmake-tools.types")
 
 local utils = {
   job = nil,
@@ -55,6 +55,7 @@ end
 -- @param executable executable file
 -- @param opts execute options
 function utils.execute(executable, opts)
+  print("EXECUTABLE", executable)
   local set_bufname = "file " .. opts.bufname
 
   vim.api.nvim_command("cclose")
@@ -115,12 +116,12 @@ function utils.get_cmake_configuration()
   local cmakelists = Path:new(vim.loop.cwd(), "CMakeLists.txt")
   if not cmakelists:is_file() then
     return Result:new(
-      ErrorTypes.CANNOT_FIND_CMAKE_CONFIGURATION_FILE,
+      Types.CANNOT_FIND_CMAKE_CONFIGURATION_FILE,
       nil,
       "Cannot find CMakeLists.txt at cwd."
     )
   end
-  return Result:new(SuccessTypes.SUCCESS, cmakelists, "cmake-tools has found CMakeLists.txt.")
+  return Result:new(Types.SUCCESS, cmakelists, "cmake-tools has found CMakeLists.txt.")
 end
 
 return utils

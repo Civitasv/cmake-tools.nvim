@@ -1,8 +1,8 @@
 --- cmake-tools's API
-
+local Path = require("plenary.path")
 local dap = require("dap")
 local utils = require("cmake-tools.utils")
-local ErrorTypes, SuccessTypes = require("cmake-tools.types")()
+local Types = require("cmake-tools.types")
 local const = require("cmake-tools.const")
 local Config = require("cmake-tools.config")
 
@@ -23,7 +23,7 @@ function cmake.generate(opt, callback)
   end
 
   local result = utils.get_cmake_configuration()
-  if not result.code == SuccessTypes.SUCCESS then
+  if not result.code == Types.SUCCESS then
     return utils.error(result.message)
   end
 
@@ -35,6 +35,8 @@ function cmake.generate(opt, callback)
     end)
   end
 
+  -- print(clean, dump(fargs))
+  -- print(config.build_directory.filename)
   config:generate_build_directory()
 
   vim.list_extend(fargs, {
@@ -44,6 +46,7 @@ function cmake.generate(opt, callback)
     "CMAKE_BUILD_TYPE=" .. config.build_type,
     unpack(config.generate_options),
   })
+  -- print(dump(config.generate_options))
   return utils.run(const.cmake_command, fargs, {
     on_success = function()
       if type(callback) == "function" then
@@ -60,6 +63,7 @@ function cmake.clean(callback)
   end
 
   local args = { "--build", config.build_directory.filename, "--target", "clean" }
+  -- print(dump(args))
   return utils.run(const.cmake_command, args, {
     on_success = function()
       if type(callback) == "function" then
@@ -75,21 +79,21 @@ function cmake.build(opt, callback)
   if not utils.has_active_job() then
     return
   end
-  print("BUILD")
+  -- print("BUILD")
 
   local fargs = opt.fargs or {}
 
   if not config.build_directory:is_dir() then
     -- configure it
-    return cmake.configure({ clean = false, fargs = {} }, function()
+    return cmake.generate({ clean = false, fargs = {} }, function()
       vim.schedule(function()
         cmake.build(opt, callback)
       end)
     end)
   end
-  print("TARGET", config.build_target)
+  -- print("TARGET", config.build_target)
 
-  if not config.build_target then
+  if config.build_target == nil then
     return vim.schedule(function()
       cmake.select_build_target(function()
         vim.schedule(function()
@@ -114,6 +118,7 @@ function cmake.build(opt, callback)
       unpack(config.build_options),
     })
   end
+  -- print(dump(fargs))
   return utils.run(const.cmake_command, fargs, {
     on_success = function()
       if type(callback) == "function" then
@@ -125,7 +130,7 @@ end
 
 function cmake.stop()
   if not utils.job or utils.job.is_shutdown then
-    utils.error("No running process")
+    utils.error("CMake Tools isn't running")
     return
   end
 
@@ -169,17 +174,18 @@ function cmake.run(opt, callback)
     return
   end
 
-  local result = config:launch_target()
+  local result = config:get_launch_target()
   local result_code = result.code
-  if result_code == ErrorTypes.NOT_CONFIGURED then
+  -- print(Types[result_code])
+  if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
     -- Configure it
     return cmake.generate({ clean = false }, function()
       cmake.run(opt, callback)
     end)
   elseif
-    result_code == ErrorTypes.NOT_SELECT_LAUNCH_TARGET
-    or result_code == ErrorTypes.NOT_A_LAUNCH_TARGET
-    or result_code == ErrorTypes.NOT_EXECUTABLE
+    result_code == Types.NOT_SELECT_LAUNCH_TARGET
+    or result_code == Types.NOT_A_LAUNCH_TARGET
+    or result_code == Types.NOT_EXECUTABLE
   then
     -- Re Select a target that could launch
     return cmake.select_launch_target(function()
@@ -187,10 +193,9 @@ function cmake.run(opt, callback)
         cmake.run(opt, callback)
       end)
     end)
-  elseif result_code == ErrorTypes.SELECTED_LAUNCH_TARGET_NOT_BUILT then
+  elseif result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
     -- Build select launch target
     config.build_target = config.launch_target
-    config:write()
     return cmake.build({}, function()
       vim.schedule(function()
         cmake.run(opt, callback)
@@ -199,36 +204,38 @@ function cmake.run(opt, callback)
   end
 
   local target_path = result.data
+  target_path = Path:new(target_path)
+  print(target_path.filename)
 
   return utils.execute(target_path.filename, { bufname = vim.fn.expand("%:t:r") })
 end
 
 -- Debug execuable targets
 function cmake.debug(opt, callback)
-  if not utils.ensure_no_job_active() then
+  if not utils.has_active_job() then
     return
   end
 
   local can_debug_result = config:validate_for_debugging()
-  if not can_debug_result.code == SuccessTypes.SUCCESS then
+  if can_debug_result.code == Types.CANNOT_DEBUG_LAUNCH_TARGET then
     -- Select build type to debug
     return cmake.select_build_type(function()
       cmake.debug(opt, callback)
     end)
   end
 
-  local result = config:launch_target()
+  local result = config:get_launch_target()
   local result_code = result.code
 
-  if result_code == ErrorTypes.NOT_CONFIGURED then
+  if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
     -- Configure it
     return cmake.generate({ clean = false }, function()
       cmake.debug(opt, callback)
     end)
   elseif
-    result_code == ErrorTypes.NOT_SELECT_LAUNCH_TARGET
-    or result_code == ErrorTypes.NOT_A_LAUNCH_TARGET
-    or result_code == ErrorTypes.NOT_EXECUTABLE
+    result_code == Types.NOT_SELECT_LAUNCH_TARGET
+    or result_code == Types.NOT_A_LAUNCH_TARGET
+    or result_code == Types.NOT_EXECUTABLE
   then
     -- Re Select a target that could launch
     return cmake.select_launch_target(function()
@@ -236,10 +243,9 @@ function cmake.debug(opt, callback)
         cmake.debug(opt, callback)
       end)
     end)
-  elseif result_code == ErrorTypes.SELECTED_LAUNCH_TARGET_NOT_BUILT then
+  elseif result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
     -- Build select launch target
     config.build_target = config.launch_target
-    config:write()
     return cmake.build({}, function()
       vim.schedule(function()
         cmake.debug(opt, callback)
@@ -275,7 +281,6 @@ function cmake.select_build_type(callback)
       return
     end
     config.build_type = build_type
-    config:write()
     if type(callback) == "function" then
       callback()
     end
@@ -294,7 +299,6 @@ function cmake.select_build_target(callback)
       return
     end
     config.build_target = targets[idx]
-    config:write()
     if type(callback) == "function" then
       callback()
     end
@@ -313,7 +317,6 @@ function cmake.select_launch_target(callback)
       return
     end
     config.launch_target = targets[idx]
-    config:write()
     if type(callback) == "function" then
       callback()
     end
