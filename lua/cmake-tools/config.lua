@@ -190,8 +190,7 @@ local function get_targets(config, opt)
     if target_name:find("_autogen") == nil then
       local type = target_info["type"]:lower():gsub("_", " ")
       local display_name = target_name .. " (" .. type .. ")"
-      if opt.only_executable and (type ~= "executable") then
-      else
+      if not (opt.only_executable and (type ~= "executable")) then
         if target_name == config.build_target then
           table.insert(targets, 1, target_name)
           table.insert(display_targets, 1, display_name)
