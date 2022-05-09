@@ -68,30 +68,30 @@ function utils.execute(executable, opts)
 end
 
 function utils.deepcopy(orig, copies)
-    copies = copies or {}
-    local orig_type = type(orig)
-    local copy
-    if orig_type == 'table' then
-        if copies[orig] then
-            copy = copies[orig]
-        else
-            copy = {}
-            copies[orig] = copy
-            for orig_key, orig_value in next, orig, nil do
-                copy[utils.deepcopy(orig_key, copies)] = utils.deepcopy(orig_value, copies)
-            end
-            setmetatable(copy, utils.deepcopy(getmetatable(orig), copies))
-        end
-    else -- number, string, boolean, etc
-        copy = orig
+  copies = copies or {}
+  local orig_type = type(orig)
+  local copy
+  if orig_type == "table" then
+    if copies[orig] then
+      copy = copies[orig]
+    else
+      copy = {}
+      copies[orig] = copy
+      for orig_key, orig_value in next, orig, nil do
+        copy[utils.deepcopy(orig_key, copies)] = utils.deepcopy(orig_value, copies)
+      end
+      setmetatable(copy, utils.deepcopy(getmetatable(orig), copies))
     end
-    return copy
+  else -- number, string, boolean, etc
+    copy = orig
+  end
+  return copy
 end
 
 -- Execute CMake command using job api
 function utils.run(cmd, args, opts)
   vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
-  opts.cmake_show_console = vim.F.if_nil(opts.cmake_show_console, const.cmake_show_console)
+  opts.cmake_show_console = const.cmake_show_console == "always"
   if opts.cmake_show_console then
     utils.show_cmake_console()
   end
@@ -108,7 +108,7 @@ function utils.run(cmd, args, opts)
         if opts.on_success then
           opts.on_success()
         end
-      elseif opts.show_cmake_console then
+      elseif opts.cmake_show_console == "only_on_error" then
         utils.show_cmake_console()
         vim.api.nvim_command("cbottom")
       end
