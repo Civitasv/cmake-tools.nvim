@@ -1,5 +1,5 @@
 --- cmake-tools's API
-local dap = require("dap")
+local has_nvim_dap, dap = pcall(require, "dap")
 local utils = require("cmake-tools.utils")
 local Types = require("cmake-tools.types")
 local const = require("cmake-tools.const")
@@ -178,7 +178,7 @@ function cmake.run(opt, callback)
   -- print(Types[result_code])
   if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
     -- Configure it
-    return cmake.generate({ clean = false }, function()
+    return cmake.generate({ clean = false, fargs = opt.fargs }, function()
       cmake.run(opt, callback)
     end)
   elseif
@@ -195,7 +195,7 @@ function cmake.run(opt, callback)
   else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT
     -- Build select launch target every time
     config.build_target = config.launch_target
-    return cmake.build({}, function()
+    return cmake.build({ fargs = opt.fargs }, function()
       vim.schedule(function()
         result = config:get_launch_target()
         -- print(utils.dump(result))
@@ -208,57 +208,59 @@ function cmake.run(opt, callback)
   end
 end
 
--- Debug execuable targets
-function cmake.debug(opt, callback)
-  if not utils.has_active_job() then
-    return
-  end
+if has_nvim_dap then
+  -- Debug execuable targets
+  function cmake.debug(opt, callback)
+    if not utils.has_active_job() then
+      return
+    end
 
-  local can_debug_result = config:validate_for_debugging()
-  if can_debug_result.code == Types.CANNOT_DEBUG_LAUNCH_TARGET then
-    -- Select build type to debug
-    return cmake.select_build_type(function()
-      cmake.debug(opt, callback)
-    end)
-  end
-
-  local result = config:get_launch_target()
-  local result_code = result.code
-
-  if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
-    -- Configure it
-    return cmake.generate({ clean = false }, function()
-      cmake.debug(opt, callback)
-    end)
-  elseif
-    result_code == Types.NOT_SELECT_LAUNCH_TARGET
-    or result_code == Types.NOT_A_LAUNCH_TARGET
-    or result_code == Types.NOT_EXECUTABLE
-  then
-    -- Re Select a target that could launch
-    return cmake.select_launch_target(function()
-      vim.schedule(function()
+    local can_debug_result = config:validate_for_debugging()
+    if can_debug_result.code == Types.CANNOT_DEBUG_LAUNCH_TARGET then
+      -- Select build type to debug
+      return cmake.select_build_type(function()
         cmake.debug(opt, callback)
       end)
-    end)
-  else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
-    -- Build select launch target every time
-    config.build_target = config.launch_target
-    return cmake.build({}, function()
-      vim.schedule(function()
-        result = config:get_launch_target()
-        local target_path = result.data
-        local dap_config = {
-          name = config.launch_target,
-          program = target_path,
-          cwd = vim.loop.cwd(),
-        }
-        dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
-        if const.cmake_dap_open_command then
-          const.cmake_dap_open_command()
-        end
+    end
+
+    local result = config:get_launch_target()
+    local result_code = result.code
+
+    if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
+      -- Configure it
+      return cmake.generate({ clean = false, fargs = opt.fargs }, function()
+        cmake.debug(opt, callback)
       end)
-    end)
+    elseif
+      result_code == Types.NOT_SELECT_LAUNCH_TARGET
+      or result_code == Types.NOT_A_LAUNCH_TARGET
+      or result_code == Types.NOT_EXECUTABLE
+    then
+      -- Re Select a target that could launch
+      return cmake.select_launch_target(function()
+        vim.schedule(function()
+          cmake.debug(opt, callback)
+        end)
+      end)
+    else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
+      -- Build select launch target every time
+      config.build_target = config.launch_target
+      return cmake.build({ fargs = opt.fargs }, function()
+        vim.schedule(function()
+          result = config:get_launch_target()
+          local target_path = result.data
+          local dap_config = {
+            name = config.launch_target,
+            program = target_path,
+            cwd = vim.loop.cwd(),
+          }
+          dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
+          if const.cmake_dap_open_command then
+            const.cmake_dap_open_command()
+          end
+        end)
+      end)
+    end
   end
 end
 
