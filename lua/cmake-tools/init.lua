@@ -109,6 +109,7 @@ function cmake.build(opt, callback)
       unpack(config.build_options),
     })
   else
+  print(config.build_target)
     vim.list_extend(fargs, {
       "--build",
       config.build_directory.filename,
@@ -117,7 +118,7 @@ function cmake.build(opt, callback)
       unpack(config.build_options),
     })
   end
-  -- print(dump(fargs))
+  print(utils.dump(fargs))
   return utils.run(const.cmake_command, fargs, {
     on_success = function()
       if type(callback) == "function" then
@@ -178,7 +179,7 @@ function cmake.run(opt, callback)
   -- print(Types[result_code])
   if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
     -- Configure it
-    return cmake.generate({ clean = false, fargs = opt.fargs }, function()
+    return cmake.generate({ clean = false, fargs = utils.deepcopy(opt.fargs) }, function()
       cmake.run(opt, callback)
     end)
   elseif
@@ -195,7 +196,7 @@ function cmake.run(opt, callback)
   else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT
     -- Build select launch target every time
     config.build_target = config.launch_target
-    return cmake.build({ fargs = opt.fargs }, function()
+    return cmake.build({ fargs = utils.deepcopy(opt.fargs) }, function()
       vim.schedule(function()
         result = config:get_launch_target()
         -- print(utils.dump(result))
@@ -228,7 +229,7 @@ if has_nvim_dap then
 
     if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
       -- Configure it
-      return cmake.generate({ clean = false, fargs = opt.fargs }, function()
+      return cmake.generate({ clean = false, fargs = utils.deepcopy(opt.fargs) }, function()
         cmake.debug(opt, callback)
       end)
     elseif
@@ -245,7 +246,7 @@ if has_nvim_dap then
     else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
       -- Build select launch target every time
       config.build_target = config.launch_target
-      return cmake.build({ fargs = opt.fargs }, function()
+      return cmake.build({ fargs = utils.deepcopy(opt.fargs) }, function()
         vim.schedule(function()
           result = config:get_launch_target()
           local target_path = result.data
