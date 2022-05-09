@@ -92,3 +92,33 @@ vim.api.nvim_create_user_command(
   }
 )
 
+--- CMake select build type
+vim.api.nvim_create_user_command(
+  "CMakeSelectBuildType", -- name
+  cmake_tools.select_build_type, -- command
+  { -- opts
+    nargs = 0,
+    desc = "CMake select build type",
+  }
+)
+
+--- CMake select build target
+vim.api.nvim_create_user_command(
+  "CMakeSelectBuildTarget", -- name
+  cmake_tools.select_build_target, -- command
+  { -- opts
+    nargs = 0,
+    desc = "CMake select build target",
+  }
+)
+
+--- CMake select launch target
+vim.api.nvim_create_user_command(
+  "CMakeSelectLaunchTarget", -- name
+  cmake_tools.select_launch_target, -- command
+  { -- opts
+    nargs = 0,
+    desc = "CMake select launch target",
+  }
+)
+

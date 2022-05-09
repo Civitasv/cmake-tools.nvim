@@ -139,8 +139,15 @@ function Config:get_launch_target()
 
   -- print("TARGET INFO", dump(target_info))
   local target_path = target_info["artifacts"][1]["path"]
-  -- print("TARGET PATH", target_path)
-  if not Path:new(target_path):is_file() then
+  target_path = Path:new(target_path)
+  if not target_path:is_absolute() then
+    -- print("NOT ABSOLUTE")
+    target_path = self.build_directory / target_path
+  end
+
+  -- print(target_path)
+  -- print(target_path.filename)
+  if not target_path:is_file() then
     return Result:new(
       Types.SELECTED_LAUNCH_TARGET_NOT_BUILT,
       nil,
@@ -148,7 +155,7 @@ function Config:get_launch_target()
     )
   end
 
-  return Result:new(Types.SUCCESS, target_path, "yeah, that's good")
+  return Result:new(Types.SUCCESS, target_path.filename, "yeah, that's good")
 end
 
 function Config:validate_for_debugging()

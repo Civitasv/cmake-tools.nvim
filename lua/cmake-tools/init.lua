@@ -1,5 +1,4 @@
 --- cmake-tools's API
-local Path = require("plenary.path")
 local dap = require("dap")
 local utils = require("cmake-tools.utils")
 local Types = require("cmake-tools.types")
@@ -193,21 +192,20 @@ function cmake.run(opt, callback)
         cmake.run(opt, callback)
       end)
     end)
-  elseif result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
-    -- Build select launch target
+  else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT
+    -- Build select launch target every time
     config.build_target = config.launch_target
     return cmake.build({}, function()
       vim.schedule(function()
-        cmake.run(opt, callback)
+        result = config:get_launch_target()
+        -- print(utils.dump(result))
+        local target_path = result.data
+        -- print("TARGET", target_path)
+
+        return utils.execute(target_path, { bufname = vim.fn.expand("%:t:r") })
       end)
     end)
   end
-
-  local target_path = result.data
-  target_path = Path:new(target_path)
-  print(target_path.filename)
-
-  return utils.execute(target_path.filename, { bufname = vim.fn.expand("%:t:r") })
 end
 
 -- Debug execuable targets
@@ -243,26 +241,24 @@ function cmake.debug(opt, callback)
         cmake.debug(opt, callback)
       end)
     end)
-  elseif result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
-    -- Build select launch target
+  else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
+    -- Build select launch target every time
     config.build_target = config.launch_target
     return cmake.build({}, function()
       vim.schedule(function()
-        cmake.debug(opt, callback)
+        result = config:get_launch_target()
+        local target_path = result.data
+        local dap_config = {
+          name = config.launch_target,
+          program = target_path,
+          cwd = vim.loop.cwd(),
+        }
+        dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
+        if const.cmake_dap_open_command then
+          const.cmake_dap_open_command()
+        end
       end)
     end)
-  end
-
-  local target_path = result.data
-
-  local dap_config = {
-    name = config.launch_target,
-    program = target_path,
-    cwd = vim.loop.cwd(),
-  }
-  dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
-  if const.cmake_dap_open_command then
-    const.cmake_dap_open_command()
   end
 end
 
@@ -289,8 +285,12 @@ end
 
 function cmake.select_build_target(callback)
   if not config.build_directory:is_dir() then
-    utils.error("You need to configure first")
-    return
+    -- configure it
+    return cmake.generate({ clean = false, fargs = {} }, function()
+      vim.schedule(function()
+        cmake.select_build_target(callback)
+      end)
+    end)
   end
 
   local targets, display_targets = config:build_targets()
@@ -307,8 +307,12 @@ end
 
 function cmake.select_launch_target(callback)
   if not config.build_directory:is_dir() then
-    utils.error("You need to configure first")
-    return
+    -- configure it
+    return cmake.generate({ clean = false, fargs = {} }, function()
+      vim.schedule(function()
+        cmake.select_launch_target(callback)
+      end)
+    end)
   end
 
   local targets, display_targets = config:launch_targets()
