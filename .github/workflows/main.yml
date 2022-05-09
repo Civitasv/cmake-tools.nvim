@@ -22,15 +22,3 @@ jobs:
           files: .
           annotate: warning
 
-  format:
-    name: Format
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Clone repo
-        uses: actions/checkout@v2
-
-      - name: StyLua
-        uses: JohnnyMorganz/stylua-action@1.0.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --color always --check 
