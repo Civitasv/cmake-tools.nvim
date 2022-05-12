@@ -4,7 +4,7 @@ local const = {
   cmake_build_type = "Debug",
   cmake_generate_options = { "-D", "CMAKE_EXPORT_COMPILE_COMMANDS=1" },
   cmake_build_options = {},
-  cmake_console_position = "bottom", -- "bottom", "top"
+  cmake_console_position = "belowright", -- "bottom", "top"
   cmake_console_size = 10,
   cmake_show_console = "always", -- "always", "only_on_error"
   cmake_focus_on_console = false, -- true, false

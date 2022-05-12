@@ -109,7 +109,7 @@ function cmake.build(opt, callback)
       unpack(config.build_options),
     })
   else
-  print(config.build_target)
+  -- print(config.build_target)
     vim.list_extend(fargs, {
       "--build",
       config.build_directory.filename,
@@ -118,7 +118,7 @@ function cmake.build(opt, callback)
       unpack(config.build_options),
     })
   end
-  print(utils.dump(fargs))
+  -- print(utils.dump(fargs))
   return utils.run(const.cmake_command, fargs, {
     on_success = function()
       if type(callback) == "function" then

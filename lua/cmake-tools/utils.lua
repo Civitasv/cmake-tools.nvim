@@ -55,11 +55,12 @@ end
 -- @param executable executable file
 -- @param opts execute options
 function utils.execute(executable, opts)
-  print("EXECUTABLE", executable)
+  -- print("EXECUTABLE", executable)
   local set_bufname = "file " .. opts.bufname
+  local prefix = string.format("%s %d new", const.cmake_console_position, const.cmake_console_size)
 
   vim.api.nvim_command("cclose")
-  vim.cmd("term " .. executable)
+  vim.cmd(prefix .. " | term " .. executable)
   vim.opt_local.relativenumber = false
   vim.opt_local.number = false
   vim.cmd(set_bufname)
