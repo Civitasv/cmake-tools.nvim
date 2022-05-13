@@ -22,7 +22,7 @@ Todo: Add help.txt
 
 |Command|Description|
 |-|-|
-|CMakeGenerate|Generate native makefiles and workspaces that can be used next. Additional arguments will be passed to CMake.|
+|CMakeGenerate\[!\]|Generate native makefiles and workspaces that can be used next. Additional arguments will be passed to CMake.|
 |CMakeBuild| Build target, if not generate makefiles yet, it will automatically invoke `CMake`, if not select build target, it will automatically invoke `CMakeSelectBuildTarget` . Additional arguments will be passwd to CMake.|
 |CMakeRun|Run launch target, if not generate makefiles yet, it will automatically invoke `CMakeGenerate`, if not select launch target, it will automatically invoke `CMakeSelectLaunchTarget`, if not built, it will automatically invoke `CMakeBuild`. Additional arguments will be passed to `CMakeGenerate` and `CMakeBuild`. |
 |CMakeDebug|Use nvim-dap to debug launch target, works like CMakeRun|
@@ -34,6 +34,36 @@ Todo: Add help.txt
 |CMakeInstall|Install CMake targets. Additional arguments will be passed to CMake.|
 |CMakeClean|Clean target|
 |CMakeStop|Stop CMake process|
+
+## Demos
+
+### CMakeGenerate
+
+![CMakeGenerate](images/CMakeGenerate.gif)
+
+### CMakeBuild
+
+![CMakeBuild](images/CMakeBuild.gif)
+
+### CMakeRun
+
+![CMakeRun](images/CMakeRun.gif)
+
+### CMakeDebug (require nvim-dap)
+
+![CMakeDebug](images/CMakeDebug.gif)
+
+### CMakeSelectBuildType
+
+![CMakeSelectBuildType](images/CMakeSelectBuildType.gif)
+
+### CMakeSelectBuildTarget
+
+![CMakeSelectBuildTarget](images/CMakeSelectBuildTarget.gif)
+
+### CMakeSelectLaunchTarget
+
+![CMakeSelectLaunchTarget](images/CMakeSelectLaunchTarget.gif)
 
 ## Setup
 
