@@ -30,7 +30,7 @@ function cmake.generate(opt, callback)
   local fargs = opt.fargs or {}
   if clean then
     return cmake.clean(function()
-      cmake.generate(opt, callback)
+      cmake.generate({ fargs = fargs }, callback)
     end)
   end
 
@@ -109,7 +109,7 @@ function cmake.build(opt, callback)
       unpack(config.build_options),
     })
   else
-  -- print(config.build_target)
+    -- print(config.build_target)
     vim.list_extend(fargs, {
       "--build",
       config.build_directory.filename,
