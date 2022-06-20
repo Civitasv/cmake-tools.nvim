@@ -82,7 +82,7 @@ function cmake.build(opt, callback)
 
   local fargs = opt.fargs or {}
 
-  if not config.build_directory:is_dir() then
+  if not config.build_directory:exists() then
     -- configure it
     return cmake.generate({ clean = false, fargs = {} }, function()
       vim.schedule(function()
@@ -98,7 +98,7 @@ function cmake.build(opt, callback)
         vim.schedule(function()
           cmake.build(opt, callback)
         end)
-      end)
+      end, false)
     end)
   end
 
@@ -192,7 +192,7 @@ function cmake.run(opt, callback)
       vim.schedule(function()
         cmake.run(opt, callback)
       end)
-    end)
+    end, false)
   else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT
     -- Build select launch target every time
     config.build_target = config.launch_target
@@ -242,7 +242,7 @@ if has_nvim_dap then
         vim.schedule(function()
           cmake.debug(opt, callback)
         end)
-      end)
+      end, false)
     else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
       -- Build select launch target every time
       config.build_target = config.launch_target
@@ -286,17 +286,31 @@ function cmake.select_build_type(callback)
   end)
 end
 
-function cmake.select_build_target(callback)
-  if not config.build_directory:is_dir() then
+function cmake.select_build_target(callback, not_regenerate)
+  if not config.build_directory:exists() then
     -- configure it
     return cmake.generate({ clean = false, fargs = {} }, function()
       vim.schedule(function()
-        cmake.select_build_target(callback)
+        cmake.select_build_target(callback, false)
       end)
     end)
   end
 
-  local targets, display_targets = config:build_targets()
+  local targets_res = config:build_targets()
+
+  if targets_res.code ~= Types.SUCCESS then
+    -- try again
+    if not_regenerate then
+      return utils.error("CMake Configure Not Success!")
+    else
+      return cmake.generate({ clean = true, fargs = {} }, function()
+        vim.schedule(function()
+          cmake.select_build_target(callback, true)
+        end)
+      end)
+    end
+  end
+  local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
   vim.ui.select(display_targets, { prompt = "Select build target" }, function(_, idx)
     if not idx then
       return
@@ -308,17 +322,32 @@ function cmake.select_build_target(callback)
   end)
 end
 
-function cmake.select_launch_target(callback)
-  if not config.build_directory:is_dir() then
+function cmake.select_launch_target(callback, not_regenerate)
+  if not config.build_directory:exists() then
     -- configure it
     return cmake.generate({ clean = false, fargs = {} }, function()
       vim.schedule(function()
-        cmake.select_launch_target(callback)
+        cmake.select_launch_target(callback, false)
       end)
     end)
   end
 
-  local targets, display_targets = config:launch_targets()
+  local targets_res = config:launch_targets()
+
+  if targets_res.code ~= Types.SUCCESS then
+    -- try again
+    if not_regenerate then
+      return utils.error("CMake Configure Not Success!")
+    else
+      return cmake.generate({ clean = true, fargs = {} }, function()
+        vim.schedule(function()
+          cmake.select_launch_target(callback, true)
+        end)
+      end)
+    end
+  end
+  local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
+
   vim.ui.select(display_targets, { prompt = "Select launch target" }, function(_, idx)
     if not idx then
       return
