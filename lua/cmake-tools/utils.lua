@@ -16,9 +16,9 @@ local function append_to_cmake_console(error, data)
   local line = error and error or data
   vim.fn.setqflist({}, "a", { lines = { line } })
   -- scroll the quickfix buffer to bottom if it doesn't active
-  if vim.bo.buftype ~= "quickfix" then
-    vim.api.nvim_command("cbottom")
-  end
+  -- if vim.bo.buftype ~= "quickfix" then
+  vim.api.nvim_command("cbottom")
+  -- end
 end
 
 function utils.dump(o)

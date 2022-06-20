@@ -45,6 +45,11 @@ function Config:new()
 end
 
 function Config:get_codemodel_targets()
+  -- if reply_directory exists
+  if not self.reply_directory:exists() then
+    return Result:new(Types.NOT_CONFIGURED, nil, "Configure fail")
+  end
+
   local found_files = scandir.scan_dir(
     self.reply_directory.filename,
     { search_pattern = "codemodel*" }
@@ -88,7 +93,7 @@ end
 
 function Config:check_launch_target()
   -- 1. not configured
-  if not self.build_directory:is_dir() then
+  if not self.build_directory:exists() then
     return Result:new(Types.NOT_CONFIGURED, nil, "You need to configure it first")
   end
 
@@ -201,7 +206,12 @@ local function get_targets(config, opt)
       end
     end
   end
-  return targets, display_targets
+
+  return Result:new(
+    Types.SUCCESS,
+    { targets = targets, display_targets = display_targets },
+    "Success!"
+  )
 end
 
 function Config:launch_targets()
