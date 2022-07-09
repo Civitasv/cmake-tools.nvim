@@ -20,20 +20,20 @@ Todo: Add help.txt
 
 ## Usage
 
-|Command|Description|
-|-|-|
-|CMakeGenerate\[!\]|Generate native makefiles and workspaces that can be used next. Additional arguments will be passed to CMake.|
-|CMakeBuild| Build target, if not generate makefiles yet, it will automatically invoke `CMake`, if not select build target, it will automatically invoke `CMakeSelectBuildTarget` . Additional arguments will be passwd to CMake.|
-|CMakeRun|Run launch target, if not generate makefiles yet, it will automatically invoke `CMakeGenerate`, if not select launch target, it will automatically invoke `CMakeSelectLaunchTarget`, if not built, it will automatically invoke `CMakeBuild`. Additional arguments will be passed to `CMakeGenerate` and `CMakeBuild`. |
-|CMakeDebug|Use nvim-dap to debug launch target, works like CMakeRun|
-|CMakeSelectBuildType|Select build type, include  "Debug", "Release", "RelWithDebInfo", "MinSizeRel" |
-|CMakeSelectBuildTarget|Select build target, include executable and library targets |
-|CMakeSelectLaunchTarget|Select launch target, only include executable targets |
-|CMakeOpen|Open CMake console|
-|CMakeClose|Close CMake console|
-|CMakeInstall|Install CMake targets. Additional arguments will be passed to CMake.|
-|CMakeClean|Clean target|
-|CMakeStop|Stop CMake process|
+| Command                 | Description                                                                                                                                                                                                                                                                                                            |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CMakeGenerate\[!\]      | Generate native makefiles and workspaces that can be used next. Additional arguments will be passed to CMake. eg. Use `CMakeGenerate -G MinGW\ Makefiles` to specify another generator.                                                                                                                                |
+| CMakeBuild              | Build target, if not generate makefiles yet, it will automatically invoke `CMake`, if not select build target, it will automatically invoke `CMakeSelectBuildTarget` . Additional arguments will be passed to CMake.                                                                                                   |
+| CMakeRun                | Run launch target, if not generate makefiles yet, it will automatically invoke `CMakeGenerate`, if not select launch target, it will automatically invoke `CMakeSelectLaunchTarget`, if not built, it will automatically invoke `CMakeBuild`. Additional arguments will be passed to `CMakeGenerate` and `CMakeBuild`. |
+| CMakeDebug              | Use nvim-dap to debug launch target, works like CMakeRun                                                                                                                                                                                                                                                               |
+| CMakeSelectBuildType    | Select build type, include "Debug", "Release", "RelWithDebInfo", "MinSizeRel"                                                                                                                                                                                                                                          |
+| CMakeSelectBuildTarget  | Select build target, include executable and library targets                                                                                                                                                                                                                                                            |
+| CMakeSelectLaunchTarget | Select launch target, only include executable targets                                                                                                                                                                                                                                                                  |
+| CMakeOpen               | Open CMake console                                                                                                                                                                                                                                                                                                     |
+| CMakeClose              | Close CMake console                                                                                                                                                                                                                                                                                                    |
+| CMakeInstall            | Install CMake targets. Additional arguments will be passed to CMake.                                                                                                                                                                                                                                                   |
+| CMakeClean              | Clean target                                                                                                                                                                                                                                                                                                           |
+| CMakeStop               | Stop CMake process                                                                                                                                                                                                                                                                                                     |
 
 ## Demos
 
