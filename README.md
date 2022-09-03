@@ -84,3 +84,9 @@ require("cmake-tools").setup {
 ## LICENCE
 
 [GPL-3.0 License](https://www.gnu.org/licenses/gpl-3.0.html) © Civitasv
+
+## Reference
+
+1. Inspired by [neovim-cmake](https://github.com/Shatur/neovim-cmake) which is made by [Shatur](https://github.com/Shatur), GPL-3.0 license.
+2. [plenary](https://github.com/nvim-lua/plenary.nvim), MIT LICENSE.
+
