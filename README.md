@@ -87,6 +87,6 @@ require("cmake-tools").setup {
 
 ## Reference
 
-1. Inspired by [neovim-cmake](https://github.com/Shatur/neovim-cmake) which is made by [Shatur](https://github.com/Shatur), GPL-3.0 license.
+1. Inspired by [neovim-cmake](https://github.com/Shatur/neovim-cmake) which is made by [Shatur](https://github.com/Shatur), [GPL-3.0 license](https://github.com/Shatur/neovim-cmake/blob/master/COPYING).
 2. [plenary](https://github.com/nvim-lua/plenary.nvim), MIT LICENSE.
 
