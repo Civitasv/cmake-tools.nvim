@@ -1,5 +1,8 @@
 # CMake Tools for Neovim
 
+> It is a fork from the brilliant [neovim-cmake](https://github.com/Shatur/neovim-cmake). Since I change too much of it, So I make a new repo to develop it.
+
+
 🔥CMake Tools for Neovim written in pure lua that requires Neovim 0.7+.🔥
 
 It uses [CMake file api](https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html) to generate CMake file structure.
