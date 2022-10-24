@@ -4,6 +4,7 @@ local utils = require("cmake-tools.utils")
 local Types = require("cmake-tools.types")
 local const = require("cmake-tools.const")
 local Config = require("cmake-tools.config")
+local variants = require("cmake-tools.variants")
 
 local config = Config:new()
 
@@ -41,8 +42,7 @@ function cmake.generate(opt, callback)
   vim.list_extend(fargs, {
     "-B",
     config.build_directory.filename,
-    "-D",
-    "CMAKE_BUILD_TYPE=" .. config.build_type,
+    unpack(variants.build_arglist(config.build_type)),
     unpack(config.generate_options),
   })
   -- print(dump(config.generate_options))
@@ -267,7 +267,7 @@ end
 
 function cmake.select_build_type(callback)
   -- Put selected build type first
-  local types = { "Debug", "Release", "RelWithDebInfo", "MinSizeRel" }
+  local types = variants.get()
   for idx, type in ipairs(types) do
     if type == config.build_type then
       table.insert(types, 1, table.remove(types, idx))
@@ -279,7 +279,10 @@ function cmake.select_build_type(callback)
     if not build_type then
       return
     end
-    config.build_type = build_type
+    if config.build_type ~= build_type then
+      utils.rmdir(config.build_directory.filename)
+      config.build_type = build_type
+    end
     if type(callback) == "function" then
       callback()
     end
