@@ -90,6 +90,7 @@ function variants.get()
   if config then
     local choices = collect_choices(config)
     local combinations = create_combinations(choices)
+    table.sort(combinations)
     return combinations
   end
 
