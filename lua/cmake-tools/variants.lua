@@ -56,7 +56,9 @@ function variants.get()
 
   local function create_combinations(choices)
     -- https://rosettacode.org/wiki/Cartesian_product_of_two_or_more_lists#Functional-esque_(non-iterator)
+    -- Code under CC-BY-SA 4.0
     -- accessed: 01.10.22
+    -- BEGIN code from rosettacode
 
     -- support:
     function T(t) return setmetatable(t, { __index = table }) end
@@ -78,7 +80,7 @@ function variants.get()
       return prod
     end
 
-    --
+    -- END code from rosettacode
 
     local combinations = cartprod(choices)
     local strings = combinations:reduce(function(t, a) table.insert(a, t:concat(" + ")); return a end, {})
