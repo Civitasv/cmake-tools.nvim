@@ -15,6 +15,7 @@ local function parse()
           dir = dir:match("%.%./((%.%./)*)")
           if not dir then dir = "./" end
           file = vim.fn.resolve(dir .. f)
+          break
         end
       end
       files = vim.fn.readdir(dir)
