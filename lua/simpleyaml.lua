@@ -87,7 +87,7 @@ function simpleyaml.parse_file(path)
 
   for line in file:lines() do -- for all lines in the file
     -- goto next line if current line is empty, a comment, the document start, or a directive
-    if line:gsub("%s*", "") == "" or line:find("^#") ~= nil or line:find("^---") ~= nil or line:find("^%") ~= nil then
+    if line:gsub("%s*", "") == "" or line:find("^#") ~= nil or line:find("^---") ~= nil or line:find("^%%") ~= nil then
       goto cont_processing_lines
     end
 
