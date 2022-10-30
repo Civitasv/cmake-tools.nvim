@@ -55,16 +55,31 @@ function variants.get()
   end
 
   local function create_combinations(choices)
+    -- The following code is a *modified* version of
     -- https://rosettacode.org/wiki/Cartesian_product_of_two_or_more_lists#Functional-esque_(non-iterator)
-    -- Code under CC-BY-SA 4.0
+    -- under CC-BY-SA 4.0
     -- accessed: 01.10.22
     -- BEGIN code from rosettacode
 
     -- support:
-    function T(t) return setmetatable(t, { __index = table }) end
+    local function T(t)
+      return setmetatable(t, { __index = table })
+    end
 
-    table.clone = function(t) local s = T {} for k, v in ipairs(t) do s[k] = v end return s end
-    table.reduce = function(t, f, acc) for i = 1, #t do acc = f(t[i], acc) end return acc end
+    local function clone(t)
+      local s = T {}
+      for k, v in ipairs(t) do
+        s[k] = v
+      end
+      return s
+    end
+
+    local function reduce(t, f, acc)
+      for i = 1, #t do
+        acc = f(t[i], acc)
+      end
+      return acc
+    end
 
     -- implementation:
     local function cartprod(sets)
@@ -72,7 +87,7 @@ function variants.get()
       local function descend(depth)
         for _, v in ipairs(sets[depth]) do
           temp[depth] = v
-          if (depth == #sets) then prod[#prod + 1] = temp:clone() else descend(depth + 1) end
+          if (depth == #sets) then prod[#prod + 1] = clone(temp) else descend(depth + 1) end
         end
       end
 
@@ -83,7 +98,7 @@ function variants.get()
     -- END code from rosettacode
 
     local combinations = cartprod(choices)
-    local strings = combinations:reduce(function(t, a) table.insert(a, t:concat(" + ")); return a end, {})
+    local strings = reduce(combinations, function(t, a) table.insert(a, t:concat(" + ")); return a end, {})
 
     return strings
   end
