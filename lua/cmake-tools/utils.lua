@@ -147,15 +147,17 @@ function utils.get_cmake_configuration()
 end
 
 function utils.rmdir(dir)
-  for name, type in vim.fs.dir(dir) do
-    local path = dir .. "/" .. name
-    if type == "file" then
-      os.remove(path)
-    else
-      utils.rmdir(path)
+  if #vim.fs.find(dir) > 0 then
+    for name, type in vim.fs.dir(dir) do
+      local path = dir .. "/" .. name
+      if type == "file" then
+        os.remove(path)
+      else
+        utils.rmdir(path)
+      end
     end
+    os.remove(dir)
   end
-  os.remove(dir)
 end
 
 return utils
