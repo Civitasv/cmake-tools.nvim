@@ -121,7 +121,7 @@ function utils.run(cmd, args, opts)
 end
 
 --- Check if exists active job.
--- @return true if exists else false
+-- @return true if not exists else false
 function utils.has_active_job()
   if not utils.job or utils.job.is_shutdown then
     return true

@@ -61,6 +61,11 @@ function cmake.clean(callback)
     return
   end
 
+  local result = utils.get_cmake_configuration()
+  if result.code ~= Types.SUCCESS then
+    return utils.error(result.message)
+  end
+
   local args = { "--build", config.build_directory.filename, "--target", "clean" }
   -- print(dump(args))
   return utils.run(const.cmake_command, args, {
@@ -77,6 +82,11 @@ end
 function cmake.build(opt, callback)
   if not utils.has_active_job() then
     return
+  end
+
+  local result = utils.get_cmake_configuration()
+  if result.code ~= Types.SUCCESS then
+    return utils.error(result.message)
   end
   -- print("BUILD")
 
@@ -152,6 +162,11 @@ function cmake.install(opt)
     return
   end
 
+  local result = utils.get_cmake_configuration()
+  if result.code ~= Types.SUCCESS then
+    return utils.error(result.message)
+  end
+
   local fargs = opt.fargs
 
   vim.list_extend(fargs, { "--install", config.build_directory.filename })
@@ -182,10 +197,9 @@ function cmake.run(opt, callback)
     return cmake.generate({ clean = false, fargs = utils.deepcopy(opt.fargs) }, function()
       cmake.run(opt, callback)
     end)
-  elseif
-    result_code == Types.NOT_SELECT_LAUNCH_TARGET
-    or result_code == Types.NOT_A_LAUNCH_TARGET
-    or result_code == Types.NOT_EXECUTABLE
+  elseif result_code == Types.NOT_SELECT_LAUNCH_TARGET
+      or result_code == Types.NOT_A_LAUNCH_TARGET
+      or result_code == Types.NOT_EXECUTABLE
   then
     -- Re Select a target that could launch
     return cmake.select_launch_target(function()
@@ -232,10 +246,9 @@ if has_nvim_dap then
       return cmake.generate({ clean = false, fargs = utils.deepcopy(opt.fargs) }, function()
         cmake.debug(opt, callback)
       end)
-    elseif
-      result_code == Types.NOT_SELECT_LAUNCH_TARGET
-      or result_code == Types.NOT_A_LAUNCH_TARGET
-      or result_code == Types.NOT_EXECUTABLE
+    elseif result_code == Types.NOT_SELECT_LAUNCH_TARGET
+        or result_code == Types.NOT_A_LAUNCH_TARGET
+        or result_code == Types.NOT_EXECUTABLE
     then
       -- Re Select a target that could launch
       return cmake.select_launch_target(function()
@@ -266,8 +279,16 @@ if has_nvim_dap then
 end
 
 function cmake.select_build_type(callback)
-  -- Put selected build type first
+  if not utils.has_active_job() then
+    return
+  end
+  local result = utils.get_cmake_configuration()
+  if result.code ~= Types.SUCCESS then
+    return utils.error(result.message)
+  end
+
   local types = variants.get()
+  -- Put selected build type first
   for idx, type in ipairs(types) do
     if type == config.build_type then
       table.insert(types, 1, table.remove(types, idx))

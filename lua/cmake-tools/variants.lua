@@ -1,3 +1,4 @@
+local utils = require("cmake-tools.utils")
 local variants = {}
 
 local syaml = require("simpleyaml")
@@ -14,7 +15,7 @@ local function parse()
     local file = nil
     local dir = ".."
     while files and not file do -- iterate over files in current directory
-       for _, f in ipairs(files) do
+      for _, f in ipairs(files) do
         if f == "cmake-variants.yaml" or f == "cmake-variants.json" then -- if a variants config file is found
           dir = dir:match("%.%./((%.%./)*)") -- constructi its full path and break the loop
           if not dir then dir = "./" end
@@ -54,7 +55,7 @@ function variants.get()
     for _, option in pairs(config) do -- for all options
       local cs = {}
       for _, choice in pairs(option["choices"]) do -- for all choices of that option
-        table.insert(cs, choice["short"]) -- collect their short name
+        table.insert(cs, choice) -- collect their short name
       end
       table.insert(choices, cs)
     end
@@ -105,9 +106,34 @@ function variants.get()
     end
 
     -- END code from rosettacode
-
     local combinations = cartprod(choices)
-    local strings = reduce(combinations, function(t, a) table.insert(a, t:concat(" + ")); return a end, {})
+    local strings = reduce(combinations, function(t, a)
+      local function handleItem()
+        local res = ""
+
+        for i = 1, #t do
+          res = res .. t[i]["short"]
+          if i ~= #t then
+            res = res .. " + "
+          end
+        end
+        res = res .. "("
+
+        for i = 1, #t do
+          res = res .. t[i]["long"]
+          if i ~= #t then
+            res = res .. " + "
+          end
+        end
+
+        res = res .. ")"
+
+        return res;
+      end
+
+      table.insert(a, handleItem());
+      return a
+    end, {})
 
     return strings
   end
@@ -127,6 +153,7 @@ end
 
 -- given a variant, build an argument list for CMake
 function variants.build_arglist(variant)
+  --[[ print(utils.dump(variant)) ]]
   -- helper function to build a simple command line option that defines the CMAKE_BUILD_TYPE variable to `build_type`
   local function build_simple(build_type)
     return { "-D", "CMAKE_BUILD_TYPE=" .. build_type }
