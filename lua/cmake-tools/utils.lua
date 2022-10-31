@@ -128,8 +128,8 @@ function utils.has_active_job()
   end
   utils.error(
     "A CMake task is already running: "
-      .. utils.job.command
-      .. " Stop it before trying to run a new CMake task."
+    .. utils.job.command
+    .. " Stop it before trying to run a new CMake task."
   )
   return false
 end
@@ -144,6 +144,20 @@ function utils.get_cmake_configuration()
     )
   end
   return Result:new(Types.SUCCESS, cmakelists, "cmake-tools has found CMakeLists.txt.")
+end
+
+function utils.rmdir(dir)
+  if #vim.fs.find(dir) > 0 then
+    for name, type in vim.fs.dir(dir) do
+      local path = dir .. "/" .. name
+      if type == "file" then
+        os.remove(path)
+      else
+        utils.rmdir(path)
+      end
+    end
+    os.remove(dir)
+  end
 end
 
 return utils
