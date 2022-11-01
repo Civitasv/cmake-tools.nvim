@@ -1,4 +1,4 @@
-local utils = require("cmake-tools.utils")
+--[[ local utils = require("cmake-tools.utils") ]]
 local variants = {}
 
 local syaml = require("simpleyaml")
@@ -124,11 +124,11 @@ function variants.get(variants_opt)
               res = res .. string.sub(detailed, 1, max_length - length) .. "..."
               break
             end
-            res = res .. t[i]["long"]
+            res = res .. detailed
             if i ~= #t then
               res = res .. " + "
             end
-            length = length + #t[i]["long"] + 3
+            length = length + #detailed + 3
           end
 
           res = res .. ")"
