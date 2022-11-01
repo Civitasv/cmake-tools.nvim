@@ -13,18 +13,11 @@ local function parse()
   local function findcfg()
     local files = vim.fn.readdir(".")
     local file = nil
-    local dir = ".."
-    while files and not file do -- iterate over files in current directory
-      for _, f in ipairs(files) do
-        if f == "cmake-variants.yaml" or f == "cmake-variants.json" then -- if a variants config file is found
-          dir = dir:match("%.%./((%.%./)*)") -- constructi its full path and break the loop
-          if not dir then dir = "./" end
-          file = vim.fn.resolve(dir .. f)
-          break
-        end
+    for _, f in ipairs(files) do -- iterate over files in current directory
+      if f == "cmake-variants.yaml" or f == "cmake-variants.json" then -- if a variants config file is found
+        file = vim.fn.resolve("./" .. f)
+        break
       end
-      files = vim.fn.readdir(dir)
-      dir = dir .. "/.."
     end
 
     return file
