@@ -12,7 +12,7 @@ local cmake = {}
 
 --- Setup cmake-tools
 function cmake.setup(values)
-  setmetatable(const, { __index = vim.tbl_extend("force", const, values) })
+  const = vim.tbl_deep_extend("force", const, values)
 end
 
 --- Generate build system for this project.
@@ -287,7 +287,7 @@ function cmake.select_build_type(callback)
     return utils.error(result.message)
   end
 
-  local types = variants.get()
+  local types = variants.get(const.cmake_variants_message)
   -- Put selected build type first
   for idx, type in ipairs(types) do
     if type == config.build_type then

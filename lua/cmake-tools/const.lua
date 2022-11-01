@@ -10,6 +10,10 @@ local const = {
   cmake_focus_on_console = false, -- true, false
   cmake_dap_configuration = { name = "cpp", type = "codelldb", request = "launch" },
   cmake_dap_open_command = require("dap").repl.open,
+  cmake_variants_message = {
+    short = { show = true },
+    long = { show = true, max_length = 40 }
+  }
 }
 
 return const

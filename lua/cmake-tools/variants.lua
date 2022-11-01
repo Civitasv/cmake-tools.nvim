@@ -40,7 +40,7 @@ local function parse()
 end
 
 -- returns a list of string descriptions of all possible combinations of configurations, using their short names
-function variants.get()
+function variants.get(variants_opt)
   -- helper function to collect all short names of choices
   local function collect_choices(config)
     local choices = {}
@@ -110,17 +110,30 @@ function variants.get()
             res = res .. " + "
           end
         end
-        res = res .. "("
 
-        for i = 1, #t do
-          res = res .. t[i]["long"]
-          if i ~= #t then
-            res = res .. " + "
+        if variants_opt.long.show then
+          local length = 0
+          local max_length = variants_opt.long.max_length
+          res = res .. "("
+          length = length + 1
+
+          for i = 1, #t do
+            local detailed = t[i]["long"]
+            -- if too long, then just show ...
+            if length + #detailed >= max_length then
+              res = res .. string.sub(detailed, 1, max_length - length) .. "..."
+              break
+            end
+            res = res .. t[i]["long"]
+            if i ~= #t then
+              res = res .. " + "
+            end
+            length = length + #t[i]["long"] + 3
           end
+
+          res = res .. ")"
+          length = length + 1
         end
-
-        res = res .. ")"
-
         return res;
       end
 
