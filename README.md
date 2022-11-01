@@ -2,7 +2,6 @@
 
 > It is a fork from the brilliant [neovim-cmake](https://github.com/Shatur/neovim-cmake). Since I change too much of it, So I make a new repo to develop it.
 
-
 🔥CMake Tools for Neovim written in pure lua that requires Neovim 0.7+.🔥
 
 It uses [CMake file api](https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html) to generate CMake file structure.
@@ -10,6 +9,12 @@ It uses [CMake file api](https://cmake.org/cmake/help/latest/manual/cmake-file-a
 It uses terminal to execute targets.
 
 (optional) It uses [nvim-dap](https://github.com/mfussenegger/nvim-dap) to debug.
+
+## New Feature
+
+Thanks @toolcreator for supporting CMake Variants which raised by VsCode's CMake Tools.
+
+![CMake Variants](images/CMakeSelectBuildType2.gif)
 
 ## Installation
 
@@ -29,7 +34,7 @@ Todo: Add help.txt
 | CMakeBuild              | Build target, if not generate makefiles yet, it will automatically invoke `CMake`, if not select build target, it will automatically invoke `CMakeSelectBuildTarget` . Additional arguments will be passed to CMake.                                                                                                   |
 | CMakeRun                | Run launch target, if not generate makefiles yet, it will automatically invoke `CMakeGenerate`, if not select launch target, it will automatically invoke `CMakeSelectLaunchTarget`, if not built, it will automatically invoke `CMakeBuild`. Additional arguments will be passed to `CMakeGenerate` and `CMakeBuild`. |
 | CMakeDebug              | Use nvim-dap to debug launch target, works like CMakeRun                                                                                                                                                                                                                                                               |
-| CMakeSelectBuildType    | Select build type, include "Debug", "Release", "RelWithDebInfo", "MinSizeRel"                                                                                                                                                                                                                                          |
+| CMakeSelectBuildType    | Select build type, include "Debug", "Release", "RelWithDebInfo", "MinSizeRel" for default. cmake-tools.nvim also support cmake variants, when "cmake-variants.yaml" or "cmake-variants.json" is provided, it will read configuration from it                                                                           |
 | CMakeSelectBuildTarget  | Select build target, include executable and library targets                                                                                                                                                                                                                                                            |
 | CMakeSelectLaunchTarget | Select launch target, only include executable targets                                                                                                                                                                                                                                                                  |
 | CMakeOpen               | Open CMake console                                                                                                                                                                                                                                                                                                     |
@@ -60,6 +65,10 @@ Todo: Add help.txt
 
 ![CMakeSelectBuildType](images/CMakeSelectBuildType.gif)
 
+When `cmake-variants.json` or `cmake-variants.yaml` is provided:
+
+![CMakeSelectBuildType with variants](images/CMakeSelectBuildType2.gif)
+
 ### CMakeSelectBuildTarget
 
 ![CMakeSelectBuildTarget](images/CMakeSelectBuildTarget.gif)
@@ -81,6 +90,10 @@ require("cmake-tools").setup {
   cmake_show_console = "always", -- "always", "only_on_error"
   cmake_dap_configuration = { name = "cpp", type = "codelldb", request = "launch" }, -- dap configuration, optional
   cmake_dap_open_command = require("dap").repl.open, -- optional
+  cmake_variants_message = {
+    short = { show = true },
+    long = { show = true, max_length = 40 }
+  }
 }
 ```
 
@@ -92,4 +105,3 @@ require("cmake-tools").setup {
 
 1. Inspired by [neovim-cmake](https://github.com/Shatur/neovim-cmake) which is made by [Shatur](https://github.com/Shatur), [GPL-3.0 license](https://github.com/Shatur/neovim-cmake/blob/master/COPYING).
 2. [plenary](https://github.com/nvim-lua/plenary.nvim), MIT LICENSE.
-
