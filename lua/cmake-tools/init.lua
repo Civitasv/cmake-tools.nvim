@@ -6,13 +6,14 @@ local const = require("cmake-tools.const")
 local Config = require("cmake-tools.config")
 local variants = require("cmake-tools.variants")
 
-local config = Config:new()
+local config
 
 local cmake = {}
 
 --- Setup cmake-tools
 function cmake.setup(values)
   const = vim.tbl_deep_extend("force", const, values)
+  config = Config:new(const)
 end
 
 --- Generate build system for this project.
@@ -52,6 +53,8 @@ function cmake.generate(opt, callback)
         callback()
       end
     end,
+    cmake_show_console = const.cmake_show_console,
+    cmake_console_size = const.cmake_console_size
   })
 end
 
@@ -74,6 +77,8 @@ function cmake.clean(callback)
         callback()
       end
     end,
+    cmake_show_console = const.cmake_show_console,
+    cmake_console_size = const.cmake_console_size
   })
 end
 
@@ -88,7 +93,6 @@ function cmake.build(opt, callback)
   if result.code ~= Types.SUCCESS then
     return utils.error(result.message)
   end
-  -- print("BUILD")
 
   local fargs = opt.fargs or {}
 
@@ -135,6 +139,8 @@ function cmake.build(opt, callback)
         callback()
       end
     end,
+    cmake_show_console = const.cmake_show_console,
+    cmake_console_size = const.cmake_console_size
   })
 end
 
@@ -170,7 +176,10 @@ function cmake.install(opt)
   local fargs = opt.fargs
 
   vim.list_extend(fargs, { "--install", config.build_directory.filename })
-  return utils.run(const.cmake_command, fargs)
+  return utils.run(const.cmake_command, fargs, {
+    cmake_show_console = const.cmake_show_console,
+    cmake_console_size = const.cmake_console_size
+  })
 end
 
 --- CMake close cmake console
@@ -217,7 +226,11 @@ function cmake.run(opt, callback)
         local target_path = result.data
         -- print("TARGET", target_path)
 
-        return utils.execute(target_path, { bufname = vim.fn.expand("%:t:r") })
+        return utils.execute(target_path, {
+          bufname = vim.fn.expand("%:t:r"),
+          cmake_console_position = const.cmake_console_position,
+          cmake_console_size = const.cmake_console_size
+        })
       end)
     end)
   end

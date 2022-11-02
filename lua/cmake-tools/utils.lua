@@ -1,6 +1,5 @@
 local Job = require("plenary.job")
 local Path = require("plenary.path")
-local const = require("cmake-tools.const")
 local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
 
@@ -36,8 +35,8 @@ function utils.dump(o)
   end
 end
 
-function utils.show_cmake_console()
-  vim.api.nvim_command("copen " .. const.cmake_console_size)
+function utils.show_cmake_console(cmake_console_size)
+  vim.api.nvim_command("copen " .. cmake_console_size)
   vim.api.nvim_command("wincmd j")
 end
 
@@ -57,7 +56,7 @@ end
 function utils.execute(executable, opts)
   -- print("EXECUTABLE", executable)
   local set_bufname = "file " .. opts.bufname
-  local prefix = string.format("%s %d new", const.cmake_console_position, const.cmake_console_size)
+  local prefix = string.format("%s %d new", opts.cmake_console_position, opts.cmake_console_size)
 
   vim.api.nvim_command("cclose")
   vim.cmd(prefix .. " | term " .. executable)
@@ -92,9 +91,9 @@ end
 -- Execute CMake command using job api
 function utils.run(cmd, args, opts)
   vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
-  opts.cmake_show_console = const.cmake_show_console == "always"
+  opts.cmake_show_console = opts.cmake_show_console == "always"
   if opts.cmake_show_console then
-    utils.show_cmake_console()
+    utils.show_cmake_console(opts.cmake_console_size)
   end
 
   utils.job = Job:new({
@@ -110,7 +109,7 @@ function utils.run(cmd, args, opts)
           opts.on_success()
         end
       elseif opts.cmake_show_console == "only_on_error" then
-        utils.show_cmake_console()
+        utils.show_cmake_console(opts.cmake_console_size)
         vim.api.nvim_command("cbottom")
       end
     end),
