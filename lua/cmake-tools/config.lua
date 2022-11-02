@@ -20,26 +20,14 @@ function Config:new()
   local obj = {}
   setmetatable(obj, self)
   self.__index = self
-  self.build_directory = Path:new(vim.loop.cwd(), const.cmake_build_directory)
-  self.query_directory = Path:new(
-    vim.loop.cwd(),
-    const.cmake_build_directory,
-    ".cmake",
-    "api",
-    "v1",
-    "query"
-  )
-  self.reply_directory = Path:new(
-    vim.loop.cwd(),
-    const.cmake_build_directory,
-    ".cmake",
-    "api",
-    "v1",
-    "reply"
-  )
-  self.build_type = const.cmake_build_type
-  self.generate_options = const.cmake_generate_options
-  self.build_options = const.cmake_build_options
+  self.build_directory = Path:new(vim.loop.cwd(), const.options.cmake_build_directory)
+  self.query_directory =
+    Path:new(vim.loop.cwd(), const.options.cmake_build_directory, ".cmake", "api", "v1", "query")
+  self.reply_directory =
+    Path:new(vim.loop.cwd(), const.options.cmake_build_directory, ".cmake", "api", "v1", "reply")
+  self.build_type = const.options.cmake_build_type
+  self.generate_options = const.options.cmake_generate_options
+  self.build_options = const.options.cmake_build_options
 
   return self
 end
@@ -50,10 +38,8 @@ function Config:get_codemodel_targets()
     return Result:new(Types.NOT_CONFIGURED, nil, "Configure fail")
   end
 
-  local found_files = scandir.scan_dir(
-    self.reply_directory.filename,
-    { search_pattern = "codemodel*" }
-  )
+  local found_files =
+    scandir.scan_dir(self.reply_directory.filename, { search_pattern = "codemodel*" })
   if #found_files == 0 then
     return Result:new(Types.CANNOT_FIND_CODEMODEL_FILE, nil, "Unable to find codemodel file")
   end

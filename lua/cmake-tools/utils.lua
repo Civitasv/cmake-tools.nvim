@@ -37,7 +37,7 @@ function utils.dump(o)
 end
 
 function utils.show_cmake_console()
-  vim.api.nvim_command("copen " .. const.cmake_console_size)
+  vim.api.nvim_command("copen " .. const.options.cmake_console_size)
   vim.api.nvim_command("wincmd j")
 end
 
@@ -57,7 +57,11 @@ end
 function utils.execute(executable, opts)
   -- print("EXECUTABLE", executable)
   local set_bufname = "file " .. opts.bufname
-  local prefix = string.format("%s %d new", const.cmake_console_position, const.cmake_console_size)
+  local prefix = string.format(
+    "%s %d new",
+    const.options.cmake_console_position,
+    const.options.cmake_console_size
+  )
 
   vim.api.nvim_command("cclose")
   vim.cmd(prefix .. " | term " .. executable)
@@ -92,7 +96,7 @@ end
 -- Execute CMake command using job api
 function utils.run(cmd, args, opts)
   vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
-  opts.cmake_show_console = const.cmake_show_console == "always"
+  opts.cmake_show_console = const.options.cmake_show_console == "always"
   if opts.cmake_show_console then
     utils.show_cmake_console()
   end
@@ -128,8 +132,8 @@ function utils.has_active_job()
   end
   utils.error(
     "A CMake task is already running: "
-    .. utils.job.command
-    .. " Stop it before trying to run a new CMake task."
+      .. utils.job.command
+      .. " Stop it before trying to run a new CMake task."
   )
   return false
 end

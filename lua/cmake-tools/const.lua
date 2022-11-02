@@ -1,4 +1,4 @@
-local const = {
+local defaults = {
   cmake_command = "cmake",
   cmake_build_directory = "build",
   cmake_build_type = "Debug",
@@ -12,8 +12,17 @@ local const = {
   cmake_dap_open_command = require("dap").repl.open,
   cmake_variants_message = {
     short = { show = true },
-    long = { show = true, max_length = 40 }
-  }
+    long = { show = true, max_length = 40 },
+  },
 }
 
-return const
+local M = {}
+M.options = {}
+
+function M.setup(options)
+  M.options = vim.tbl_deep_extend("force", {}, defaults, options or {})
+end
+
+M.setup()
+
+return M

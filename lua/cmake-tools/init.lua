@@ -12,7 +12,8 @@ local cmake = {}
 
 --- Setup cmake-tools
 function cmake.setup(values)
-  const = vim.tbl_deep_extend("force", const, values)
+  -- const = vim.tbl_deep_extend("force", const, values)
+  const.setup(values)
 end
 
 --- Generate build system for this project.
@@ -46,7 +47,7 @@ function cmake.generate(opt, callback)
     unpack(config.generate_options),
   })
   -- print(dump(config.generate_options))
-  return utils.run(const.cmake_command, fargs, {
+  return utils.run(const.options.cmake_command, fargs, {
     on_success = function()
       if type(callback) == "function" then
         callback()
@@ -68,7 +69,7 @@ function cmake.clean(callback)
 
   local args = { "--build", config.build_directory.filename, "--target", "clean" }
   -- print(dump(args))
-  return utils.run(const.cmake_command, args, {
+  return utils.run(const.options.cmake_command, args, {
     on_success = function()
       if type(callback) == "function" then
         callback()
@@ -129,7 +130,7 @@ function cmake.build(opt, callback)
     })
   end
   -- print(utils.dump(fargs))
-  return utils.run(const.cmake_command, fargs, {
+  return utils.run(const.options.cmake_command, fargs, {
     on_success = function()
       if type(callback) == "function" then
         callback()
@@ -170,7 +171,7 @@ function cmake.install(opt)
   local fargs = opt.fargs
 
   vim.list_extend(fargs, { "--install", config.build_directory.filename })
-  return utils.run(const.cmake_command, fargs)
+  return utils.run(const.options.cmake_command, fargs)
 end
 
 --- CMake close cmake console
@@ -197,9 +198,10 @@ function cmake.run(opt, callback)
     return cmake.generate({ clean = false, fargs = utils.deepcopy(opt.fargs) }, function()
       cmake.run(opt, callback)
     end)
-  elseif result_code == Types.NOT_SELECT_LAUNCH_TARGET
-      or result_code == Types.NOT_A_LAUNCH_TARGET
-      or result_code == Types.NOT_EXECUTABLE
+  elseif
+    result_code == Types.NOT_SELECT_LAUNCH_TARGET
+    or result_code == Types.NOT_A_LAUNCH_TARGET
+    or result_code == Types.NOT_EXECUTABLE
   then
     -- Re Select a target that could launch
     return cmake.select_launch_target(function()
@@ -246,9 +248,10 @@ if has_nvim_dap then
       return cmake.generate({ clean = false, fargs = utils.deepcopy(opt.fargs) }, function()
         cmake.debug(opt, callback)
       end)
-    elseif result_code == Types.NOT_SELECT_LAUNCH_TARGET
-        or result_code == Types.NOT_A_LAUNCH_TARGET
-        or result_code == Types.NOT_EXECUTABLE
+    elseif
+      result_code == Types.NOT_SELECT_LAUNCH_TARGET
+      or result_code == Types.NOT_A_LAUNCH_TARGET
+      or result_code == Types.NOT_EXECUTABLE
     then
       -- Re Select a target that could launch
       return cmake.select_launch_target(function()
@@ -268,9 +271,9 @@ if has_nvim_dap then
             program = target_path,
             cwd = vim.loop.cwd(),
           }
-          dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
-          if const.cmake_dap_open_command then
-            const.cmake_dap_open_command()
+          dap.run(vim.tbl_extend("force", dap_config, const.options.cmake_dap_configuration))
+          if const.options.cmake_dap_open_command then
+            const.options.cmake_dap_open_command()
           end
         end)
       end)
@@ -287,7 +290,7 @@ function cmake.select_build_type(callback)
     return utils.error(result.message)
   end
 
-  local types = variants.get(const.cmake_variants_message)
+  local types = variants.get(const.options.cmake_variants_message)
   -- Put selected build type first
   for idx, type in ipairs(types) do
     if type == config.build_type then
