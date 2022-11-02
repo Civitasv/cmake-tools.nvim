@@ -1,6 +1,5 @@
 local Path = require("plenary.path")
 local scandir = require("plenary.scandir")
-local const = require("cmake-tools.const")
 local Result = require("cmake-tools.result")
 local utils = require("cmake-tools.utils")
 local Types = require("cmake-tools.types")
@@ -16,7 +15,7 @@ local Config = {
   launch_target = nil,
 }
 
-function Config:new()
+function Config:new(const)
   local obj = {}
   setmetatable(obj, self)
   self.__index = self
@@ -168,7 +167,7 @@ function Config:validate_for_debugging()
   if build_type ~= "Debug" and build_type ~= "RelWithDebInfo" then
     utils.error(
       "For debugging you need to use Debug or RelWithDebInfo, but currently your build type is "
-        .. build_type
+      .. build_type
     )
     return Result:new(Types.CANNOT_DEBUG_LAUNCH_TARGET, false, "cannot debug it")
   end
