@@ -47,11 +47,13 @@ function cmake.generate(opt, callback)
   vim.list_extend(fargs, {
     "-B",
     config.build_directory.filename,
+    "-S",
+    ".",
     unpack(variants.build_arglist(config.build_type)),
     unpack(kit_option.args),
     unpack(config.generate_options),
   })
-  -- print(dump(config.generate_options))
+
   return utils.run(const.cmake_command, kit_option.env, fargs, {
     on_success = function()
       if type(callback) == "function" then

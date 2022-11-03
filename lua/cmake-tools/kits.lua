@@ -49,13 +49,26 @@ function kits.get()
   return res
 end
 
--- given a kit, build an argument list for CMake
-function kits.build_env_and_args(kit)
+function kits.get_by_name(kit_name)
   local config = parse()
+  if config then
+    for _, item in ipairs(config) do
+      local name = item.name
+      if name == kit_name then
+        return item
+      end
+    end
+  end
+  return nil
+end
+
+-- given a kit, build an argument list for CMake
+function kits.build_env_and_args(kit_name)
+  local kit = kits.get_by_name(kit_name)
   local args = {}
   local env = {}
 
-  if not config then
+  if not kit then
     return { env = env, args = args } -- silent error (empty arglist) if no config file found
   end
 
@@ -75,11 +88,7 @@ function kits.build_env_and_args(kit)
   -- if exists `compilers` option, then set variable for cmake
   if kit.compilers then
     for lang, compiler in pairs(kit.compilers) do
-      if lang == "C" then
-        add_args({ "-DCMAKE_C_COMPILER=" .. compiler })
-      elseif lang == "CXX" then
-        add_args({ "-DCMAKE_CXX_COMPILER=" .. compiler })
-      end
+      add_args({ "-DCMAKE_" .. lang .. "_COMPILER=" .. compiler })
     end
   end
   if kit.toolchainFile then
@@ -87,7 +96,7 @@ function kits.build_env_and_args(kit)
   end
 
   if kit.environmentVariables then
-    for k, v in kit.environmentVariables do
+    for k, v in pairs(kit.environmentVariables) do
       add_env({ k .. "=" .. v })
     end
   end
