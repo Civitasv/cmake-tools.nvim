@@ -6,7 +6,7 @@ local const = require("cmake-tools.const")
 local Config = require("cmake-tools.config")
 local variants = require("cmake-tools.variants")
 
-local config
+local config = Config:new(const)
 
 local cmake = {}
 

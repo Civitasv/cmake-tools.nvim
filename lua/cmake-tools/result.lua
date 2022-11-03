@@ -5,7 +5,7 @@ local Result = {
 }
 
 function Result:new(code, data, message)
-local obj = {}
+  local obj = {}
   setmetatable(obj, self)
   self.__index = self
 
