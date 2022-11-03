@@ -13,6 +13,7 @@ local Config = {
   build_options = {},
   build_target = nil,
   launch_target = nil,
+  cmake_kit = nil
 }
 
 function Config:new(const)

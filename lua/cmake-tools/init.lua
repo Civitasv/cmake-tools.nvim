@@ -5,6 +5,7 @@ local Types = require("cmake-tools.types")
 local const = require("cmake-tools.const")
 local Config = require("cmake-tools.config")
 local variants = require("cmake-tools.variants")
+local kits = require("cmake-tools.kits")
 
 local config = Config:new(const)
 
@@ -40,14 +41,18 @@ function cmake.generate(opt, callback)
   -- print(config.build_directory.filename)
   config:generate_build_directory()
 
+  -- cmake kits
+  local kit_option = kits.build_env_and_args(config.cmake_kit)
+
   vim.list_extend(fargs, {
     "-B",
     config.build_directory.filename,
     unpack(variants.build_arglist(config.build_type)),
+    unpack(kit_option.args),
     unpack(config.generate_options),
   })
   -- print(dump(config.generate_options))
-  return utils.run(const.cmake_command, fargs, {
+  return utils.run(const.cmake_command, kit_option.env, fargs, {
     on_success = function()
       if type(callback) == "function" then
         callback()
@@ -71,7 +76,7 @@ function cmake.clean(callback)
 
   local args = { "--build", config.build_directory.filename, "--target", "clean" }
   -- print(dump(args))
-  return utils.run(const.cmake_command, args, {
+  return utils.run(const.cmake_command, {}, args, {
     on_success = function()
       if type(callback) == "function" then
         callback()
@@ -133,7 +138,7 @@ function cmake.build(opt, callback)
     })
   end
   -- print(utils.dump(fargs))
-  return utils.run(const.cmake_command, fargs, {
+  return utils.run(const.cmake_command, {}, fargs, {
     on_success = function()
       if type(callback) == "function" then
         callback()
@@ -176,7 +181,7 @@ function cmake.install(opt)
   local fargs = opt.fargs
 
   vim.list_extend(fargs, { "--install", config.build_directory.filename })
-  return utils.run(const.cmake_command, fargs, {
+  return utils.run(const.cmake_command, {}, fargs, {
     cmake_show_console = const.cmake_show_console,
     cmake_console_size = const.cmake_console_size
   })
@@ -316,6 +321,38 @@ function cmake.select_build_type(callback)
     if config.build_type ~= build_type then
       utils.rmdir(config.build_directory.filename)
       config.build_type = build_type
+    end
+    if type(callback) == "function" then
+      callback()
+    end
+  end)
+end
+
+function cmake.select_cmake_kit(callback)
+  if not utils.has_active_job() then
+    return
+  end
+  local result = utils.get_cmake_configuration()
+  if result.code ~= Types.SUCCESS then
+    return utils.error(result.message)
+  end
+
+  local cmake_kits = kits.get()
+  -- Put selected kit first
+  for idx, kit in ipairs(cmake_kits) do
+    if kit == config.cmake_kit then
+      table.insert(cmake_kits, 1, table.remove(cmake_kits, idx))
+      break
+    end
+  end
+
+  vim.ui.select(cmake_kits, { prompt = "Select cmake kits" }, function(kit)
+    if not kit then
+      return
+    end
+    if config.cmake_kit ~= kit then
+      utils.rmdir(config.build_directory.filename)
+      config.cmake_kit = kit
     end
     if type(callback) == "function" then
       callback()
