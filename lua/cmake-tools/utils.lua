@@ -96,25 +96,47 @@ function utils.run(cmd, env, args, opts)
     utils.show_cmake_console(opts.cmake_console_size)
   end
 
-  utils.job = Job:new({
-    command = cmd,
-    args = args,
-    env = env,
-    cwd = opts.cwd,
-    on_stdout = vim.schedule_wrap(append_to_cmake_console),
-    on_stderr = vim.schedule_wrap(append_to_cmake_console),
-    on_exit = vim.schedule_wrap(function(_, code, signal)
-      append_to_cmake_console("Exited with code " .. (signal == 0 and code or 128 + signal))
-      if code == 0 and signal == 0 then
-        if opts.on_success then
-          opts.on_success()
-        end
-      elseif opts.cmake_show_console == "only_on_error" then
-        utils.show_cmake_console(opts.cmake_console_size)
-        vim.api.nvim_command("cbottom")
-      end
-    end),
-  })
+  if next(env) ~= nil then -- check if next env is nil
+        utils.job = Job:new({
+            command = cmd,
+            args = args,
+            env = env,
+            cwd = opts.cwd,
+            on_stdout = vim.schedule_wrap(append_to_cmake_console),
+            on_stderr = vim.schedule_wrap(append_to_cmake_console),
+            on_exit = vim.schedule_wrap(function(_, code, signal)
+                append_to_cmake_console("Exited with code " .. (signal == 0 and code or 128 + signal))
+                if code == 0 and signal == 0 then
+                    if opts.on_success then
+                        opts.on_success()
+                    end
+                elseif opts.cmake_show_console == "only_on_error" then
+                    utils.show_cmake_console(opts.cmake_console_size)
+                    vim.api.nvim_command("cbottom")
+                end
+            end),
+        })
+    else
+        utils.job = Job:new({
+            command = cmd,
+            args = args,
+            cwd = opts.cwd,
+            on_stdout = vim.schedule_wrap(append_to_cmake_console),
+            on_stderr = vim.schedule_wrap(append_to_cmake_console),
+            on_exit = vim.schedule_wrap(function(_, code, signal)
+                append_to_cmake_console("Exited with code " .. (signal == 0 and code or 128 + signal))
+                if code == 0 and signal == 0 then
+                    if opts.on_success then
+                        opts.on_success()
+                    end
+                elseif opts.cmake_show_console == "only_on_error" then
+                    utils.show_cmake_console(opts.cmake_console_size)
+                    vim.api.nvim_command("cbottom")
+                end
+            end),
+        })
+
+    end
 
   utils.job:start()
   return utils.job
