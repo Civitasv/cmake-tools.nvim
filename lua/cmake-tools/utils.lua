@@ -89,7 +89,7 @@ function utils.deepcopy(orig, copies)
 end
 
 -- Execute CMake command using job api
-function utils.run(cmd, args, opts)
+function utils.run(cmd, env, args, opts)
   vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
   opts.cmake_show_console = opts.cmake_show_console == "always"
   if opts.cmake_show_console then
@@ -99,6 +99,7 @@ function utils.run(cmd, args, opts)
   utils.job = Job:new({
     command = cmd,
     args = args,
+    env = env,
     cwd = opts.cwd,
     on_stdout = vim.schedule_wrap(append_to_cmake_console),
     on_stderr = vim.schedule_wrap(append_to_cmake_console),
