@@ -39,7 +39,7 @@ local function parse()
   return config
 end
 
--- returns a list of string descriptions of all possible combinations of configurations, using their short names
+-- returns a list of string descriptions of all possible combinations of configurations, using their short names and optional detailed description
 function variants.get(variants_opt)
   -- helper function to collect all short names of choices
   local function collect_choices(config)
