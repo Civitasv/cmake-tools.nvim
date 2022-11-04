@@ -40,15 +40,20 @@ function cmake.generate(opt, callback)
 
   -- if exists presets
   local presets_file = presets.check()
-  if presets_file then
+  if presets_file and config.preset == nil then
+    return vim.schedule(function()
+      vim.ui.select(presets.parsePresets(presets_file, "configurePresets"), {},
+        function(choice)
+          config.preset = choice
+          return vim.schedule(function() cmake.generate(opt, callback) end)
+        end)
+    end)
+  end
+  if config.preset and presets_file then
     vim.list_extend(fargs, {
-      "-B",
-      config.build_directory.filename,
-      "-S",
-      ".",
-      unpack(config.generate_options),
       "--preset",
-      presets_file
+      config.preset,
+      unpack(config.generate_options),
     })
 
     return utils.run(const.cmake_command, {}, fargs, {
@@ -111,12 +116,12 @@ function cmake.clean(callback)
 
   local args
   -- if exists presets
-  local presets_file = presets.check()
-  if presets_file then
-    args = { "--build", config.build_directory.filename, "--target", "clean", "--preset", presets_file }
-  else
-    args = { "--build", config.build_directory.filename, "--target", "clean" }
-  end
+  -- local presets_file = presets.check()
+  -- if presets_file then
+  --   args = { "--build", config.build_directory.filename, "--target", "clean", "--preset", presets_file }
+  -- else
+  args = { "--build", config.build_directory.filename, "--target", "clean" }
+  -- end
 
   return utils.run(const.cmake_command, {}, args, {
     on_success = function()
@@ -164,8 +169,18 @@ function cmake.build(opt, callback)
 
   local args
   local presets_file = presets.check()
-  if presets_file then
-    args = { "--build", config.build_directory.filename, "--preset", presets_file, unpack(config.build_options) }
+  if presets_file and config.preset == nil then
+    return vim.schedule(function()
+      vim.ui.select(presets.parsePresets(presets_file, "buildPresets"), {},
+        function(choice)
+          config.preset = choice
+          return vim.schedule(function() cmake.build(opt, callback) end)
+        end)
+    end)
+  end
+
+  if config.preset ~= nil then
+    args = { "--build", "--preset", config.preset, unpack(config.build_options) } -- preset don't need define build dir.
   else
     args = { "--build", config.build_directory.filename, unpack(config.build_options) }
   end
