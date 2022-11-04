@@ -12,11 +12,13 @@ It uses terminal to execute targets.
 
 ## New Feature
 
+### CMake Presets
+
+Not it supports `CMake[User]Presets.json`.
+
 ### CMake Kits
 
 ![CMake Kits](images/CMakeSelectCMakeKit.gif)
-
-If you encounter `CMake Error: Could not find CMAKE_ROOT !!!`, please specify absolute path of `cmake` for `cmake_command`, like `/usr/bin/cmake`, if you're interested with it, please see issue [#11](https://github.com/Civitasv/cmake-tools.nvim/issues/11). I don't find a good solution yet. Welcome discussions and PR.
 
 And, It doesn't support Visual Studio currently.
 
@@ -89,11 +91,9 @@ When `cmake-variants.json` or `cmake-variants.yaml` is provided:
 
 ## Setup
 
-For some weird reasons, you should specify absolute path of `cmake` for `cmake_command`, like `/usr/bin/cmake`, if you're interested with it, please see issue #11. And welcome PR.
-
 ```lua
 require("cmake-tools").setup {
-  cmake_command = "/usr/bin/cmake",
+  cmake_command = "cmake",
   cmake_build_directory = "build",
   cmake_build_type = "Debug",
   cmake_generate_options = { "-D", "CMAKE_EXPORT_COMPILE_COMMANDS=1" },
