@@ -5,7 +5,7 @@ function kits.init()
 end
 
 -- checks if there is a cmake-kits.json file and parses it to a Lua table
-local function parse()
+function kits.parse()
   -- helper function to find the config file
   -- returns file path if found, nil otherwise
   local function findcfg()
@@ -38,7 +38,7 @@ end
 -- returns a list of descriptions of all kits
 function kits.get()
   -- start parsing
-  local config = parse()
+  local config = kits.parse()
   local res = {}
   if config then -- if a config is found
     for _, item in ipairs(config) do
@@ -50,7 +50,7 @@ function kits.get()
 end
 
 function kits.get_by_name(kit_name)
-  local config = parse()
+  local config = kits.parse()
   if config then
     for _, item in ipairs(config) do
       local name = item.name

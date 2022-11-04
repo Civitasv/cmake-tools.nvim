@@ -37,8 +37,14 @@ function cmake.generate(opt, callback)
     end)
   end
 
-  -- print(clean, dump(fargs))
-  -- print(config.build_directory.filename)
+  -- if exists cmake-kits.json
+  local kits_config = kits.parse()
+  if kits_config then
+    return cmake.select_cmake_kit(function()
+      cmake.generate(opt, nil)
+    end)
+  end
+
   config:generate_build_directory()
 
   -- cmake kits
@@ -105,7 +111,7 @@ function cmake.build(opt, callback)
 
   if not config.build_directory:exists() then
     -- configure it
-    return cmake.generate({ clean = false, fargs = {} }, function()
+    return cmake.generate({ bang = false, fargs = {} }, function()
       vim.schedule(function()
         cmake.build(opt, callback)
       end)
@@ -210,7 +216,7 @@ function cmake.run(opt, callback)
   -- print(Types[result_code])
   if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
     -- Configure it
-    return cmake.generate({ clean = false, fargs = utils.deepcopy(opt.fargs) }, function()
+    return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) }, function()
       cmake.run(opt, callback)
     end)
   elseif result_code == Types.NOT_SELECT_LAUNCH_TARGET
@@ -263,7 +269,7 @@ if has_nvim_dap then
 
     if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
       -- Configure it
-      return cmake.generate({ clean = false, fargs = utils.deepcopy(opt.fargs) }, function()
+      return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) }, function()
         cmake.debug(opt, callback)
       end)
     elseif result_code == Types.NOT_SELECT_LAUNCH_TARGET
@@ -365,7 +371,7 @@ end
 function cmake.select_build_target(callback, not_regenerate)
   if not config.build_directory:exists() then
     -- configure it
-    return cmake.generate({ clean = false, fargs = {} }, function()
+    return cmake.generate({ bang = false, fargs = {} }, function()
       vim.schedule(function()
         cmake.select_build_target(callback, false)
       end)
@@ -379,7 +385,7 @@ function cmake.select_build_target(callback, not_regenerate)
     if not_regenerate then
       return utils.error("CMake Configure Not Success!")
     else
-      return cmake.generate({ clean = true, fargs = {} }, function()
+      return cmake.generate({ bang = true, fargs = {} }, function()
         vim.schedule(function()
           cmake.select_build_target(callback, true)
         end)
@@ -401,7 +407,7 @@ end
 function cmake.select_launch_target(callback, not_regenerate)
   if not config.build_directory:exists() then
     -- configure it
-    return cmake.generate({ clean = false, fargs = {} }, function()
+    return cmake.generate({ bang = false, fargs = {} }, function()
       vim.schedule(function()
         cmake.select_launch_target(callback, false)
       end)
@@ -415,7 +421,7 @@ function cmake.select_launch_target(callback, not_regenerate)
     if not_regenerate then
       return utils.error("CMake Configure Not Success!")
     else
-      return cmake.generate({ clean = true, fargs = {} }, function()
+      return cmake.generate({ bang = true, fargs = {} }, function()
         vim.schedule(function()
           cmake.select_launch_target(callback, true)
         end)

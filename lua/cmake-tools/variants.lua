@@ -7,7 +7,7 @@ local syaml = require("simpleyaml")
 local DEFAULT_VARIANTS = { "Debug", "Release", "RelWithDebInfo", "MinSizeRel" }
 
 -- checks if there is a cmake-variants.[yaml|json] file and parses it to a Lua table
-local function parse()
+function variants.parse()
   -- helper function to find the config file
   -- returns file path if found, nil otherwise
   local function findcfg()
@@ -134,10 +134,10 @@ function variants.get(variants_opt)
           res = res .. ")"
           length = length + 1
         end
-        return res;
+        return res
       end
 
-      table.insert(a, handleItem());
+      table.insert(a, handleItem())
       return a
     end, {})
 
@@ -146,7 +146,7 @@ function variants.get(variants_opt)
 
   -- start parsing
 
-  local config = parse()
+  local config = variants.parse()
   if config then -- if a config is found
     local choices = collect_choices(config) -- collect all possible choices from it
     local combinations = create_combinations(choices) -- calculate the cartesian product
@@ -175,7 +175,7 @@ function variants.build_arglist(variant)
   end
 
   -- otherwise, find the config file to parse
-  local config = parse()
+  local config = variants.parse()
   if not config then
     return {} -- silent error (empty arglist) if no config file found
   end

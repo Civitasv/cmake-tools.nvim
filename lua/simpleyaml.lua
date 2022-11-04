@@ -97,9 +97,9 @@ function simpleyaml.parse_file(path)
 
       -- compare with indent of previous line
       if indent > prevIndent then -- if current indent larger, increase nesting level
-        nestingLevel = nestingLevel + 1;
+        nestingLevel = nestingLevel + 1
       elseif indent < prevIndent then -- of current indent smaller, decrease nesting level and ...
-        nestingLevel = nestingLevel - 1;
+        nestingLevel = nestingLevel - 1
         while indents[#indents] > indent do -- ... clean up the stack of indents, tracking the nesting level
           if prevIndent < indents[#indents] then
             nestingLevel = nestingLevel + 1
