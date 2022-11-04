@@ -38,11 +38,13 @@ function cmake.generate(opt, callback)
   end
 
   -- if exists cmake-kits.json
-  local kits_config = kits.parse()
-  if kits_config then
-    return cmake.select_cmake_kit(function()
-      cmake.generate(opt, nil)
-    end)
+  if not config.cmake_kit then
+    local kits_config = kits.parse()
+    if kits_config then
+      return cmake.select_cmake_kit(function()
+        cmake.generate(opt, nil)
+      end)
+    end
   end
 
   config:generate_build_directory()
