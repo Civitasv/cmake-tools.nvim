@@ -15,7 +15,7 @@ local Config = {
   build_target = nil,
   launch_target = nil,
   cmake_kit = nil,
-  preset = nil,
+  cmake_preset = nil,
 }
 
 function Config:new(const)
