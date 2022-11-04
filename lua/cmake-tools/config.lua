@@ -14,9 +14,9 @@ local Config = {
   build_type = nil,
   build_target = nil,
   launch_target = nil,
-  cmake_kit = nil,
-  cmake_configure_preset = nil,
-  cmake_build_preset = nil,
+  kit = nil,
+  configure_preset = nil,
+  build_preset = nil,
 }
 
 function Config:new(const)
@@ -40,7 +40,6 @@ function Config:new(const)
     "v1",
     "reply"
   )
-  self.build_type = const.cmake_build_type
   self.generate_options = const.cmake_generate_options
   self.build_options = const.cmake_build_options
 

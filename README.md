@@ -16,9 +16,11 @@ It uses terminal to execute targets.
 
 Not it supports `CMake[User]Presets.json`.
 
+Attention: If `CMake[User]Presets.json` is provided, then `CMakeKits.json` or `CMakeVariants.[json|yaml]` won't have any effect.
+
 ### CMake Kits
 
-![CMake Kits](images/CMakeSelectCMakeKit.gif)
+![CMake Kits](images/CMakeSelectKit.gif)
 
 And, It doesn't support Visual Studio currently.
 

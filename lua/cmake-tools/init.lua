@@ -40,16 +40,16 @@ function cmake.generate(opt, callback)
 
   -- if exists presets
   local presets_file = presets.check()
-  if presets_file and not config.cmake_configure_preset then
+  if presets_file and not config.configure_preset then
     return cmake.select_cmake_configure_preset(function()
       cmake.generate(opt, callback)
     end)
   end
 
-  if presets_file and config.cmake_configure_preset then
+  if presets_file and config.configure_preset then
     vim.list_extend(fargs, {
       "--preset",
-      config.cmake_configure_preset,
+      config.configure_preset,
       unpack(config.generate_options),
     })
 
@@ -66,16 +66,23 @@ function cmake.generate(opt, callback)
 
   -- if exists cmake-kits.json
   local kits_config = kits.parse()
-  if kits_config and not config.cmake_kit then
+  if kits_config and not config.kit then
     return cmake.select_cmake_kit(function()
-      cmake.generate(opt, nil)
+      cmake.generate(opt, callback)
+    end)
+  end
+
+  -- specify build type
+  if not config.build_type then
+    return cmake.select_build_type(function()
+      cmake.generate(opt, callback)
     end)
   end
 
   config:generate_build_directory()
 
   -- cmake kits
-  local kit_option = kits.build_env_and_args(config.cmake_kit)
+  local kit_option = kits.build_env_and_args(config.kit)
 
   vim.list_extend(fargs, {
     "-B",
@@ -157,14 +164,15 @@ function cmake.build(opt, callback)
 
   local args
   local presets_file = presets.check()
-  if presets_file and not config.cmake_configure_preset then
+
+  if presets_file and not config.build_preset then
     return cmake.select_cmake_build_preset(function()
       cmake.build(opt, callback)
     end)
   end
 
-  if presets_file and config.cmake_build_preset then
-    args = { "--build", "--preset", config.cmake_build_preset, unpack(config.build_options) } -- preset don't need define build dir.
+  if presets_file and config.build_preset then
+    args = { "--build", "--preset", config.build_preset, unpack(config.build_options) } -- preset don't need define build dir.
   else
     args = { "--build", config.build_directory.filename, unpack(config.build_options) }
   end
@@ -362,9 +370,14 @@ function cmake.select_build_type(callback)
     if config.build_type ~= build_type then
       utils.rmdir(config.build_directory.filename)
       config.build_type = build_type
-    end
-    if type(callback) == "function" then
-      callback()
+      -- regenerate it
+      return cmake.generate({ bang = false, fargs = {} }, function()
+        vim.schedule(function()
+          if type(callback) == "function" then
+            callback()
+          end
+        end)
+      end)
     end
   end)
 end
@@ -382,7 +395,7 @@ function cmake.select_cmake_kit(callback)
   if cmake_kits then
     -- Put selected kit first
     for idx, kit in ipairs(cmake_kits) do
-      if kit == config.cmake_kit then
+      if kit == config.kit then
         table.insert(cmake_kits, 1, table.remove(cmake_kits, idx))
         break
       end
@@ -392,9 +405,9 @@ function cmake.select_cmake_kit(callback)
       if not kit then
         return
       end
-      if config.cmake_kit ~= kit then
+      if config.kit ~= kit then
         utils.rmdir(config.build_directory.filename)
-        config.cmake_kit = kit
+        config.kit = kit
       end
       if type(callback) == "function" then
         callback()
@@ -417,14 +430,17 @@ function cmake.select_cmake_configure_preset(callback)
   -- if exists presets
   local presets_file = presets.check()
   if presets_file then
-    local configure_presets = presets.parse(presets_file, "configurePresets")
+    local configure_presets = presets.parse("configurePresets")
     vim.ui.select(configure_presets, { prompt = "Select cmake configure presets" },
       function(choice)
         if not choice then
           return
         end
-        if config.cmake_configure_preset ~= choice then
-          config.cmake_configure_preset = choice
+        if config.configure_preset ~= choice then
+          config.configure_preset = choice
+          config.build_type = presets.get_build_type(
+            presets.get_preset_by_name(choice, "configurePresets")
+          )
         end
         if type(callback) == "function" then
           callback()
@@ -447,14 +463,14 @@ function cmake.select_cmake_build_preset(callback)
   -- if exists presets
   local presets_file = presets.check()
   if presets_file then
-    local configure_presets = presets.parse(presets_file, "buildPresets")
+    local configure_presets = presets.parse("buildPresets")
     vim.ui.select(configure_presets, { prompt = "Select cmake build presets" },
       function(choice)
         if not choice then
           return
         end
-        if config.cmake_build_preset ~= choice then
-          config.cmake_build_preset = choice
+        if config.build_preset ~= choice then
+          config.build_preset = choice
         end
         if type(callback) == "function" then
           callback()
