@@ -1,9 +1,5 @@
 local kits = {}
 
-function kits.init()
-
-end
-
 -- checks if there is a cmake-kits.json file and parses it to a Lua table
 function kits.parse()
   -- helper function to find the config file
