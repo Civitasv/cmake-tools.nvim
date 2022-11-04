@@ -79,9 +79,11 @@ When `cmake-variants.json` or `cmake-variants.yaml` is provided:
 
 ## Setup
 
+For some weird reasons, you should specify absolute path of `cmake` for `cmake_command`, like `/usr/bin/cmake`, if you're interested with it, please see issue #11. And welcome PR.
+
 ```lua
 require("cmake-tools").setup {
-  cmake_command = "cmake",
+  cmake_command = "/usr/bin/cmake",
   cmake_build_directory = "build",
   cmake_build_type = "Debug",
   cmake_generate_options = { "-D", "CMAKE_EXPORT_COMPILE_COMMANDS=1" },
