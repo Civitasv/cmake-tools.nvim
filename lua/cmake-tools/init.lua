@@ -37,7 +37,8 @@ function cmake.generate(opt, callback)
       cmake.generate({ fargs = fargs }, callback)
     end)
   end
-
+  -- execute this earlier or we get a lot of trouble
+  config:generate_build_directory()
   -- if exists presets
   local presets_file = presets.check()
   if presets_file and not config.configure_preset then
@@ -79,7 +80,7 @@ function cmake.generate(opt, callback)
     end)
   end
 
-  config:generate_build_directory()
+  
 
   -- cmake kits
   local kit_option = kits.build_env_and_args(config.kit)
