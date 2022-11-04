@@ -99,7 +99,7 @@ function utils.run(cmd, env, args, opts)
   utils.job = Job:new({
     command = cmd,
     args = args,
-    env = env,
+    env = vim.tbl_extend("force", env, { path = vim.fn.getenv("PATH") }),
     cwd = opts.cwd,
     on_stdout = vim.schedule_wrap(append_to_cmake_console),
     on_stderr = vim.schedule_wrap(append_to_cmake_console),

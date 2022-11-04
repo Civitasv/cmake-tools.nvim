@@ -8,9 +8,9 @@ local Config = {
   build_directory = nil,
   query_directory = nil,
   reply_directory = nil,
-  build_type = nil,
   generate_options = {},
   build_options = {},
+  build_type = nil,
   build_target = nil,
   launch_target = nil,
   cmake_kit = nil
@@ -164,6 +164,7 @@ function Config:get_launch_target()
 end
 
 function Config:validate_for_debugging()
+  -- TODO this should changed according to cmake-variants
   local build_type = self.build_type
   if build_type ~= "Debug" and build_type ~= "RelWithDebInfo" then
     utils.error(
