@@ -22,13 +22,38 @@ function presets.check()
   return file
 end
 
-function presets.parse(file, type)
-  local data = vim.fn.json_decode(vim.fn.readfile(file))
+function presets.parse(type)
+  local file = presets.check()
   local options = {}
+  if not file then
+    return options
+  end
+  local data = vim.fn.json_decode(vim.fn.readfile(file))
   for _, v in pairs(data[type]) do
     table.insert(options, v["name"])
   end
   return options
+end
+
+function presets.get_preset_by_name(name, type)
+  local file = presets.check()
+  if not file then
+    return nil
+  end
+  local data = vim.fn.json_decode(vim.fn.readfile(file))
+  for _, v in pairs(data[type]) do
+    if v.name == name then
+      return v
+    end
+  end
+  return nil
+end
+
+function presets.get_build_type(preset)
+  if preset and preset.cacheVariables and preset.cacheVariables.CMAKE_BUILD_TYPE then
+    return preset.cacheVariables.CMAKE_BUILD_TYPE
+  end
+  return "Debug"
 end
 
 return presets
