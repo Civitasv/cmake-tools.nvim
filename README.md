@@ -12,6 +12,16 @@ It uses terminal to execute targets.
 
 ## New Feature
 
+### CMake Kits
+
+![CMake Kits](images/CMakeSelectCMakeKit.gif)
+
+If you encounter `CMake Error: Could not find CMAKE_ROOT !!!`, please specify absolute path of `cmake` for `cmake_command`, like `/usr/bin/cmake`, if you're interested with it, please see issue #11. I don't find a good solution yet. Welcome discussions and PR.
+
+And, It doesn't support Visual Studio currently.
+
+### CMake Variants
+
 Thanks @toolcreator for supporting CMake Variants which raised by VsCode's CMake Tools.
 
 ![CMake Variants](images/CMakeSelectBuildType2.gif)
