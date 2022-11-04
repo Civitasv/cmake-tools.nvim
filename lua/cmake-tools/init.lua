@@ -40,19 +40,16 @@ function cmake.generate(opt, callback)
 
   -- if exists presets
   local presets_file = presets.check()
-  if presets_file and config.cmake_preset == nil then
-    return vim.schedule(function()
-      vim.ui.select(presets.parse(presets_file, "configurePresets"), {},
-        function(choice)
-          config.cmake_preset = choice
-          return vim.schedule(function() cmake.generate(opt, callback) end)
-        end)
+  if presets_file and not config.cmake_configure_preset then
+    return cmake.select_cmake_configure_preset(function()
+      cmake.generate(opt, callback)
     end)
   end
-  if config.cmake_preset and presets_file then
+
+  if presets_file and config.cmake_configure_preset then
     vim.list_extend(fargs, {
       "--preset",
-      config.cmake_preset,
+      config.cmake_configure_preset,
       unpack(config.generate_options),
     })
 
@@ -68,13 +65,11 @@ function cmake.generate(opt, callback)
   end
 
   -- if exists cmake-kits.json
-  if not config.cmake_kit then
-    local kits_config = kits.parse()
-    if kits_config then
-      return cmake.select_cmake_kit(function()
-        cmake.generate(opt, nil)
-      end)
-    end
+  local kits_config = kits.parse()
+  if kits_config and not config.cmake_kit then
+    return cmake.select_cmake_kit(function()
+      cmake.generate(opt, nil)
+    end)
   end
 
   config:generate_build_directory()
@@ -162,18 +157,14 @@ function cmake.build(opt, callback)
 
   local args
   local presets_file = presets.check()
-  if presets_file and config.cmake_preset == nil then
-    return vim.schedule(function()
-      vim.ui.select(presets.parse(presets_file, "buildPresets"), {},
-        function(choice)
-          config.cmake_preset = choice
-          return vim.schedule(function() cmake.build(opt, callback) end)
-        end)
+  if presets_file and not config.cmake_configure_preset then
+    return cmake.select_cmake_build_preset(function()
+      cmake.build(opt, callback)
     end)
   end
 
-  if config.cmake_preset ~= nil then
-    args = { "--build", "--preset", config.cmake_preset, unpack(config.build_options) } -- preset don't need define build dir.
+  if presets_file and config.cmake_build_preset then
+    args = { "--build", "--preset", config.cmake_build_preset, unpack(config.build_options) } -- preset don't need define build dir.
   else
     args = { "--build", config.build_directory.filename, unpack(config.build_options) }
   end
@@ -181,13 +172,13 @@ function cmake.build(opt, callback)
   if config.build_target == "all" then
     vim.list_extend(fargs, args)
   else
-    -- print(config.build_target)
+
     vim.list_extend(fargs, vim.list_extend(args, {
       "--target",
       config.build_target
     }))
   end
-  -- print(utils.dump(fargs))
+
   return utils.run(const.cmake_command, {}, fargs, {
     on_success = function()
       if type(callback) == "function" then
@@ -388,26 +379,90 @@ function cmake.select_cmake_kit(callback)
   end
 
   local cmake_kits = kits.get()
-  -- Put selected kit first
-  for idx, kit in ipairs(cmake_kits) do
-    if kit == config.cmake_kit then
-      table.insert(cmake_kits, 1, table.remove(cmake_kits, idx))
-      break
+  if cmake_kits then
+    -- Put selected kit first
+    for idx, kit in ipairs(cmake_kits) do
+      if kit == config.cmake_kit then
+        table.insert(cmake_kits, 1, table.remove(cmake_kits, idx))
+        break
+      end
     end
+
+    vim.ui.select(cmake_kits, { prompt = "Select cmake kits" }, function(kit)
+      if not kit then
+        return
+      end
+      if config.cmake_kit ~= kit then
+        utils.rmdir(config.build_directory.filename)
+        config.cmake_kit = kit
+      end
+      if type(callback) == "function" then
+        callback()
+      end
+    end)
+  else
+    utils.error("Cannot find CMakeKits.[json|yaml] at Root!!")
+  end
+end
+
+function cmake.select_cmake_configure_preset(callback)
+  if not utils.has_active_job() then
+    return
+  end
+  local result = utils.get_cmake_configuration()
+  if result.code ~= Types.SUCCESS then
+    return utils.error(result.message)
   end
 
-  vim.ui.select(cmake_kits, { prompt = "Select cmake kits" }, function(kit)
-    if not kit then
-      return
-    end
-    if config.cmake_kit ~= kit then
-      utils.rmdir(config.build_directory.filename)
-      config.cmake_kit = kit
-    end
-    if type(callback) == "function" then
-      callback()
-    end
-  end)
+  -- if exists presets
+  local presets_file = presets.check()
+  if presets_file then
+    local configure_presets = presets.parse(presets_file, "configurePresets")
+    vim.ui.select(configure_presets, { prompt = "Select cmake configure presets" },
+      function(choice)
+        if not choice then
+          return
+        end
+        if config.cmake_configure_preset ~= choice then
+          config.cmake_configure_preset = choice
+        end
+        if type(callback) == "function" then
+          callback()
+        end
+      end)
+  else
+    utils.error("Cannot find CMake[User]Presets.json at Root!!")
+  end
+end
+
+function cmake.select_cmake_build_preset(callback)
+  if not utils.has_active_job() then
+    return
+  end
+  local result = utils.get_cmake_configuration()
+  if result.code ~= Types.SUCCESS then
+    return utils.error(result.message)
+  end
+
+  -- if exists presets
+  local presets_file = presets.check()
+  if presets_file then
+    local configure_presets = presets.parse(presets_file, "buildPresets")
+    vim.ui.select(configure_presets, { prompt = "Select cmake build presets" },
+      function(choice)
+        if not choice then
+          return
+        end
+        if config.cmake_build_preset ~= choice then
+          config.cmake_build_preset = choice
+        end
+        if type(callback) == "function" then
+          callback()
+        end
+      end)
+  else
+    utils.error("Cannot find CMake[User]Presets.json at Root!!")
+  end
 end
 
 function cmake.select_build_target(callback, not_regenerate)
