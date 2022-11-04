@@ -3,6 +3,7 @@ local scandir = require("plenary.scandir")
 local Result = require("cmake-tools.result")
 local utils = require("cmake-tools.utils")
 local Types = require("cmake-tools.types")
+local variants = require("cmake-tools.variants")
 
 local Config = {
   build_directory = nil,
@@ -132,26 +133,17 @@ end
 
 function Config:get_launch_target()
   local check_result = self:check_launch_target()
-  -- print("CHECK", dump(check_result))
-  -- print(check_result.code)
-  -- print(Types.SUCCESS)
   if check_result.code ~= Types.SUCCESS then
-    -- print("RETURN AGAIN")
     return check_result
   end
-  -- print("LAUNCH", dump(check_result))
   local target_info = check_result.data
 
-  -- print("TARGET INFO", dump(target_info))
   local target_path = target_info["artifacts"][1]["path"]
   target_path = Path:new(target_path)
   if not target_path:is_absolute() then
-    -- print("NOT ABSOLUTE")
     target_path = self.build_directory / target_path
   end
 
-  -- print(target_path)
-  -- print(target_path.filename)
   if not target_path:is_file() then
     return Result:new(
       Types.SELECTED_LAUNCH_TARGET_NOT_BUILT,
@@ -164,9 +156,9 @@ function Config:get_launch_target()
 end
 
 function Config:validate_for_debugging()
-  -- TODO this should changed according to cmake-variants
   local build_type = self.build_type
-  if build_type ~= "Debug" and build_type ~= "RelWithDebInfo" then
+
+  if not variants.debuggable(build_type) then
     utils.error(
       "For debugging you need to use Debug or RelWithDebInfo, but currently your build type is "
       .. build_type
