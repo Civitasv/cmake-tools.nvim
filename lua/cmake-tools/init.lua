@@ -40,19 +40,19 @@ function cmake.generate(opt, callback)
 
   -- if exists presets
   local presets_file = presets.check()
-  if presets_file and config.preset == nil then
+  if presets_file and config.cmake_preset == nil then
     return vim.schedule(function()
-      vim.ui.select(presets.parsePresets(presets_file, "configurePresets"), {},
+      vim.ui.select(presets.parse(presets_file, "configurePresets"), {},
         function(choice)
-          config.preset = choice
+          config.cmake_preset = choice
           return vim.schedule(function() cmake.generate(opt, callback) end)
         end)
     end)
   end
-  if config.preset and presets_file then
+  if config.cmake_preset and presets_file then
     vim.list_extend(fargs, {
       "--preset",
-      config.preset,
+      config.cmake_preset,
       unpack(config.generate_options),
     })
 
@@ -114,14 +114,7 @@ function cmake.clean(callback)
     return utils.error(result.message)
   end
 
-  local args
-  -- if exists presets
-  -- local presets_file = presets.check()
-  -- if presets_file then
-  --   args = { "--build", config.build_directory.filename, "--target", "clean", "--preset", presets_file }
-  -- else
-  args = { "--build", config.build_directory.filename, "--target", "clean" }
-  -- end
+  local args = { "--build", config.build_directory.filename, "--target", "clean" }
 
   return utils.run(const.cmake_command, {}, args, {
     on_success = function()
@@ -169,18 +162,18 @@ function cmake.build(opt, callback)
 
   local args
   local presets_file = presets.check()
-  if presets_file and config.preset == nil then
+  if presets_file and config.cmake_preset == nil then
     return vim.schedule(function()
-      vim.ui.select(presets.parsePresets(presets_file, "buildPresets"), {},
+      vim.ui.select(presets.parse(presets_file, "buildPresets"), {},
         function(choice)
-          config.preset = choice
+          config.cmake_preset = choice
           return vim.schedule(function() cmake.build(opt, callback) end)
         end)
     end)
   end
 
-  if config.preset ~= nil then
-    args = { "--build", "--preset", config.preset, unpack(config.build_options) } -- preset don't need define build dir.
+  if config.cmake_preset ~= nil then
+    args = { "--build", "--preset", config.cmake_preset, unpack(config.build_options) } -- preset don't need define build dir.
   else
     args = { "--build", config.build_directory.filename, unpack(config.build_options) }
   end

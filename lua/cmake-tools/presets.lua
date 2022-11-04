@@ -22,10 +22,10 @@ function presets.check()
   return file
 end
 
-function presets.parsePresets(file, presetType)
+function presets.parse(file, type)
   local data = vim.fn.json_decode(vim.fn.readfile(file))
   local options = {}
-  for _, v in pairs(data[presetType]) do
+  for _, v in pairs(data[type]) do
     table.insert(options, v["name"])
   end
   return options
