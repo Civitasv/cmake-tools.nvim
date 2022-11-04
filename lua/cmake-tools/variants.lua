@@ -157,6 +157,41 @@ function variants.get(variants_opt)
   return DEFAULT_VARIANTS
 end
 
+function variants.debuggable(variant)
+  -- check if the chosen variants is one of the defaults
+  for defaultvar in pairs(DEFAULT_VARIANTS) do
+    if variant == defaultvar then
+      return variant == "Debug" or variant == "RelWithDebInfo"
+    end
+  end
+
+  -- otherwise, find the config file to parse
+  local config = variants.parse()
+  if not config then
+    return false -- silent error (empty arglist) if no config file found
+  end
+
+  -- for each choice in the chosen variant
+  for choice in string.gmatch(variant, "%s*([^+]+)%s*") do -- split variant string on + to get choices
+    local choice_found = false
+    choice = choice:match("^%s*(.-)%s*$") -- trim (or come up with a better regex above)
+    for _, option in pairs(config) do -- search for the choice
+      for _, chc in pairs(option["choices"]) do
+        local short = chc["short"]
+        if choice == short then -- if the choice is found, add to the argument list according to the defined keys
+          if chc["buildType"] ~= nil then -- CMAKE_BUILD_TYPE
+            return chc["buildType"] == "Debug" or chc["buildType"] == "RelWithDebInfo"
+          end
+          choice_found = true
+          break -- choice found, break loops
+        end
+      end
+      if choice_found then break end
+    end
+  end
+  return false
+end
+
 -- given a variant, build an argument list for CMake
 function variants.build_arglist(variant)
   --[[ print(utils.dump(variant)) ]]

@@ -119,7 +119,6 @@ function cmake.build(opt, callback)
       end)
     end)
   end
-  -- print("TARGET", config.build_target)
 
   if config.build_target == nil then
     return vim.schedule(function()
