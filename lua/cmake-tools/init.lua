@@ -37,11 +37,17 @@ function cmake.generate(opt, callback)
       cmake.generate({ fargs = fargs }, callback)
     end)
   end
+
   -- execute this earlier or we get a lot of trouble
   config:generate_build_directory()
-  -- if exists presets
+
+  -- if exists presets, preset include all info that cmake 
+  -- needed to execute, so we don't use cmake-kits.json and
+  -- cmake-variants.[json|yaml] event they exist.
   local presets_file = presets.check()
   if presets_file and not config.configure_preset then
+    -- this will also set value for build type from preset.
+    -- default to be "Debug"
     return cmake.select_cmake_configure_preset(function()
       cmake.generate(opt, callback)
     end)
@@ -65,7 +71,8 @@ function cmake.generate(opt, callback)
     })
   end
 
-  -- if exists cmake-kits.json
+  -- if exists cmake-kits.json, kit is used to set
+  -- environmental variables and args.
   local kits_config = kits.parse()
   if kits_config and not config.kit then
     return cmake.select_cmake_kit(function()
@@ -73,16 +80,17 @@ function cmake.generate(opt, callback)
     end)
   end
 
-  -- specify build type
+  -- specify build type, if exists cmake-variants.json,
+  -- this will get build variant from it. Or this will
+  -- get build variant from "Debug, Release, RelWithDebInfo, MinSizeRel"
   if not config.build_type then
     return cmake.select_build_type(function()
       cmake.generate(opt, callback)
     end)
   end
 
-  
-
-  -- cmake kits
+  -- cmake kits, if cmake-kits.json doesn't exist, kit_option will
+  -- be {env={}, args={}}, so it's okay.
   local kit_option = kits.build_env_and_args(config.kit)
 
   vim.list_extend(fargs, {
