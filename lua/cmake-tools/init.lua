@@ -41,7 +41,7 @@ function cmake.generate(opt, callback)
   -- execute this earlier or we get a lot of trouble
   config:generate_build_directory()
 
-  -- if exists presets, preset include all info that cmake 
+  -- if exists presets, preset include all info that cmake
   -- needed to execute, so we don't use cmake-kits.json and
   -- cmake-variants.[json|yaml] event they exist.
   local presets_file = presets.check()
@@ -379,14 +379,17 @@ function cmake.select_build_type(callback)
     if config.build_type ~= build_type then
       utils.rmdir(config.build_directory.filename)
       config.build_type = build_type
+      if type(callback == "function") then
+        callback()
+      end
       -- regenerate it
-      return cmake.generate({ bang = false, fargs = {} }, function()
-        vim.schedule(function()
-          if type(callback) == "function" then
-            callback()
-          end
-        end)
-      end)
+      --[[ return cmake.generate({ bang = false, fargs = {} }, function() ]]
+      --[[   vim.schedule(function() ]]
+      --[[     if type(callback) == "function" then ]]
+      --[[       callback() ]]
+      --[[     end ]]
+      --[[   end) ]]
+      --[[ end) ]]
     end
   end)
 end

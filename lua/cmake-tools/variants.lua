@@ -159,7 +159,7 @@ end
 
 function variants.debuggable(variant)
   -- check if the chosen variants is one of the defaults
-  for defaultvar in pairs(DEFAULT_VARIANTS) do
+  for _, defaultvar in ipairs(DEFAULT_VARIANTS) do
     if variant == defaultvar then
       return variant == "Debug" or variant == "RelWithDebInfo"
     end
