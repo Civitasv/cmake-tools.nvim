@@ -159,7 +159,7 @@ end
 function Config:validate_for_debugging()
   local build_type = self.build_type
 
-  if not variants.debuggable(build_type) then
+  if not build_type or not variants.debuggable(build_type) then
     utils.error(
       "For debugging you need to use Debug or RelWithDebInfo, but currently your build type is "
       .. build_type
