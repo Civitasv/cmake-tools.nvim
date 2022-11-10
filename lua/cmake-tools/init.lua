@@ -67,7 +67,7 @@ function cmake.generate(opt, callback)
         end
       end,
       cmake_show_console = const.cmake_show_console,
-      cmake_console_size = const.cmake_console_size
+      cmake_console_size = const.cmake_console_size,
     })
   end
 
@@ -110,7 +110,7 @@ function cmake.generate(opt, callback)
       end
     end,
     cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size
+    cmake_console_size = const.cmake_console_size,
   })
 end
 
@@ -134,7 +134,7 @@ function cmake.clean(callback)
       end
     end,
     cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size
+    cmake_console_size = const.cmake_console_size,
   })
 end
 
@@ -174,11 +174,11 @@ function cmake.build(opt, callback)
   local args
   local presets_file = presets.check()
 
-  if presets_file and not config.build_preset then
-    return cmake.select_cmake_build_preset(function()
-      cmake.build(opt, callback)
-    end)
-  end
+  -- if presets_file and not config.build_preset then
+  --   return cmake.select_cmake_build_preset(function()
+  --     cmake.build(opt, callback)
+  --   end)
+  -- end
 
   if presets_file and config.build_preset then
     args = { "--build", "--preset", config.build_preset, unpack(config.build_options) } -- preset don't need define build dir.
@@ -187,13 +187,15 @@ function cmake.build(opt, callback)
   end
 
   if config.build_target == "all" then
-    vim.list_extend(fargs, args)
+    vim.list_extend(fargs, vim.list_extend(args, { "--target", "all" }))
   else
-
-    vim.list_extend(fargs, vim.list_extend(args, {
-      "--target",
-      config.build_target
-    }))
+    vim.list_extend(
+      fargs,
+      vim.list_extend(args, {
+        "--target",
+        config.build_target,
+      })
+    )
   end
 
   return utils.run(const.cmake_command, {}, fargs, {
@@ -203,7 +205,7 @@ function cmake.build(opt, callback)
       end
     end,
     cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size
+    cmake_console_size = const.cmake_console_size,
   })
 end
 
@@ -241,7 +243,7 @@ function cmake.install(opt)
   vim.list_extend(fargs, { "--install", config.build_directory.filename })
   return utils.run(const.cmake_command, {}, fargs, {
     cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size
+    cmake_console_size = const.cmake_console_size,
   })
 end
 
@@ -269,9 +271,10 @@ function cmake.run(opt, callback)
     return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) }, function()
       cmake.run(opt, callback)
     end)
-  elseif result_code == Types.NOT_SELECT_LAUNCH_TARGET
-      or result_code == Types.NOT_A_LAUNCH_TARGET
-      or result_code == Types.NOT_EXECUTABLE
+  elseif
+    result_code == Types.NOT_SELECT_LAUNCH_TARGET
+    or result_code == Types.NOT_A_LAUNCH_TARGET
+    or result_code == Types.NOT_EXECUTABLE
   then
     -- Re Select a target that could launch
     return cmake.select_launch_target(function()
@@ -292,7 +295,7 @@ function cmake.run(opt, callback)
         return utils.execute(target_path, {
           bufname = vim.fn.expand("%:t:r"),
           cmake_console_position = const.cmake_console_position,
-          cmake_console_size = const.cmake_console_size
+          cmake_console_size = const.cmake_console_size,
         })
       end)
     end)
@@ -322,9 +325,10 @@ if has_nvim_dap then
       return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) }, function()
         cmake.debug(opt, callback)
       end)
-    elseif result_code == Types.NOT_SELECT_LAUNCH_TARGET
-        or result_code == Types.NOT_A_LAUNCH_TARGET
-        or result_code == Types.NOT_EXECUTABLE
+    elseif
+      result_code == Types.NOT_SELECT_LAUNCH_TARGET
+      or result_code == Types.NOT_A_LAUNCH_TARGET
+      or result_code == Types.NOT_EXECUTABLE
     then
       -- Re Select a target that could launch
       return cmake.select_launch_target(function()
@@ -443,21 +447,19 @@ function cmake.select_cmake_configure_preset(callback)
   local presets_file = presets.check()
   if presets_file then
     local configure_presets = presets.parse("configurePresets")
-    vim.ui.select(configure_presets, { prompt = "Select cmake configure presets" },
-      function(choice)
-        if not choice then
-          return
-        end
-        if config.configure_preset ~= choice then
-          config.configure_preset = choice
-          config.build_type = presets.get_build_type(
-            presets.get_preset_by_name(choice, "configurePresets")
-          )
-        end
-        if type(callback) == "function" then
-          callback()
-        end
-      end)
+    vim.ui.select(configure_presets, { prompt = "Select cmake configure presets" }, function(choice)
+      if not choice then
+        return
+      end
+      if config.configure_preset ~= choice then
+        config.configure_preset = choice
+        config.build_type =
+          presets.get_build_type(presets.get_preset_by_name(choice, "configurePresets"))
+      end
+      if type(callback) == "function" then
+        callback()
+      end
+    end)
   else
     utils.error("Cannot find CMake[User]Presets.json at Root!!")
   end
@@ -476,18 +478,17 @@ function cmake.select_cmake_build_preset(callback)
   local presets_file = presets.check()
   if presets_file then
     local configure_presets = presets.parse("buildPresets")
-    vim.ui.select(configure_presets, { prompt = "Select cmake build presets" },
-      function(choice)
-        if not choice then
-          return
-        end
-        if config.build_preset ~= choice then
-          config.build_preset = choice
-        end
-        if type(callback) == "function" then
-          callback()
-        end
-      end)
+    vim.ui.select(configure_presets, { prompt = "Select cmake build presets" }, function(choice)
+      if not choice then
+        return
+      end
+      if config.build_preset ~= choice then
+        config.build_preset = choice
+      end
+      if type(callback) == "function" then
+        callback()
+      end
+    end)
   else
     utils.error("Cannot find CMake[User]Presets.json at Root!!")
   end
