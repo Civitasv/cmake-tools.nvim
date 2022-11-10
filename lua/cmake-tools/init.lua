@@ -174,12 +174,6 @@ function cmake.build(opt, callback)
   local args
   local presets_file = presets.check()
 
-  if presets_file and not config.build_preset then
-    return cmake.select_cmake_build_preset(function()
-      cmake.build(opt, callback)
-    end)
-  end
-
   if presets_file and config.build_preset then
     args = { "--build", "--preset", config.build_preset, unpack(config.build_options) } -- preset don't need define build dir.
   else
@@ -187,7 +181,10 @@ function cmake.build(opt, callback)
   end
 
   if config.build_target == "all" then
-    vim.list_extend(fargs, args)
+    vim.list_extend(fargs, vim.list_extend(args, {
+      "--target",
+      "all"
+    }))
   else
 
     vim.list_extend(fargs, vim.list_extend(args, {
