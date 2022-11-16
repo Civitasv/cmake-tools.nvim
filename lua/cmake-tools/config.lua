@@ -23,9 +23,8 @@ function Config:new(const)
   local obj = {}
   setmetatable(obj, self)
   self.__index = self
-  self.build_directory = Path:new(vim.loop.cwd(), const.cmake_build_directory)
+  self.build_directory = Path:new(const.cmake_build_directory)
   self.query_directory = Path:new(
-    vim.loop.cwd(),
     const.cmake_build_directory,
     ".cmake",
     "api",
@@ -33,7 +32,6 @@ function Config:new(const)
     "query"
   )
   self.reply_directory = Path:new(
-    vim.loop.cwd(),
     const.cmake_build_directory,
     ".cmake",
     "api",
@@ -48,12 +46,13 @@ end
 
 function Config:get_codemodel_targets()
   -- if reply_directory exists
-  if not self.reply_directory:exists() then
+  local reply_directory = Path:new(vim.loop.cwd(), self.reply_directory)
+  if not reply_directory:exists() then
     return Result:new(Types.NOT_CONFIGURED, nil, "Configure fail")
   end
 
   local found_files = scandir.scan_dir(
-    self.reply_directory.filename,
+    reply_directory.filename,
     { search_pattern = "codemodel*" }
   )
   if #found_files == 0 then
@@ -65,22 +64,26 @@ function Config:get_codemodel_targets()
 end
 
 function Config:get_code_model_target_info(codemodel_target)
-  return vim.json.decode((self.reply_directory / codemodel_target["jsonFile"]):read())
+  local reply_directory = Path:new(vim.loop.cwd(), self.reply_directory)
+  return vim.json.decode((reply_directory / codemodel_target["jsonFile"]):read())
 end
 
 function Config:generate_build_directory()
-  if not self.build_directory:mkdir({ parents = true }) then
+  local build_directory = Path:new(vim.loop.cwd(), self.build_directory)
+
+  if not build_directory:mkdir({ parents = true }) then
     return Result:new(Types.CANNOT_CREATE_DIRECTORY, false, "cannot create directory")
   end
   return self:generate_query_files()
 end
 
 function Config:generate_query_files()
-  if not self.query_directory:mkdir({ parents = true }) then
+  local query_directory = Path:new(vim.loop.cwd(), self.query_directory)
+  if not query_directory:mkdir({ parents = true }) then
     return Result:new(Types.CANNOT_CREATE_DIRECTORY, false, "cannot create directory")
   end
 
-  local codemodel_file = self.query_directory / "codemodel-v2"
+  local codemodel_file = query_directory / "codemodel-v2"
   if not codemodel_file:is_file() then
     if not codemodel_file:touch() then
       return Result:new(
@@ -95,7 +98,8 @@ end
 
 function Config:check_launch_target()
   -- 1. not configured
-  if not self.build_directory:exists() then
+  local build_directory = Path:new(vim.loop.cwd(), self.build_directory)
+  if not build_directory:exists() then
     return Result:new(Types.NOT_CONFIGURED, nil, "You need to configure it first")
   end
 
@@ -142,7 +146,8 @@ function Config:get_launch_target()
   local target_path = target_info["artifacts"][1]["path"]
   target_path = Path:new(target_path)
   if not target_path:is_absolute() then
-    target_path = self.build_directory / target_path
+    local build_directory = Path:new(vim.loop.cwd(), self.build_directory)
+    target_path = build_directory / target_path
   end
 
   if not target_path:is_file() then
