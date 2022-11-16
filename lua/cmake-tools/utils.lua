@@ -99,7 +99,7 @@ function utils.run(cmd, env, args, opts)
   utils.job = Job:new({
     command = cmd,
     args = next(env) and { "-E", "env", table.concat(env, " "), "cmake", unpack(args) } or args,
-    cwd = opts.cwd,
+    cwd = vim.loop.cwd(),
     on_stdout = vim.schedule_wrap(append_to_cmake_console),
     on_stderr = vim.schedule_wrap(append_to_cmake_console),
     on_exit = vim.schedule_wrap(function(_, code, signal)
