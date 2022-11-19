@@ -132,7 +132,6 @@ function variants.get(variants_opt)
           end
 
           res = res .. ")"
-          length = length + 1
         end
         return res
       end
