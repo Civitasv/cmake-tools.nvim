@@ -38,9 +38,6 @@ function cmake.generate(opt, callback)
     end)
   end
 
-  -- default build directory
-  config:update_build_dir(const.cmake_build_directory)
-
   -- if exists presets, preset include all info that cmake
   -- needed to execute, so we don't use cmake-kits.json and
   -- cmake-variants.[json|yaml] event they exist.
@@ -102,6 +99,12 @@ function cmake.generate(opt, callback)
   -- cmake kits, if cmake-kits.json doesn't exist, kit_option will
   -- be {env={}, args={}}, so it's okay.
   local kit_option = kits.build_env_and_args(config.kit)
+
+  if const.cmake_build_directory ~= "" then
+    config:update_build_dir(const.cmake_build_directory)
+  else
+    config:update_build_dir(const.cmake_build_directory_prefix .. config.build_type)
+  end
 
   config:generate_build_directory()
 
@@ -383,7 +386,7 @@ function cmake.select_build_type(callback)
     end
     if config.build_type ~= build_type then
       config.build_type = build_type
-      if type(callback == "function") then
+      if type(callback) == "function" then
         callback()
       end
       -- regenerate it

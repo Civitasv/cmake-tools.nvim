@@ -23,21 +23,6 @@ function Config:new(const)
   local obj = {}
   setmetatable(obj, self)
   self.__index = self
-  self.build_directory = Path:new(const.cmake_build_directory)
-  self.query_directory = Path:new(
-    const.cmake_build_directory,
-    ".cmake",
-    "api",
-    "v1",
-    "query"
-  )
-  self.reply_directory = Path:new(
-    const.cmake_build_directory,
-    ".cmake",
-    "api",
-    "v1",
-    "reply"
-  )
   self.generate_options = const.cmake_generate_options
   self.build_options = const.cmake_build_options
 
