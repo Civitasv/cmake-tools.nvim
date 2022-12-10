@@ -147,7 +147,9 @@ end
 
 function utils.rmdir(dir)
   local _dir = Path:new(vim.loop.cwd(), dir)
-  _dir:rm({ recursive = true })
+  if _dir:exists() then
+    _dir:rm({ recursive = true })
+  end
 end
 
 return utils
