@@ -38,8 +38,7 @@ function cmake.generate(opt, callback)
     end)
   end
 
-  -- execute this earlier or we get a lot of trouble
-  config:generate_build_directory()
+  config:update_build_dir(const.cmake_build_directory)
 
   -- if exists presets, preset include all info that cmake
   -- needed to execute, so we don't use cmake-kits.json and
@@ -54,6 +53,14 @@ function cmake.generate(opt, callback)
   end
 
   if presets_file and config.configure_preset then
+    local build_directory = presets.get_build_dir(
+      presets.get_preset_by_name(config.configure_preset, "configurePresets")
+    )
+    if build_directory ~= -1 then
+      config:update_build_dir(build_directory)
+    end
+    config:generate_build_directory()
+
     vim.list_extend(fargs, {
       "--preset",
       config.configure_preset,
@@ -92,6 +99,8 @@ function cmake.generate(opt, callback)
   -- cmake kits, if cmake-kits.json doesn't exist, kit_option will
   -- be {env={}, args={}}, so it's okay.
   local kit_option = kits.build_env_and_args(config.kit)
+
+  config:generate_build_directory()
 
   vim.list_extend(fargs, {
     "-B",
@@ -152,56 +161,52 @@ function cmake.build(opt, callback)
 
   local fargs = opt.fargs or {}
 
-  if not config.build_directory:exists() then
-    -- configure it
-    return cmake.generate({ bang = false, fargs = {} }, function()
-      vim.schedule(function()
-        cmake.build(opt, callback)
+  --[[ if not config.build_directory:exists() then ]]
+  -- first, configure it
+  return cmake.generate({ bang = false, fargs = {} }, function()
+    -- then, build it
+    if config.build_target == nil then
+      return vim.schedule(function()
+        cmake.select_build_target(function()
+          vim.schedule(function()
+            cmake.build(opt, callback)
+          end)
+        end, false)
       end)
-    end)
-  end
+    end
 
-  if config.build_target == nil then
-    return vim.schedule(function()
-      cmake.select_build_target(function()
-        vim.schedule(function()
-          cmake.build(opt, callback)
-        end)
-      end, false)
-    end)
-  end
+    local args
+    local presets_file = presets.check()
 
-  local args
-  local presets_file = presets.check()
+    if presets_file and config.build_preset then
+      args = { "--build", "--preset", config.build_preset, unpack(config.build_options) } -- preset don't need define build dir.
+    else
+      args = { "--build", config.build_directory.filename, unpack(config.build_options) }
+    end
 
-  if presets_file and config.build_preset then
-    args = { "--build", "--preset", config.build_preset, unpack(config.build_options) } -- preset don't need define build dir.
-  else
-    args = { "--build", config.build_directory.filename, unpack(config.build_options) }
-  end
+    if config.build_target == "all" then
+      vim.list_extend(fargs, vim.list_extend(args, {
+        "--target",
+        "all"
+      }))
+    else
+      vim.list_extend(fargs, vim.list_extend(args, {
+        "--target",
+        config.build_target
+      }))
+    end
 
-  if config.build_target == "all" then
-    vim.list_extend(fargs, vim.list_extend(args, {
-      "--target",
-      "all"
-    }))
-  else
-
-    vim.list_extend(fargs, vim.list_extend(args, {
-      "--target",
-      config.build_target
-    }))
-  end
-
-  return utils.run(const.cmake_command, {}, fargs, {
-    on_success = function()
-      if type(callback) == "function" then
-        callback()
-      end
-    end,
-    cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size
-  })
+    return utils.run(const.cmake_command, {}, fargs, {
+      on_success = function()
+        if type(callback) == "function" then
+          callback()
+        end
+      end,
+      cmake_show_console = const.cmake_show_console,
+      cmake_console_size = const.cmake_console_size
+    })
+  end)
+  --[[ end ]]
 end
 
 function cmake.stop()
@@ -374,7 +379,6 @@ function cmake.select_build_type(callback)
       return
     end
     if config.build_type ~= build_type then
-      utils.rmdir(config.build_directory)
       config.build_type = build_type
       if type(callback == "function") then
         callback()
@@ -415,7 +419,6 @@ function cmake.select_cmake_kit(callback)
         return
       end
       if config.kit ~= kit then
-        utils.rmdir(config.build_directory)
         config.kit = kit
       end
       if type(callback) == "function" then
@@ -450,16 +453,6 @@ function cmake.select_cmake_configure_preset(callback)
           config.build_type = presets.get_build_type(
             presets.get_preset_by_name(choice, "configurePresets")
           )
-
-          -- remove current build directory
-          local build_directory = presets.get_build_dir(
-            presets.get_preset_by_name(choice, "configurePresets")
-          )
-
-          if build_directory ~= -1 then
-            utils.rmdir(config.build_directory)
-            config:update_build_dir(build_directory)
-          end
         end
         if type(callback) == "function" then
           callback()
