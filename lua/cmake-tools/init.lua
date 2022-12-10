@@ -45,7 +45,7 @@ function cmake.generate(opt, callback)
   if presets_file and not config.configure_preset then
     -- this will also set value for build type from preset.
     -- default to be "Debug"
-    return cmake.select_cmake_configure_preset(function()
+    return cmake.select_configure_preset(function()
       cmake.generate(opt, callback)
     end)
   end
@@ -82,7 +82,7 @@ function cmake.generate(opt, callback)
   -- environmental variables and args.
   local kits_config = kits.parse()
   if kits_config and not config.kit then
-    return cmake.select_cmake_kit(function()
+    return cmake.select_kit(function()
       cmake.generate(opt, callback)
     end)
   end
@@ -401,7 +401,7 @@ function cmake.select_build_type(callback)
   end)
 end
 
-function cmake.select_cmake_kit(callback)
+function cmake.select_kit(callback)
   if not utils.has_active_job() then
     return
   end
@@ -436,7 +436,7 @@ function cmake.select_cmake_kit(callback)
   end
 end
 
-function cmake.select_cmake_configure_preset(callback)
+function cmake.select_configure_preset(callback)
   if not utils.has_active_job() then
     return
   end
@@ -469,7 +469,7 @@ function cmake.select_cmake_configure_preset(callback)
   end
 end
 
-function cmake.select_cmake_build_preset(callback)
+function cmake.select_build_preset(callback)
   if not utils.has_active_job() then
     return
   end

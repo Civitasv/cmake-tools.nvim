@@ -108,7 +108,7 @@ vim.api.nvim_create_user_command(
 --- CMake select kit
 vim.api.nvim_create_user_command(
   "CMakeSelectKit", -- name
-  cmake_tools.select_cmake_kit, -- command
+  cmake_tools.select_kit, -- command
   { -- opts
     nargs = 0,
     desc = "CMake select cmake kit",
@@ -118,7 +118,7 @@ vim.api.nvim_create_user_command(
 --- CMake select configure preset
 vim.api.nvim_create_user_command(
   "CMakeSelectConfigurePreset", -- name
-  cmake_tools.select_cmake_configure_preset, -- command
+  cmake_tools.select_configure_preset, -- command
   { -- opts
     nargs = 0,
     desc = "CMake select cmake configure preset",
@@ -127,8 +127,8 @@ vim.api.nvim_create_user_command(
 
 --- CMake select build preset
 vim.api.nvim_create_user_command(
-  "CMakeSelectCBuildPreset", -- name
-  cmake_tools.select_cmake_build_preset, -- command
+  "CMakeSelectBuildPreset", -- name
+  cmake_tools.select_build_preset, -- command
   { -- opts
     nargs = 0,
     desc = "CMake select cmake kit",
