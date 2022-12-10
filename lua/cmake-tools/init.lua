@@ -38,6 +38,7 @@ function cmake.generate(opt, callback)
     end)
   end
 
+  -- default build directory
   config:update_build_dir(const.cmake_build_directory)
 
   -- if exists presets, preset include all info that cmake
@@ -53,6 +54,8 @@ function cmake.generate(opt, callback)
   end
 
   if presets_file and config.configure_preset then
+    -- if exsist preset file and set configure preset, then
+    -- set build directory to the `binaryDir` option of `configurePresets`
     local build_directory = presets.get_build_dir(
       presets.get_preset_by_name(config.configure_preset, "configurePresets")
     )
