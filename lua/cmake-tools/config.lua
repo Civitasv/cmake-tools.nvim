@@ -44,6 +44,24 @@ function Config:new(const)
   return self
 end
 
+function Config:update_build_dir(build_dir)
+  self.build_directory = Path:new(build_dir)
+  self.query_directory = Path:new(
+    build_dir,
+    ".cmake",
+    "api",
+    "v1",
+    "query"
+  )
+  self.reply_directory = Path:new(
+    build_dir,
+    ".cmake",
+    "api",
+    "v1",
+    "reply"
+  )
+end
+
 function Config:get_codemodel_targets()
   -- if reply_directory exists
   local reply_directory = Path:new(vim.loop.cwd(), self.reply_directory)

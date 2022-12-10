@@ -374,7 +374,7 @@ function cmake.select_build_type(callback)
       return
     end
     if config.build_type ~= build_type then
-      utils.rmdir(config.build_directory.filename)
+      utils.rmdir(config.build_directory)
       config.build_type = build_type
       if type(callback == "function") then
         callback()
@@ -415,7 +415,7 @@ function cmake.select_cmake_kit(callback)
         return
       end
       if config.kit ~= kit then
-        utils.rmdir(config.build_directory.filename)
+        utils.rmdir(config.build_directory)
         config.kit = kit
       end
       if type(callback) == "function" then
@@ -450,6 +450,16 @@ function cmake.select_cmake_configure_preset(callback)
           config.build_type = presets.get_build_type(
             presets.get_preset_by_name(choice, "configurePresets")
           )
+
+          -- remove current build directory
+          local build_directory = presets.get_build_dir(
+            presets.get_preset_by_name(choice, "configurePresets")
+          )
+
+          if build_directory ~= -1 then
+            utils.rmdir(config.build_directory)
+            config:update_build_dir(build_directory)
+          end
         end
         if type(callback) == "function" then
           callback()

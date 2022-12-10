@@ -1,3 +1,5 @@
+local Path = require("plenary.path")
+
 local presets = {}
 
 -- checks if there is a CMakePresets.json or CMakeUserPresets.json file
@@ -54,6 +56,13 @@ function presets.get_build_type(preset)
     return preset.cacheVariables.CMAKE_BUILD_TYPE
   end
   return "Debug"
+end
+
+function presets.get_build_dir(preset)
+  if preset and preset.binaryDir then
+    return Path:new(preset.binaryDir)
+  end
+  return -1
 end
 
 return presets
