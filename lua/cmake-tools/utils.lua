@@ -35,6 +35,18 @@ function utils.dump(o)
   end
 end
 
+function utils.get_cmake_configuration()
+  local cmakelists = Path:new(vim.loop.cwd(), "CMakeLists.txt")
+  if not cmakelists:is_file() then
+    return Result:new(
+      Types.CANNOT_FIND_CMAKE_CONFIGURATION_FILE,
+      nil,
+      "Cannot find CMakeLists.txt at cwd."
+    )
+  end
+  return Result:new(Types.SUCCESS, cmakelists, "cmake-tools has found CMakeLists.txt.")
+end
+
 function utils.show_cmake_console(cmake_console_size)
   vim.api.nvim_command("copen " .. cmake_console_size)
   vim.api.nvim_command("wincmd j")
@@ -131,18 +143,6 @@ function utils.has_active_job()
     .. " Stop it before trying to run a new CMake task."
   )
   return false
-end
-
-function utils.get_cmake_configuration()
-  local cmakelists = Path:new(vim.loop.cwd(), "CMakeLists.txt")
-  if not cmakelists:is_file() then
-    return Result:new(
-      Types.CANNOT_FIND_CMAKE_CONFIGURATION_FILE,
-      nil,
-      "Cannot find CMakeLists.txt at cwd."
-    )
-  end
-  return Result:new(Types.SUCCESS, cmakelists, "cmake-tools has found CMakeLists.txt.")
 end
 
 function utils.rmdir(dir)

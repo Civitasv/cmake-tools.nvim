@@ -56,7 +56,7 @@ function cmake.generate(opt, callback)
     local build_directory = presets.get_build_dir(
       presets.get_preset_by_name(config.configure_preset, "configurePresets")
     )
-    if build_directory ~= -1 then
+    if build_directory ~= "" then
       config:update_build_dir(build_directory)
     end
     config:generate_build_directory()

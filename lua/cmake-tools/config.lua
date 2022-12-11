@@ -47,30 +47,6 @@ function Config:update_build_dir(build_dir)
   )
 end
 
-function Config:get_codemodel_targets()
-  -- if reply_directory exists
-  local reply_directory = Path:new(vim.loop.cwd(), self.reply_directory)
-  if not reply_directory:exists() then
-    return Result:new(Types.NOT_CONFIGURED, nil, "Configure fail")
-  end
-
-  local found_files = scandir.scan_dir(
-    reply_directory.filename,
-    { search_pattern = "codemodel*" }
-  )
-  if #found_files == 0 then
-    return Result:new(Types.CANNOT_FIND_CODEMODEL_FILE, nil, "Unable to find codemodel file")
-  end
-  local codemodel = Path:new(found_files[1])
-  local codemodel_json = vim.json.decode(codemodel:read())
-  return Result:new(Types.SUCCESS, codemodel_json["configurations"][1]["targets"], "find it")
-end
-
-function Config:get_code_model_target_info(codemodel_target)
-  local reply_directory = Path:new(vim.loop.cwd(), self.reply_directory)
-  return vim.json.decode((reply_directory / codemodel_target["jsonFile"]):read())
-end
-
 function Config:generate_build_directory()
   local build_directory = Path:new(vim.loop.cwd(), self.build_directory)
 
@@ -99,6 +75,31 @@ function Config:generate_query_files()
   return Result:new(Types.SUCCESS, true, "yeah, that could be")
 end
 
+function Config:get_codemodel_targets()
+  -- if reply_directory exists
+  local reply_directory = Path:new(vim.loop.cwd(), self.reply_directory)
+  if not reply_directory:exists() then
+    return Result:new(Types.NOT_CONFIGURED, nil, "Configure fail")
+  end
+
+  local found_files = scandir.scan_dir(
+    reply_directory.filename,
+    { search_pattern = "codemodel*" }
+  )
+  if #found_files == 0 then
+    return Result:new(Types.CANNOT_FIND_CODEMODEL_FILE, nil, "Unable to find codemodel file")
+  end
+  local codemodel = Path:new(found_files[1])
+  local codemodel_json = vim.json.decode(codemodel:read())
+  return Result:new(Types.SUCCESS, codemodel_json["configurations"][1]["targets"], "find it")
+end
+
+function Config:get_code_model_target_info(codemodel_target)
+  local reply_directory = Path:new(vim.loop.cwd(), self.reply_directory)
+  return vim.json.decode((reply_directory / codemodel_target["jsonFile"]):read())
+end
+
+-- Check if launch target is built
 function Config:check_launch_target()
   -- 1. not configured
   local build_directory = Path:new(vim.loop.cwd(), self.build_directory)
@@ -139,6 +140,8 @@ function Config:check_launch_target()
   )
 end
 
+-- Retrieve launch target path: self.launch_target
+-- it will first check if this launch target is built
 function Config:get_launch_target()
   local check_result = self:check_launch_target()
   if check_result.code ~= Types.SUCCESS then
@@ -149,9 +152,11 @@ function Config:get_launch_target()
   local target_path = target_info["artifacts"][1]["path"]
   target_path = Path:new(target_path)
   if not target_path:is_absolute() then
+    -- then it is a relative path, based on build directory
     local build_directory = Path:new(vim.loop.cwd(), self.build_directory)
     target_path = build_directory / target_path
   end
+  -- else it is an absolute path
 
   if not target_path:is_file() then
     return Result:new(
@@ -164,6 +169,8 @@ function Config:get_launch_target()
   return Result:new(Types.SUCCESS, target_path.filename, "yeah, that's good")
 end
 
+-- Check if this launch target is debuggable
+-- use variants.debuggable
 function Config:validate_for_debugging()
   local build_type = self.build_type
 

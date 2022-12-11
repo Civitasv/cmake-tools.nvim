@@ -7,11 +7,11 @@ then
 end
 
 local const = {
-  cmake_command = "/usr/bin/cmake",
-  cmake_build_directory = "",
+  cmake_command = "/usr/bin/cmake", -- cmake command path
+  cmake_build_directory = "", -- cmake generate directory
   cmake_build_directory_prefix = "cmake_build_", -- when cmake_build_directory is "", this option will be activated
-  cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" },
-  cmake_build_options = {},
+  cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" }, -- it will be activated when invoke `cmake.generate`
+  cmake_build_options = {}, -- it will be activated when invoke `cmake.build`
   cmake_console_position = "belowright", -- "bottom", "top"
   cmake_console_size = 10,
   cmake_show_console = "always", -- "always", "only_on_error"
