@@ -61,13 +61,13 @@ function cmake.generate(opt, callback)
     end
     config:generate_build_directory()
 
-    vim.list_extend(fargs, {
+    local args = {
       "--preset",
       config.configure_preset,
-      unpack(config.generate_options),
-    })
-
-    return utils.run(const.cmake_command, {}, fargs, {
+      unpack(vim.list_extend(config.generate_options, fargs))
+    }
+    --[[ print(unpack(args)) ]]
+    return utils.run(const.cmake_command, {}, args, {
       on_success = function()
         if type(callback) == "function" then
           callback()
@@ -108,17 +108,23 @@ function cmake.generate(opt, callback)
 
   config:generate_build_directory()
 
-  vim.list_extend(fargs, {
+  local args = {
     "-B",
     config.build_directory.filename,
     "-S",
     ".",
-    unpack(variants.build_arglist(config.build_type)),
-    unpack(kit_option.args),
-    unpack(config.generate_options),
-  })
+    vim.list_extend(
+      variants.build_arglist(config.build_type),
+      vim.list_extend(
+        kit_option.args,
+        vim.list_extend(
+          config.generate_options,
+          fargs
+        )
+      )),
+  }
 
-  return utils.run(const.cmake_command, kit_option.env, fargs, {
+  return utils.run(const.cmake_command, kit_option.env, args, {
     on_success = function()
       if type(callback) == "function" then
         callback()
@@ -191,18 +197,22 @@ function cmake.build(opt, callback)
     end
 
     if config.build_target == "all" then
-      vim.list_extend(fargs, vim.list_extend(args, {
-        "--target",
-        "all"
-      }))
+      vim.list_extend(args,
+        {
+          unpack(fargs),
+          "--target",
+          "all"
+        })
     else
-      vim.list_extend(fargs, vim.list_extend(args, {
-        "--target",
-        config.build_target
-      }))
+      vim.list_extend(args,
+        {
+          unpack(fargs),
+          "--target",
+          config.build_target
+        })
     end
 
-    return utils.run(const.cmake_command, {}, fargs, {
+    return utils.run(const.cmake_command, {}, args, {
       on_success = function()
         if type(callback) == "function" then
           callback()
@@ -246,8 +256,8 @@ function cmake.install(opt)
 
   local fargs = opt.fargs
 
-  vim.list_extend(fargs, { "--install", config.build_directory.filename })
-  return utils.run(const.cmake_command, {}, fargs, {
+  local args = { "--install", config.build_directory.filename, unpack(fargs) }
+  return utils.run(const.cmake_command, {}, args, {
     cmake_show_console = const.cmake_show_console,
     cmake_console_size = const.cmake_console_size
   })
