@@ -613,4 +613,9 @@ function cmake.is_cmake_project()
   return result.code == Types.SUCCESS
 end
 
+function cmake.has_cmake_preset()
+  local presets_file = presets.check()
+  return presets_file ~= nil
+end
+
 return cmake
