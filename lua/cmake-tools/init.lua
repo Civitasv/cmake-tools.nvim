@@ -113,7 +113,7 @@ function cmake.generate(opt, callback)
     config.build_directory.filename,
     "-S",
     ".",
-    vim.list_extend(
+    unpack(vim.list_extend(
       variants.build_arglist(config.build_type),
       vim.list_extend(
         kit_option.args,
@@ -121,7 +121,7 @@ function cmake.generate(opt, callback)
           config.generate_options,
           fargs
         )
-      )),
+      )))
   }
 
   return utils.run(const.cmake_command, kit_option.env, args, {
@@ -510,7 +510,7 @@ function cmake.select_build_preset(callback)
 end
 
 function cmake.select_build_target(callback, not_regenerate)
-  if not config.build_directory:exists() then
+  if not (config.build_directory and config.build_directory:exists()) then
     -- configure it
     return cmake.generate({ bang = false, fargs = {} }, function()
       vim.schedule(function()
@@ -546,7 +546,7 @@ function cmake.select_build_target(callback, not_regenerate)
 end
 
 function cmake.select_launch_target(callback, not_regenerate)
-  if not config.build_directory:exists() then
+  if not (config.build_directory and config.build_directory:exists()) then
     -- configure it
     return cmake.generate({ bang = false, fargs = {} }, function()
       vim.schedule(function()
@@ -580,6 +580,37 @@ function cmake.select_launch_target(callback, not_regenerate)
       callback()
     end
   end)
+end
+
+--[[ Getters ]]
+
+function cmake.get_build_target()
+  return config.build_target
+end
+
+function cmake.get_launch_target()
+  return config.launch_target
+end
+
+function cmake.get_build_type()
+  return config.build_type
+end
+
+function cmake.get_kit()
+  return config.kit
+end
+
+function cmake.get_configure_preset()
+  return config.configure_preset
+end
+
+function cmake.get_build_preset()
+  return config.build_preset
+end
+
+function cmake.is_cmake_project()
+  local result = utils.get_cmake_configuration()
+  return result.code == Types.SUCCESS
 end
 
 return cmake
