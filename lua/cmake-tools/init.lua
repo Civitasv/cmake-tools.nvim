@@ -263,7 +263,7 @@ end
 
 --- CMake open cmake console
 function cmake.open()
-  utils.show_cmake_console()
+  utils.show_cmake_console(const.cmake_console_size)
 end
 
 -- Run executable targets
