@@ -355,10 +355,9 @@ if has_nvim_dap then
             program = target_path,
             cwd = vim.loop.cwd(),
           }
+          -- close cmake console
+          cmake.close()
           dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
-          if const.cmake_dap_open_command then
-            const.cmake_dap_open_command()
-          end
         end)
       end)
     end
