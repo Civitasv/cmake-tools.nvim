@@ -64,8 +64,10 @@ function cmake.generate(opt, callback)
     local args = {
       "--preset",
       config.configure_preset,
-      unpack(vim.list_extend(config.generate_options, fargs))
     }
+    vim.list_extend(args, config.generate_options)
+    vim.list_extend(args, fargs)
+
     --[[ print(unpack(args)) ]]
     return utils.run(const.cmake_command, {}, args, {
       on_success = function()
@@ -113,16 +115,11 @@ function cmake.generate(opt, callback)
     config.build_directory.filename,
     "-S",
     ".",
-    unpack(vim.list_extend(
-      variants.build_arglist(config.build_type),
-      vim.list_extend(
-        kit_option.args,
-        vim.list_extend(
-          config.generate_options,
-          fargs
-        )
-      )))
   }
+  vim.list_extend(args, variants.build_arglist(config.build_type))
+  vim.list_extend(args, kit_option.args)
+  vim.list_extend(args, config.generate_options)
+  vim.list_extend(args, fargs)
 
   return utils.run(const.cmake_command, kit_option.env, args, {
     on_success = function()
@@ -191,25 +188,19 @@ function cmake.build(opt, callback)
     local presets_file = presets.check()
 
     if presets_file and config.build_preset then
-      args = { "--build", "--preset", config.build_preset, unpack(config.build_options) } -- preset don't need define build dir.
+      args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
     else
-      args = { "--build", config.build_directory.filename, unpack(config.build_options) }
+      args = { "--build", config.build_directory.filename }
     end
 
+    vim.list_extend(args, config.build_options)
+
     if config.build_target == "all" then
-      vim.list_extend(args,
-        {
-          unpack(fargs),
-          "--target",
-          "all"
-        })
+      vim.list_extend(args, { "--target", "all" })
+      vim.list_extend(args, fargs)
     else
-      vim.list_extend(args,
-        {
-          unpack(fargs),
-          "--target",
-          config.build_target
-        })
+      vim.list_extend(args, { "--target", config.build_target })
+      vim.list_extend(args, fargs)
     end
 
     return utils.run(const.cmake_command, {}, args, {
@@ -256,7 +247,9 @@ function cmake.install(opt)
 
   local fargs = opt.fargs
 
-  local args = { "--install", config.build_directory.filename, unpack(fargs) }
+  local args = { "--install", config.build_directory.filename }
+  vim.list_extend(args, fargs)
+
   return utils.run(const.cmake_command, {}, args, {
     cmake_show_console = const.cmake_show_console,
     cmake_console_size = const.cmake_console_size

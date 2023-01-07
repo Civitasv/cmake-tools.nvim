@@ -193,7 +193,7 @@ end
 
 -- given a variant, build an argument list for CMake
 function variants.build_arglist(variant)
-  --[[ print(utils.dump(variant)) ]]
+  --[[ print("VARIANT", utils.dump(variant)) ]]
   -- helper function to build a simple command line option that defines the CMAKE_BUILD_TYPE variable to `build_type`
   local function build_simple(build_type)
     return { "-D", "CMAKE_BUILD_TYPE=" .. build_type }
@@ -202,7 +202,7 @@ function variants.build_arglist(variant)
   -- start building arglist
 
   -- check if the chosen variants is one of the defaults
-  for defaultvar in pairs(DEFAULT_VARIANTS) do
+  for _, defaultvar in pairs(DEFAULT_VARIANTS) do
     if variant == defaultvar then
       return build_simple(variant) -- if so, build the simple arglist and return
     end
