@@ -1,5 +1,7 @@
 # CMake Tools for Neovim
 
+https://user-images.githubusercontent.com/37768049/211132987-c620fc47-d5a0-49e1-8e7d-5da9ac528428.mp4
+
 > CREDIT:
 >
 > It is a fork from the brilliant [neovim-cmake](https://github.com/Shatur/neovim-cmake). Since I change too much of it, So I make a new repo to develop it.
@@ -14,29 +16,47 @@ It uses terminal to execute targets.
 
 (optional) It uses [nvim-dap](https://github.com/mfussenegger/nvim-dap) to debug.
 
-## New Feature
-
-### CMake Build Directory Prefix
-
-The option `cmake_build_directory_prefix` will be activated only when `cmake_build_directory` is set to "".
-
-See detailed user scenario from issue [#21](https://github.com/Civitasv/cmake-tools.nvim/issues/21).
+## Notable Features
 
 ### CMake Presets
 
-Not it supports `CMake[User]Presets.json`.
+CMake Presets is a "standard" way in cmake to share settings with other people.
+
+Read more about CMake presets from [CMake docs](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html#macro-expansion).
 
 Attention: If `CMake[User]Presets.json` is provided, then `CMakeKits.json` or `CMakeVariants.[json|yaml]` won't have any effect.
 
 ### CMake Kits
 
-![CMake Kits](images/CMakeSelectKit.gif)
+CMake Kits define rules about how to build code. Typically, a kit can include:
+
+- A set of compilers.
+- A toolchain file.
+
+Example:
+
+```json
+{
+  "name": "My Compiler Kit",
+  "compilers": {
+    "C": "/usr/bin/gcc",
+    "CXX": "/usr/bin/g++",
+    "Fortran": "/usr/bin/gfortran"
+  }
+}
+```
+
+Read more about cmake kits from [vscode-cmake-tools docs](https://github.com/microsoft/vscode-cmake-tools/blob/main/docs/kits.md).
+
+**And currently some features are not implemented, see details at [TODO](#todo) section. PR is welcome!**
 
 ### CMake Variants
 
 Thanks @toolcreator for supporting CMake Variants which raised by VsCode's CMake Tools.
 
-![CMake Variants](images/CMakeSelectBuildType2.gif)
+CMake Variants is a concept of vscode-cmake-tools. It's used to group together and combine a common set of build options.
+
+Read more about cmake variants from [vscode-cmake-tools docs](https://github.com/microsoft/vscode-cmake-tools/blob/main/docs/variants.md).
 
 ## Installation
 
@@ -45,8 +65,6 @@ Thanks @toolcreator for supporting CMake Variants which raised by VsCode's CMake
 - Install it like any other Neovim plugin.
   - [packer.nvim](https://github.com/wbthomason/packer.nvim): `use 'Civitasv/cmake-tools.nvim'`
   - [vim-plug](https://github.com/junegunn/vim-plug): `Plug 'Civitasv/cmake-tools.nvim'`
-
-Todo: Add help.txt
 
 ## Usage
 
@@ -59,7 +77,7 @@ Todo: Add help.txt
 | CMakeSelectBuildType       | Select build type, include "Debug", "Release", "RelWithDebInfo", "MinSizeRel" for default. cmake-tools.nvim also support cmake variants, when "cmake-variants.yaml" or "cmake-variants.json" is provided, it will read configuration from it                                                                           |
 | CMakeSelectBuildTarget     | Select build target, include executable and library targets                                                                                                                                                                                                                                                            |
 | CMakeSelectLaunchTarget    | Select launch target, only include executable targets                                                                                                                                                                                                                                                                  |
-| CMakeSelectKit             | Select kit                                                                                                                                                                                                                                                                                                             |
+| CMakeSelectKit             | Select kit defined from CMakeKits.json                                                                                                                                                                                                                                                                                 |
 | CMakeSelectConfigurePreset | Select configure preset, if CMake[User]Presets.json is provided                                                                                                                                                                                                                                                        |
 | CMakeSelectBuildPreset     | Select build preset, if CMake[User]Presets.json is provided                                                                                                                                                                                                                                                            |
 | CMakeSelectLaunchTarget    | Select launch target, only include executable targets                                                                                                                                                                                                                                                                  |
@@ -69,41 +87,9 @@ Todo: Add help.txt
 | CMakeClean                 | Clean target                                                                                                                                                                                                                                                                                                           |
 | CMakeStop                  | Stop CMake process                                                                                                                                                                                                                                                                                                     |
 
-## Demos
-
-### CMakeGenerate
-
-![CMakeGenerate](images/CMakeGenerate.gif)
-
-### CMakeBuild
-
-![CMakeBuild](images/CMakeBuild.gif)
-
-### CMakeRun
-
-![CMakeRun](images/CMakeRun.gif)
-
-### CMakeDebug (require nvim-dap)
-
-![CMakeDebug](images/CMakeDebug.gif)
-
-### CMakeSelectBuildType
-
-![CMakeSelectBuildType](images/CMakeSelectBuildType.gif)
-
-When `cmake-variants.json` or `cmake-variants.yaml` is provided:
-
-![CMakeSelectBuildType with variants](images/CMakeSelectBuildType2.gif)
-
-### CMakeSelectBuildTarget
-
-![CMakeSelectBuildTarget](images/CMakeSelectBuildTarget.gif)
-
-### CMakeSelectLaunchTarget
-
-![CMakeSelectLaunchTarget](images/CMakeSelectLaunchTarget.gif)
-
 ## Setup
+
+### Example
 
 ```lua
 require("cmake-tools").setup {
@@ -115,13 +101,37 @@ require("cmake-tools").setup {
   cmake_console_size = 10, -- cmake output window height
   cmake_show_console = "always", -- "always", "only_on_error"
   cmake_dap_configuration = { name = "cpp", type = "codelldb", request = "launch" }, -- dap configuration, optional
-  cmake_dap_open_command = require("dap").repl.open, -- optional
   cmake_variants_message = {
     short = { show = true },
     long = { show = true, max_length = 40 }
   }
 }
 ```
+
+The option `cmake_build_directory_prefix` will be activated only when `cmake_build_directory` is set to "".
+
+See detailed user scenario from issue [#21](https://github.com/Civitasv/cmake-tools.nvim/issues/21).
+
+## TODO
+
+### CMake Presets
+
+1. Support test preset.
+2. Support package preset.
+3. Support workflow preset.
+4. Support condition.
+5. Some macro not supported yet.
+
+### CMake Kit
+
+1. Support Visual Studio.
+2. Support option `preferredGenerator`.
+3. Support option `cmakeSettings`.
+4. Support option `environmentSetupScript`.
+
+### Others
+
+1. Add help.txt
 
 ## LICENCE
 
