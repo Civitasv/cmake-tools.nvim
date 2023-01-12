@@ -104,20 +104,30 @@ function presets.get_build_dir(preset)
 
     if p_preset.inherits then
       local inherits = p_preset.inherits
+      local set_dir_by_parent = function (parent)
+          local ppreset = presets.get_preset_by_name(parent, "configurePresets")
+          local ppreset_build_dir = helper(ppreset)
+          if ppreset_build_dir ~= "" then
+            build_dir = ppreset_build_dir
+          end
+      end
 
-      -- iterate inherits from end, cause
-      -- If multiple inherits presets provide conflicting
-      -- values for the same field, the earlier preset in
-      -- the inherits array will be preferred.
-      for i = #inherits, 1, -1 do
-        local parent = inherits[i]
+      -- According to `https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html`,
+      -- `inherits` field may be a list of strings or a single string.
+      -- Check type then act.
+      if type(inherits) == "table" then
+        -- iterate inherits from end, cause
+        -- If multiple inherits presets provide conflicting
+        -- values for the same field, the earlier preset in
+        -- the inherits array will be preferred.
+        for i = #inherits, 1, -1 do
+          local parent = inherits[i]
 
-        -- retrieve its parent preset
-        local ppreset = presets.get_preset_by_name(parent, "configurePresets")
-        local ppreset_build_dir = helper(ppreset)
-        if ppreset_build_dir ~= "" then
-          build_dir = ppreset_build_dir
+          -- retrieve its parent preset
+          set_dir_by_parent(parent)
         end
+      elseif type(inherits) == "string" then
+        set_dir_by_parent(inherits)
       end
     end
 
