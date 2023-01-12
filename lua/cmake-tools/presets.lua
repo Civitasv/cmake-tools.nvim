@@ -1,5 +1,4 @@
 local Path = require("plenary.path")
-local utils = require("cmake-tools.utils")
 
 local presets = {}
 
@@ -27,8 +26,8 @@ end
 
 -- Retrieve all presets with type
 -- @param type: `buildPresets` or `configurePresets`
--- @param {opts}: include_hidden(bool|nil). 
---                If true, hidden preset will be included in result. 
+-- @param {opts}: include_hidden(bool|nil).
+--                If true, hidden preset will be included in result.
 -- @returns : list with all preset names
 function presets.parse(type, opts)
   local file = presets.check()
@@ -48,8 +47,8 @@ end
 
 -- Retrieve all presets with type
 -- @param type: `buildPresets` or `configurePresets`
--- @param {opts}: include_hidden(bool|nil). 
---                If true, hidden preset will be included in result. 
+-- @param {opts}: include_hidden(bool|nil).
+--                If true, hidden preset will be included in result.
 -- @returns : table with preset name as key and preset content as value
 function presets.parse_name_mapped(type, opts)
   local file = presets.check()
