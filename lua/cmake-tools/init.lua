@@ -450,8 +450,17 @@ function cmake.select_configure_preset(callback)
   -- if exists presets
   local presets_file = presets.check()
   if presets_file then
-    local configure_presets = presets.parse("configurePresets")
-    vim.ui.select(configure_presets, { prompt = "Select cmake configure presets" },
+    local configure_preset_names = presets.parse("configurePresets", {include_hidden = false})
+    local configure_presets = presets.parse_name_mapped("configurePresets", {include_hidden = false})
+    local format_preset_name = function (p_name)
+      local p = configure_presets[p_name]
+      return p.displayName or p.name
+    end
+    vim.ui.select(configure_preset_names,
+      {
+        prompt = "Select cmake configure presets",
+        format_item = format_preset_name
+      },
       function(choice)
         if not choice then
           return

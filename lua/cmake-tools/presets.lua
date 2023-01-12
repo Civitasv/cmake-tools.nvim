@@ -27,15 +27,42 @@ end
 
 -- Retrieve all presets with type
 -- @param type: `buildPresets` or `configurePresets`
-function presets.parse(type)
+-- @param {opts}: include_hidden(bool|nil). 
+--                If true, hidden preset will be included in result. 
+-- @returns : list with all preset names
+function presets.parse(type, opts)
   local file = presets.check()
   local options = {}
   if not file then
     return options
   end
+  local include_hidden = opts and opts.include_hidden
   local data = vim.fn.json_decode(vim.fn.readfile(file))
   for _, v in pairs(data[type]) do
-    table.insert(options, v["name"])
+    if include_hidden or not v["hidden"] then
+      table.insert(options, v["name"])
+    end
+  end
+  return options
+end
+
+-- Retrieve all presets with type
+-- @param type: `buildPresets` or `configurePresets`
+-- @param {opts}: include_hidden(bool|nil). 
+--                If true, hidden preset will be included in result. 
+-- @returns : table with preset name as key and preset content as value
+function presets.parse_name_mapped(type, opts)
+  local file = presets.check()
+  local options = {}
+  if not file then
+    return options
+  end
+  local include_hidden = opts and opts.include_hidden
+  local data = vim.fn.json_decode(vim.fn.readfile(file))
+  for _, v in pairs(data[type]) do
+    if include_hidden or not v["hidden"] then
+      options[v["name"]] = v
+    end
   end
   return options
 end
