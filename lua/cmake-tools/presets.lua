@@ -1,5 +1,4 @@
 local Path = require("plenary.path")
-local utils = require("cmake-tools.utils")
 
 local presets = {}
 
@@ -27,15 +26,42 @@ end
 
 -- Retrieve all presets with type
 -- @param type: `buildPresets` or `configurePresets`
-function presets.parse(type)
+-- @param {opts}: include_hidden(bool|nil).
+--                If true, hidden preset will be included in result.
+-- @returns : list with all preset names
+function presets.parse(type, opts)
   local file = presets.check()
   local options = {}
   if not file then
     return options
   end
+  local include_hidden = opts and opts.include_hidden
   local data = vim.fn.json_decode(vim.fn.readfile(file))
   for _, v in pairs(data[type]) do
-    table.insert(options, v["name"])
+    if include_hidden or not v["hidden"] then
+      table.insert(options, v["name"])
+    end
+  end
+  return options
+end
+
+-- Retrieve all presets with type
+-- @param type: `buildPresets` or `configurePresets`
+-- @param {opts}: include_hidden(bool|nil).
+--                If true, hidden preset will be included in result.
+-- @returns : table with preset name as key and preset content as value
+function presets.parse_name_mapped(type, opts)
+  local file = presets.check()
+  local options = {}
+  if not file then
+    return options
+  end
+  local include_hidden = opts and opts.include_hidden
+  local data = vim.fn.json_decode(vim.fn.readfile(file))
+  for _, v in pairs(data[type]) do
+    if include_hidden or not v["hidden"] then
+      options[v["name"]] = v
+    end
   end
   return options
 end
@@ -77,20 +103,30 @@ function presets.get_build_dir(preset)
 
     if p_preset.inherits then
       local inherits = p_preset.inherits
+      local set_dir_by_parent = function (parent)
+          local ppreset = presets.get_preset_by_name(parent, "configurePresets")
+          local ppreset_build_dir = helper(ppreset)
+          if ppreset_build_dir ~= "" then
+            build_dir = ppreset_build_dir
+          end
+      end
 
-      -- iterate inherits from end, cause
-      -- If multiple inherits presets provide conflicting
-      -- values for the same field, the earlier preset in
-      -- the inherits array will be preferred.
-      for i = #inherits, 1, -1 do
-        local parent = inherits[i]
+      -- According to `https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html`,
+      -- `inherits` field may be a list of strings or a single string.
+      -- Check type then act.
+      if type(inherits) == "table" then
+        -- iterate inherits from end, cause
+        -- If multiple inherits presets provide conflicting
+        -- values for the same field, the earlier preset in
+        -- the inherits array will be preferred.
+        for i = #inherits, 1, -1 do
+          local parent = inherits[i]
 
-        -- retrieve its parent preset
-        local ppreset = presets.get_preset_by_name(parent, "configurePresets")
-        local ppreset_build_dir = helper(ppreset)
-        if ppreset_build_dir ~= "" then
-          build_dir = ppreset_build_dir
+          -- retrieve its parent preset
+          set_dir_by_parent(parent)
         end
+      elseif type(inherits) == "string" then
+        set_dir_by_parent(inherits)
       end
     end
 
