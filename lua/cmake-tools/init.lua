@@ -75,6 +75,7 @@ function cmake.generate(opt, callback)
           callback()
         end
       end,
+      cmake_console_position = const.cmake_console_position,
       cmake_show_console = const.cmake_show_console,
       cmake_console_size = const.cmake_console_size
     })
@@ -127,6 +128,7 @@ function cmake.generate(opt, callback)
         callback()
       end
     end,
+    cmake_console_position = const.cmake_console_position,
     cmake_show_console = const.cmake_show_console,
     cmake_console_size = const.cmake_console_size
   })
@@ -151,6 +153,7 @@ function cmake.clean(callback)
         callback()
       end
     end,
+    cmake_console_position = const.cmake_console_position,
     cmake_show_console = const.cmake_show_console,
     cmake_console_size = const.cmake_console_size
   })
@@ -209,6 +212,7 @@ function cmake.build(opt, callback)
           callback()
         end
       end,
+      cmake_console_position = const.cmake_console_position,
       cmake_show_console = const.cmake_show_console,
       cmake_console_size = const.cmake_console_size
     })
@@ -251,8 +255,9 @@ function cmake.install(opt)
   vim.list_extend(args, fargs)
 
   return utils.run(const.cmake_command, {}, args, {
-    cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size
+    cmake_console_position = const.cmake_console_position,
+    cmake_show_console     = const.cmake_show_console,
+    cmake_console_size     = const.cmake_console_size
   })
 end
 
@@ -263,7 +268,7 @@ end
 
 --- CMake open cmake console
 function cmake.open()
-  utils.show_cmake_console(const.cmake_console_size)
+  utils.show_cmake_console(const.cmake_console_position, const.cmake_console_size)
 end
 
 -- Run executable targets

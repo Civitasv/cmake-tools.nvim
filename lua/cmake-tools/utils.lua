@@ -14,10 +14,8 @@ end
 local function append_to_cmake_console(error, data)
   local line = error and error or data
   vim.fn.setqflist({}, "a", { lines = { line } })
-  -- scroll the quickfix buffer to bottom if it doesn't active
-  -- if vim.bo.buftype ~= "quickfix" then
+  -- scroll the quickfix buffer to bottom
   vim.api.nvim_command("cbottom")
-  -- end
 end
 
 function utils.dump(o)
@@ -47,8 +45,8 @@ function utils.get_cmake_configuration()
   return Result:new(Types.SUCCESS, cmakelists, "cmake-tools has found CMakeLists.txt.")
 end
 
-function utils.show_cmake_console(cmake_console_size)
-  vim.api.nvim_command("copen " .. cmake_console_size)
+function utils.show_cmake_console(cmake_console_position, cmake_console_size)
+  vim.api.nvim_command(cmake_console_position .. " copen " .. cmake_console_size)
   vim.api.nvim_command("wincmd j")
 end
 
@@ -70,7 +68,7 @@ function utils.execute(executable, opts)
   local set_bufname = "file " .. opts.bufname
   local prefix = string.format("%s %d new", opts.cmake_console_position, opts.cmake_console_size)
 
-  vim.api.nvim_command("cclose")
+  utils.close_cmake_console();
   vim.cmd(prefix .. " | term " .. executable)
   vim.opt_local.relativenumber = false
   vim.opt_local.number = false
@@ -105,7 +103,7 @@ function utils.run(cmd, env, args, opts)
   vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
   opts.cmake_show_console = opts.cmake_show_console == "always"
   if opts.cmake_show_console then
-    utils.show_cmake_console(opts.cmake_console_size)
+    utils.show_cmake_console(opts.cmake_console_position, opts.cmake_console_size)
   end
 
   utils.job = Job:new({
@@ -121,7 +119,7 @@ function utils.run(cmd, env, args, opts)
           opts.on_success()
         end
       elseif opts.cmake_show_console == "only_on_error" then
-        utils.show_cmake_console(opts.cmake_console_size)
+        utils.show_cmake_console(opts.cmake_console_position, opts.cmake_console_size)
         vim.api.nvim_command("cbottom")
       end
     end),
