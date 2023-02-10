@@ -39,6 +39,9 @@ end
 -- Decodes a Cmake[User]Presets.json and its "includes", if any
 local function decode(file)
   local data = vim.fn.json_decode(vim.fn.readfile(file))
+  if not data then
+    error(string.format('Could not parse %s', file))
+  end
   local includes = data['include']
   if not includes then
     return data
@@ -184,7 +187,11 @@ function presets.get_build_dir(preset)
   local source_path = Path:new(vim.loop.cwd())
   local source_relative = vim.fn.fnamemodify(vim.loop.cwd(), ":t")
 
-  build_dir = build_dir:gsub("${sourceDir}", vim.loop.cwd())
+  local cwd = vim.loop.cwd()
+  if not cwd then
+    cwd = "."
+  end
+  build_dir = build_dir:gsub("${sourceDir}", cwd)
   build_dir = build_dir:gsub("${sourceParentDir}", source_path:parent().filename)
   build_dir = build_dir:gsub("${sourceDirName}", source_relative)
   build_dir = build_dir:gsub("${presetName}", preset.name)
