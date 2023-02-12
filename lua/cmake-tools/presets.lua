@@ -28,7 +28,7 @@ end
 -- key is [key] and the value is the resulting list table of merging
 -- dst[key] and src[key].
 -- This function mutates dest.
-local function mergeTableListByKey(dst, src, key)
+local function merge_table_list_by_key(dst, src, key)
   if not dst[key] then
     dst[key]={}
   end
@@ -55,7 +55,7 @@ local function decode(file)
                                            vim.tbl_keys(fdata))
 
     for _, eachPreset in ipairs(thisFilePresetKeys) do
-      mergeTableListByKey(data, fdata,eachPreset )
+      merge_table_list_by_key(data, fdata, eachPreset)
     end
   end
 
