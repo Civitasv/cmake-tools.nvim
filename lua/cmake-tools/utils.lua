@@ -64,6 +64,8 @@ end
 -- @param executable executable file
 -- @param opts execute options
 function utils.execute(executable, opts)
+  -- save all
+  vim.cmd("wall")
   -- print("EXECUTABLE", executable)
   local set_bufname = "file " .. opts.bufname
   local prefix = string.format("%s %d new", opts.cmake_console_position, opts.cmake_console_size)
@@ -100,6 +102,8 @@ end
 
 -- Execute CMake command using job api
 function utils.run(cmd, env, args, opts)
+  -- save all
+  vim.cmd("wall")
   vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
   opts.cmake_show_console = opts.cmake_show_console == "always"
   if opts.cmake_show_console then
