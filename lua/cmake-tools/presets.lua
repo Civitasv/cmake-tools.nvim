@@ -24,6 +24,44 @@ function presets.check()
   return file
 end
 
+-- Extends (or creates a new) key-value pair in [dest] in which the
+-- key is [key] and the value is the resulting list table of merging
+-- dst[key] and src[key].
+-- This function mutates dest.
+local function merge_table_list_by_key(dst, src, key)
+  if not dst[key] then
+    dst[key]={}
+  end
+  vim.list_extend(dst[key], src[key])
+end
+
+
+-- Decodes a Cmake[User]Presets.json and its "includes", if any
+local function decode(file)
+  local data = vim.fn.json_decode(vim.fn.readfile(file))
+  if not data then
+    error(string.format('Could not parse %s', file))
+  end
+  local includes = data['include']
+  if not includes then
+    return data
+  end
+
+  for _, f in ipairs(includes) do
+    local fdata = vim.fn.json_decode(vim.fn.readfile(f))
+    local thisFilePresetKeys = vim.tbl_filter(function(key)
+                                                return string.find(key, "Presets")
+                                              end,
+                                           vim.tbl_keys(fdata))
+
+    for _, eachPreset in ipairs(thisFilePresetKeys) do
+      merge_table_list_by_key(data, fdata, eachPreset)
+    end
+  end
+
+  return data
+end
+
 -- Retrieve all presets with type
 -- @param type: `buildPresets` or `configurePresets`
 -- @param {opts}: include_hidden(bool|nil).
@@ -36,7 +74,10 @@ function presets.parse(type, opts)
     return options
   end
   local include_hidden = opts and opts.include_hidden
-  local data = vim.fn.json_decode(vim.fn.readfile(file))
+  local data = decode(file)
+  if not data then
+    error("Error when parsing the presets file")
+  end
   for _, v in pairs(data[type]) do
     if include_hidden or not v["hidden"] then
       table.insert(options, v["name"])
@@ -57,7 +98,10 @@ function presets.parse_name_mapped(type, opts)
     return options
   end
   local include_hidden = opts and opts.include_hidden
-  local data = vim.fn.json_decode(vim.fn.readfile(file))
+  local data = decode(file)
+  if not data then
+    error("Error when parsing the presets file")
+  end
   for _, v in pairs(data[type]) do
     if include_hidden or not v["hidden"] then
       options[v["name"]] = v
@@ -74,7 +118,7 @@ function presets.get_preset_by_name(name, type)
   if not file then
     return nil
   end
-  local data = vim.fn.json_decode(vim.fn.readfile(file))
+  local data = decode(file)
   for _, v in pairs(data[type]) do
     if v.name == name then
       return v
@@ -143,7 +187,11 @@ function presets.get_build_dir(preset)
   local source_path = Path:new(vim.loop.cwd())
   local source_relative = vim.fn.fnamemodify(vim.loop.cwd(), ":t")
 
-  build_dir = build_dir:gsub("${sourceDir}", vim.loop.cwd())
+  local cwd = vim.loop.cwd()
+  if not cwd then
+    cwd = "."
+  end
+  build_dir = build_dir:gsub("${sourceDir}", cwd)
   build_dir = build_dir:gsub("${sourceParentDir}", source_path:parent().filename)
   build_dir = build_dir:gsub("${sourceDirName}", source_relative)
   build_dir = build_dir:gsub("${presetName}", preset.name)
