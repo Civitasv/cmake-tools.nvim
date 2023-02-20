@@ -305,7 +305,7 @@ function cmake.run(opt, callback)
         local target_path = result.data
         -- print("TARGET", target_path)
 
-        return utils.execute(target_path, {
+        return utils.execute('"' .. target_path .. '"', {
           bufname = vim.fn.expand("%:t:r"),
           cmake_console_position = const.cmake_console_position,
           cmake_console_size = const.cmake_console_size
