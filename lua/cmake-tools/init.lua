@@ -304,21 +304,12 @@ function cmake.run(opt, callback)
         -- print(utils.dump(result))
         local target_path = result.data
         -- print("TARGET", target_path)
-        local is_win32 = vim.fn.has("win32")
-        if (is_win32 == 1) then
-          -- Prints the output in the same cmake window as in wsl/linux
-          return utils.execute(target_path, {
-            bufname = vim.fn.expand("%:p"),
-            cmake_console_position = const.cmake_console_position,
-            cmake_console_size = const.cmake_console_size
-          })
-        else
-          return utils.execute('"' .. target_path .. '"', {
-            bufname = vim.fn.expand("%:t:r"),
-            cmake_console_position = const.cmake_console_position,
-            cmake_console_size = const.cmake_console_size
-          })
-        end
+
+        return utils.execute('"' .. target_path .. '"', {
+          bufname = vim.fn.expand("%:t:r"),
+          cmake_console_position = const.cmake_console_position,
+          cmake_console_size = const.cmake_console_size
+        })
       end)
     end)
   end
@@ -603,6 +594,7 @@ function cmake.select_launch_target(callback, not_regenerate)
 end
 
 --[[ Getters ]]
+
 function cmake.get_build_target()
   return config.build_target
 end

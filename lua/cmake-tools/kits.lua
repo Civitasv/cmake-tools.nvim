@@ -8,7 +8,7 @@ function kits.parse()
     local files = vim.fn.readdir(".")
     local file = nil
     for _, f in ipairs(files) do -- iterate over files in current directory
-      if (f == "cmake-kits.json" or f == "CMakeKits.json")  then -- if a kits config file is found
+      if f == "cmake-kits.json" then -- if a kits config file is found
         file = vim.fn.resolve("./" .. f)
         break
       end
