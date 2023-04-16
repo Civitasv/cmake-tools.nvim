@@ -153,10 +153,12 @@ Currently, we do not have an implementation of `vswhere` in lua for MSVC kit sca
 
 ```
 
-Here is the MSVC config in their standard location within `Program Files` and `Program Files (x86)`. Tweaks to the compiler location might be necessary if installation locations are different. This is a workaround for till auto scanning is implemented.
+Here is the MSVC config in their standard location within `Program Files` and `Program Files (x86)`. **Tweaks to the compiler location might be necessary** if installation locations are different from what is shown below. This is a workaround for till auto kit scanning is implemented.
+
+### All MSVC Config Examples
 
 <details>
-<Summary>All MSVC Configs<\Summary>
+<Summary>Click to expand MSVC Configs</Summary>
 
 ```json
 {
@@ -262,7 +264,7 @@ Here is the MSVC config in their standard location within `Program Files` and `P
 
 ```
 
-<\details>
+</details>
 
 ## Windows : MinGw / GCC / Clang / Clang-cl support
 
@@ -287,9 +289,10 @@ Exmaples of clang, gcc, clang-cl, and gcc support in windows. **You must specify
 }
 
 ```
+### MinGW/Ninja/GCC/Clang/Clang-cl Examples
 
 <details>
-<Summary>More Examples<\Summary>
+<Summary>Click to expand Examples</Summary>
 
 ```json
 {
@@ -359,7 +362,7 @@ Exmaples of clang, gcc, clang-cl, and gcc support in windows. **You must specify
 
 ```
 
-<\details>
+</details>
 
 ## How to make cmake-tools work exactly like it in exmaple video?
 
