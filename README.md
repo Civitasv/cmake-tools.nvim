@@ -118,22 +118,151 @@ When using multiple compilers, you can specify this in your `CMakeKits.json` or 
 
 ```json
 [
-	{
-		"name": "Clang_14.0.6_x86_64-w64-windows-gnu",
-		"compilers": {
-			"C": "path/to/C/Compiler",
-			"CXX": "path/to/CXX/Compiler"
-		}
-	},
-	{
-		"name": "Clang_15.0.7_x86_64-pc-windows-msvc",
-		"compilers": {
-			"C": "path/to/C/Compiler",
-			"CXX": "path/to/CXX/Compiler"
-		}
+  {
+    "name": "Clang_14.0.6_x86_64-w64-windows-gnu",
+	"compilers": {
+      "C": "path/to/C/Compiler",
+      "CXX": "path/to/CXX/Compiler"
 	}
+  },
+  {
+	"name": "Clang_15.0.7_x86_64-pc-windows-msvc",
+	"compilers": {
+	  "C": "path/to/C/Compiler",
+      "CXX": "path/to/CXX/Compiler"
+	}
+  }
 ]
 ```
+
+## MSVC Support without kit scans
+
+Currently, we do not have an implementation of `vswhere` in lua for MSVC kit scanning, however, architectures and hosts can be set as:
+
+```json
+{
+  "name": "VS 17 2022 amd64",
+  "generator": "Visual Studio 17 2022",
+  "host_architecture": "x64",
+  "target_architecture": "x64",
+  "compilers": {
+    "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x64/cl.exe",
+    "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin//Hostx64/x64/cl.exe"
+    }
+},
+
+```
+
+Here is the MSVC config in their standard location within `Program Files` and `Program Files (x86)`. Tweaks to the compiler location might be necessary if installation locations are different. This is a workaround for till auto scanning is implemented.
+
+<details>
+<Summary>All MSVC Configs<\Summary>
+
+```json
+{
+  "name": "VS 16 2019 amd64",
+  "generator": "Visual Studio 16 2019",
+  "host_architecture": "x64",
+  "target_architecture": "x64",
+  "compilers": {
+    "C": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/Hostx64/x64/cl.exe",
+    "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe"
+    }
+},
+{
+  "name": "VS 16 2019 amd64_x86",
+  "generator": "Visual Studio 16 2019",
+  "host_architecture": "x64",
+  "target_architecture": "win32",
+  "compilers": {
+    "C": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/Hostx64/x86/cl.exe",
+    "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x86/cl.exe"
+    }
+},
+{
+  "name": "VS 16 2019 x86",
+  "generator": "Visual Studio 16 2019",
+  "host_architecture": "x86",
+  "target_architecture": "win32",
+  "compilers": {
+    "C": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx86/x86/cl.exe",
+    "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx86/x86/cl.exe"
+    }
+},
+{
+  "name": "VS 16 2019 x86_amd64",
+  "generator": "Visual Studio 16 2019",
+  "host_architecture": "x86",
+  "target_architecture": "x64",
+  "compilers": {
+    "C": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx86/x64/cl.exe",
+    "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx86/x64/cl.exe"
+    }
+},
+{
+  "name": "VS 17 2022 amd64",
+  "generator": "Visual Studio 17 2022",
+  "host_architecture": "x64",
+  "target_architecture": "x64",
+  "compilers": {
+    "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x64/cl.exe",
+    "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin//Hostx64/x64/cl.exe"
+    }
+},
+{
+  "name": "VS 17 2022 amd64_arm64",
+  "generator": "Visual Studio 17 2022",
+  "host_architecture": "x64",
+  "target_architecture": "arm64",
+  "compilers": {
+    "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x86/cl.exe",
+    "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x86/cl.exe"
+    }
+},
+{
+  "name": "VS 17 2022 amd64_x86",
+  "generator": "Visual Studio 17 2022",
+  "host_architecture": "x64",
+  "target_architecture": "win32",
+  "compilers": {
+    "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/arm64/cl.exe",
+    "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/arm64/cl.exe"
+    }
+},
+{
+  "name": "VS 17 2022 x86",
+  "generator": "Visual Studio 17 2022",
+  "host_architecture": "x86",
+  "target_architecture": "win32",
+  "compilers": {
+    "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx86/x86/cl.exe",
+    "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx86/x86/cl.exe"
+    }
+},
+{
+  "name": "VS 17 2022 x86_amd64",
+  "generator": "Visual Studio 17 2022",
+  "host_architecture": "x86",
+  "target_architecture": "x64",
+  "compilers": {
+    "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx86/x64/cl.exe",
+    "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx86/x64/cl.exe"
+    }
+},
+{
+  "name": "VS 17 2022 x86_arm64",
+  "generator": "Visual Studio 17 2022",
+  "host_architecture": "x86",
+  "target_architecture": "arm64",
+  "compilers": {
+    "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx86/arm64/cl.exe",
+    "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx86/arm64/cl.exe"
+    }
+}
+
+```
+
+<\details>
 
 ## How to make cmake-tools work exactly like it in exmaple video?
 
