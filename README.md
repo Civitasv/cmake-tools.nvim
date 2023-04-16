@@ -264,6 +264,103 @@ Here is the MSVC config in their standard location within `Program Files` and `P
 
 <\details>
 
+## Windows : MinGw / GCC / Clang / Clang-cl support
+
+Exmaples of clang, gcc, clang-cl, and gcc support in windows. **You must specify the generator.** For example:
+
+```json
+{
+  "name": "Clang_14.0.6_x86_64-w64-windows-gnu",
+  "generator":"Ninja",
+  "compilers": {
+    "C": "C:/mingw64/bin/clang.exe",
+    "CXX": "C:/mingw64/bin/clang++.exe"
+  }
+},
+{
+  "name": "GCC_12.2.0_15.0.7_x86_64-windows-msvc",
+  "generator":"MinGW Makefiles",
+  "compilers": {
+    "C": "C:/mingw64/bin/gcc.exe",
+    "CXX": "C:/mingw64/bin/g++.exe"
+  }
+}
+
+```
+
+<details>
+<Summary>More Examples<\Summary>
+
+```json
+{
+  "name": "Clang_14.0.6_x86_64-w64-windows-gnu",
+  "generator":"Ninja",
+  "compilers": {
+    "C": "C:/mingw64/bin/clang.exe",
+    "CXX": "C:/mingw64/bin/clang++.exe"
+ }
+},
+{
+  "name": "Clang-cl 14.0.6 x86_64-pc-windows-msvc",
+  "generator":"Ninja",
+  "compilers": {
+    "C": "C:/mingw64/bin/clang-cl.exe",
+    "CXX": "C:/mingw64/bin/clang-cl.exe"
+  }
+},
+{
+  "name": "Clang_15.0.7_x86_64-pc-windows-msvc",
+  "generator":"Ninja",
+  "compilers": {
+    "C": "C:/Program Files/LLVM/bin/clang.exe",
+    "CXX": "C:/Program Files/LLVM/bin/clang++.exe"
+  }
+},
+{
+  "name": "Clang_cl_15.0.7_x86_64-pc-windows-msvc",
+  "generator":"Ninja",
+  "compilers": {
+    "C": "C:/Program Files/LLVM/bin/clang-cl.exe",
+    "CXX": "C:/Program Files/LLVM/bin/clang-cl.exe"
+  }
+},
+{
+  "name": "GCC_12.2.0_15.0.7_x86_64-windows-msvc",
+  "generator":"MinGW Makefiles",
+  "compilers": {
+    "C": "C:/mingw64/bin/gcc.exe",
+    "CXX": "C:/mingw64/bin/g++.exe"
+  }
+},
+{
+  "name": "GCC_6.3.0_mingw32",
+  "generator":"Ninja",
+  "compilers": {
+    "C": "C:/MinGW/bin/mingw32-gcc.exe",
+    "CXX": "C:/MinGW/bin/mingw32-g++.exe"
+  }
+},
+{
+  "name": "GCC_8.3.0_x86_64-mingw32",
+  "generator":"Ninja",
+  "compilers": {
+    "C": "C:/Strawberry/c/bin/gcc.exe",
+    "CXX": "C:/Strawberry/c/bin/g++.exe"
+  }
+},
+{
+  "name": "GCC_9.2.0_x86_64-mingw32",
+  "generator":"Ninja",
+  "compilers": {
+    "C": "C:/MinGW/bin/gcc.exe",
+    "CXX": "C:/MinGW/bin/g++.exe"
+  }
+},
+
+```
+
+<\details>
+
 ## How to make cmake-tools work exactly like it in exmaple video?
 
 ### lualine

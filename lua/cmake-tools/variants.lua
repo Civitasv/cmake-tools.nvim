@@ -196,7 +196,7 @@ function variants.build_arglist(variant)
   --[[ print("VARIANT", utils.dump(variant)) ]]
   -- helper function to build a simple command line option that defines the CMAKE_BUILD_TYPE variable to `build_type`
   local function build_simple(build_type)
-    return { "-D", "CMAKE_BUILD_TYPE=" .. build_type }
+    return { "-D", "CMAKE_BUILD_TYPE:STRING=" .. build_type }
   end
 
   -- start building arglist
