@@ -38,6 +38,10 @@ Example:
 ```json
 {
   "name": "My Compiler Kit",
+  
+  <!-- For windows if CMakeKits are used as there are default msvc compilers. Ignore if CMakeUserPrests are used. -->
+  "generator":"Ninja", 
+  
   "compilers": {
     "C": "/usr/bin/gcc",
     "CXX": "/usr/bin/g++",
@@ -120,24 +124,36 @@ When using multiple compilers, you can specify this in your `CMakeKits.json` or 
 [
   {
     "name": "Clang_14.0.6_x86_64-w64-windows-gnu",
-	"compilers": {
+    "generator":"Ninja",
+    "compilers": {
       "C": "path/to/C/Compiler",
       "CXX": "path/to/CXX/Compiler"
-	}
+    }
   },
   {
-	"name": "Clang_15.0.7_x86_64-pc-windows-msvc",
-	"compilers": {
-	  "C": "path/to/C/Compiler",
+    "name": "Clang_15.0.7_x86_64-pc-windows-msvc",
+    "generator":"Ninja",
+    "compilers": {
+      "C": "path/to/C/Compiler",
       "CXX": "path/to/CXX/Compiler"
-	}
-  }
+    }
+  },
+  {
+    "name": "VS 17 2022 amd64",
+    "generator": "Visual Studio 17 2022",
+    "host_architecture": "x64",
+    "target_architecture": "x64",
+    "compilers": {
+      "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x64/cl.exe",
+      "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin//Hostx64/x64/cl.exe"
+    }
+  },
 ]
 ```
 
 ## MSVC Support without kit scans
 
-Currently, we do not have an implementation of `vswhere` in lua for MSVC kit scanning, however, architectures and hosts can be set as:
+Currently, we do not have an implementation of `vswhere` in lua for kit scanning. However, architectures and hosts and generators can be set as:
 
 ```json
 {
@@ -153,9 +169,9 @@ Currently, we do not have an implementation of `vswhere` in lua for MSVC kit sca
 
 ```
 
-Here is the MSVC config in their standard location within `Program Files` and `Program Files (x86)`. **Tweaks to the compiler location might be necessary** if installation locations are different from what is shown below. This is a workaround for till auto kit scanning is implemented.
+For MSVC config in their standard location within `Program Files` and `Program Files (x86)`. This is a workaround for till auto kit scanning is implemented. (**Tweaks to the compiler location might be necessary** if installation locations are different from what is shown below.)
 
-### All MSVC Config Examples
+All MSVC Config Examples:
 
 <details>
 <Summary>Click to expand MSVC Configs</Summary>
@@ -289,10 +305,10 @@ Exmaples of clang, gcc, clang-cl, and gcc support in windows. **You must specify
 }
 
 ```
-### MinGW/Ninja/GCC/Clang/Clang-cl Examples
+More MinGW/Ninja/GCC/Clang/Clang-cl Examples
 
 <details>
-<Summary>Click to expand Examples</Summary>
+<Summary>Click to expand More Examples</Summary>
 
 ```json
 {
@@ -792,11 +808,10 @@ telescope.load_extension("ui-select")
 
 ### CMake Kit
 
-0. Support Kits scan.
-1. Support Visual Studio.
-2. Support option `preferredGenerator`.
-3. Support option `cmakeSettings`.
-4. Support option `environmentSetupScript`.
+0. Support Kits scan. <!-- 1. Support Visual Studio. -->
+1. Support option `preferredGenerator`.
+2. Support option `cmakeSettings`.
+3. Support option `environmentSetupScript`.
 
 ### Others
 
