@@ -112,6 +112,29 @@ The option `cmake_build_directory_prefix` will be activated only when `cmake_bui
 
 See detailed user scenario from issue [#21](https://github.com/Civitasv/cmake-tools.nvim/issues/21).
 
+## Using Multiple compilers
+
+When using multiple compilers, you can specify this in your `CMakeKits.json` or `cmake-kits.json` file in your root directory. (See the Lualine config below to select the different comiplers from the GUI)
+
+```json
+[
+	{
+		"name": "Clang_14.0.6_x86_64-w64-windows-gnu",
+		"compilers": {
+			"C": "path/to/C/Compiler",
+			"CXX": "path/to/CXX/Compiler"
+		}
+	},
+	{
+		"name": "Clang_15.0.7_x86_64-pc-windows-msvc",
+		"compilers": {
+			"C": "path/to/C/Compiler",
+			"CXX": "path/to/CXX/Compiler"
+		}
+	}
+]
+```
+
 ## How to make cmake-tools work exactly like it in exmaple video?
 
 ### lualine
