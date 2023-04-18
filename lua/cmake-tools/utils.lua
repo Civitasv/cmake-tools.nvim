@@ -79,6 +79,15 @@ function utils.execute(executable, opts)
   vim.cmd("startinsert")
 end
 
+function utils.softlink(src, target)
+  local dir_src = Path:new(src)
+  local dir_target = Path:new(target)
+  if dir_src:exists() and not dir_target:exists() then
+    local cmd = "!cmake -E create_symlink " .. src .. " " .. target;
+    vim.cmd(cmd)
+  end
+end
+
 function utils.deepcopy(orig, copies)
   copies = copies or {}
   local orig_type = type(orig)

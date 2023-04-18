@@ -74,6 +74,12 @@ function cmake.generate(opt, callback)
         if type(callback) == "function" then
           callback()
         end
+        if const.cmake_soft_link_compile_commands then
+          utils.softlink(
+            config.build_directory.filename .. "/compile_commands.json",
+            vim.loop.cwd() .. "/compile_commands.json"
+          )
+        end
       end,
       cmake_console_position = const.cmake_console_position,
       cmake_show_console = const.cmake_show_console,
@@ -126,6 +132,13 @@ function cmake.generate(opt, callback)
     on_success = function()
       if type(callback) == "function" then
         callback()
+      end
+
+      if const.cmake_soft_link_compile_commands then
+        utils.softlink(
+          config.build_directory.filename .. "/compile_commands.json",
+          vim.loop.cwd() .. "/compile_commands.json"
+        )
       end
     end,
     cmake_console_position = const.cmake_console_position,
