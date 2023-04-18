@@ -84,11 +84,20 @@ function kits.build_env_and_args(kit_name)
   -- if exists `compilers` option, then set variable for cmake
   if kit.compilers then
     for lang, compiler in pairs(kit.compilers) do
-      add_args({ "-DCMAKE_" .. lang .. "_COMPILER=" .. compiler })
+      add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=" .. compiler })
     end
   end
+  if kit.generator then
+      table.insert(args, "-G " .. kit.generator)
+  end
+  if kit.host_architecture then
+      table.insert(args, "-T host=" .. kit.host_architecture)
+  end
+  if kit.target_architecture then
+      table.insert(args, "-A " .. kit.target_architecture)
+  end
   if kit.toolchainFile then
-    add_args({ "-DCMAKE_TOOLCHAIN_FILE=" .. kit.toolchainFile })
+    add_args({ "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=" .. kit.toolchainFile })
   end
 
   if kit.environmentVariables then
