@@ -1,9 +1,9 @@
 local const = {
-  cmake_build_directory = "", -- cmake generate directory
-  cmake_build_directory_prefix = "cmake_build_", -- when cmake_build_directory is "", this option will be activated
+  cmake_build_directory = "",                                       -- cmake generate directory
+  cmake_build_directory_prefix = "cmake_build_",                    -- when cmake_build_directory is "", this option will be activated
   cmake_command = "cmake",                                          -- cmake command path
   cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" }, -- it will be activated when invoke `cmake.generate`
-  cmake_soft_link_compile_commands = true,
+  cmake_soft_link_compile_commands = false,
   cmake_build_options = {},                                         -- it will be activated when invoke `cmake.build`
   cmake_console_position = "belowright",                            -- "bottom", "top"
   cmake_console_size = 10,
