@@ -58,7 +58,6 @@ function cmake.generate(opt, callback)
     )
     if build_directory ~= "" then
       config:update_build_dir(build_directory)
-      cmake.compile_commands_from_preset()
     end
     config:generate_build_directory()
 
@@ -110,7 +109,6 @@ function cmake.generate(opt, callback)
   else
     config:update_build_dir(const.cmake_build_directory_prefix .. config.build_type)
   end
-  cmake.compile_commands_from_preset()
 
   config:generate_build_directory()
 
@@ -130,7 +128,6 @@ function cmake.generate(opt, callback)
       if type(callback) == "function" then
         callback()
       end
-      cmake.configure_compile_commands()
     end,
     cmake_console_position = const.cmake_console_position,
     cmake_show_console = const.cmake_show_console,
@@ -642,47 +639,62 @@ function cmake.has_cmake_preset()
 end
 
 function cmake.configure_compile_commands()
-  if const.cmake_soft_link_compile_commands then
-    utils.softlink(
-      config.build_directory.filename .. "/compile_commands.json",
-      vim.loop.cwd() .. "/compile_commands.json"
-    )
+  if config.lsp_type == nil then
+    if config.soft_link_compile_commands then
+      cmake.compile_commands_from_soft_link()
+    end
+  else
+    cmake.compile_commands_from_preset()
   end
-  cmake.compile_commands_from_preset()
+end
+
+function cmake.compile_commands_from_soft_link()
+  if config.build_directory == nil or config.lsp_type ~= nil then return end
+
+  local source = config.build_directory.filename .. "/compile_commands.json"
+  local destination = vim.loop.cwd() .. "/compile_commands.json"
+  if utils.file_exists(source) then
+    utils.softlink(source, destination)
+  end
 end
 
 function cmake.compile_commands_from_preset()
-  if const.cmake_compile_commands_from_preset then
-    local lspconfig = require "lspconfig"
-    for _, client in ipairs(vim.lsp.get_active_clients()) do
-      vim.notify("Checking lsp " .. client.name)
-      if client.name == "ccls" then
-        lspconfig.ccls.setup {
-          init_options = {
-            compilationDatabaseDirectory = config.build_directory.filename,
-          },
-        }
-      elseif client.name == "clangd" then
-        lspconfig.clangd.setup {
-          on_new_config = function(new_config)
-            local found = false
-            local arg = "--compile-commands-dir=" .. config.build_directory.filename
-            for _, v in ipairs(new_config.cmd) do
-              if string.find(v, "--compile-commands-dir=") ~= nil then
-                v = arg
-                found = true
-                break
-              end
-            end
-            if not found then
-              table.insert(new_config.cmd, arg)
-            end
-          end
-        }
-        vim.notify("clangd: compile-commands-dir set to " .. config.build_directory.filename)
-      end
+  if config.build_directory == nil then return end
+
+  local buf = vim.api.nvim_get_current_buf()
+  local clients = vim.lsp.get_active_clients({ name = config.lsp_type })
+  for _, client in ipairs(clients) do
+    local lspbufs = vim.lsp.get_buffers_by_client_id(client.id)
+    for _, bufid in ipairs(lspbufs) do
+      vim.api.nvim_set_current_buf(bufid)
+      vim.cmd("LspRestart " .. tostring(client.id))
     end
   end
+  vim.api.nvim_set_current_buf(buf)
+end
+
+function cmake.clangd_on_new_config(new_config)
+  config.lsp_type = "clangd"
+
+  local found = false
+  local arg = "--compile-commands-dir=" .. config.build_directory.filename
+  for _, v in ipairs(new_config.cmd) do
+    if string.find(v, "--compile-commands-dir=") ~= nil then
+      v = arg
+      found = true
+      break
+    end
+  end
+  if found ~= true then
+    table.insert(new_config.cmd, arg)
+  end
+  vim.notify("DEBUG: " .. arg)
+end
+
+function cmake.ccls_on_new_config(new_config)
+  config.lsp_type = "ccls"
+
+  new_config.init_options.compilationDatabaseDirectory = config.build_directory.filename
 end
 
 return cmake

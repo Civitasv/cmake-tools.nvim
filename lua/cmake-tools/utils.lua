@@ -163,4 +163,13 @@ function utils.rmdir(dir)
   end
 end
 
+function utils.file_exists(path)
+  local file = io.open(path, "r")
+  if file then
+    file:close()
+    return true
+  end
+  return false
+end
+
 return utils

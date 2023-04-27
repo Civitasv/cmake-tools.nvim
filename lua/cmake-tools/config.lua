@@ -25,6 +25,7 @@ function Config:new(const)
   self.__index = self
   self.generate_options = const.cmake_generate_options
   self.build_options = const.cmake_build_options
+  self.soft_link_compile_commands = const.cmake_soft_link_compile_commands
 
   return self
 end
