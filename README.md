@@ -100,7 +100,7 @@ require("cmake-tools").setup {
   cmake_build_directory = "",
   cmake_build_directory_prefix = "cmake_build_", -- when cmake_build_directory is "", this option will be activated
   cmake_generate_options = { "-D", "CMAKE_EXPORT_COMPILE_COMMANDS=1" },
-  cmake_soft_link_compile_commands = false, -- if softlink compile commands json file
+  cmake_soft_link_compile_commands = true, -- if softlink compile commands json file
   cmake_build_options = {},
   cmake_console_size = 10, -- cmake output window height
   cmake_console_position = "belowright", -- "belowright", "aboveleft", ...

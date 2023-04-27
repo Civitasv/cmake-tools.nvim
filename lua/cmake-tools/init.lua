@@ -640,7 +640,7 @@ end
 
 function cmake.configure_compile_commands()
   if config.lsp_type == nil then
-    if config.soft_link_compile_commands then
+    if config.cmake_soft_link_compile_commands then
       cmake.compile_commands_from_soft_link()
     end
   else
