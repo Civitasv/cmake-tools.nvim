@@ -47,7 +47,7 @@ end
 
 function utils.show_cmake_console(cmake_console_position, cmake_console_size)
   vim.api.nvim_command(cmake_console_position .. " copen " .. cmake_console_size)
-  vim.api.nvim_command("wincmd j")
+  vim.api.nvim_command("wincmd p")
 end
 
 function utils.close_cmake_console()
