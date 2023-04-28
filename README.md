@@ -381,6 +381,22 @@ More MinGW/Ninja/GCC/Clang/Clang-cl Examples
 
 </details>
 
+## Automatically setting your compile_commands.json directory
+
+If you're using clangd or ccls configured through [lspconfig](https://github.com/neovim/nvim-lspconfig) you can
+set your compilation database directory to your active preset build directory by calling a hook in your on_new_config callback.
+
+```lua
+require('lspconfig').clangd.setup{
+    on_new_config = function(new_config, new_cwd)
+        local status, cmake = pcall(require, "cmake-tools")
+        if status then
+            cmake.clangd_on_new_config(new_config)
+        end
+    end,
+}
+```
+
 ## How to make cmake-tools work exactly like it in exmaple video?
 
 ### lualine
