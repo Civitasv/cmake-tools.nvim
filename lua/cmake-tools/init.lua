@@ -688,7 +688,6 @@ function cmake.clangd_on_new_config(new_config)
   if found ~= true then
     table.insert(new_config.cmd, arg)
   end
-  vim.notify("DEBUG: " .. arg)
 end
 
 function cmake.ccls_on_new_config(new_config)
