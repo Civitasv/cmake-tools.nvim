@@ -639,8 +639,8 @@ function cmake.has_cmake_preset()
 end
 
 function cmake.configure_compile_commands()
-  if config.lsp_type == nil then
-    if config.cmake_soft_link_compile_commands then
+  if const.lsp_type == nil then
+    if const.cmake_soft_link_compile_commands then
       cmake.compile_commands_from_soft_link()
     end
   else
@@ -649,7 +649,7 @@ function cmake.configure_compile_commands()
 end
 
 function cmake.compile_commands_from_soft_link()
-  if config.build_directory == nil or config.lsp_type ~= nil then return end
+  if config.build_directory == nil or const.lsp_type ~= nil then return end
 
   local source = config.build_directory.filename .. "/compile_commands.json"
   local destination = vim.loop.cwd() .. "/compile_commands.json"
@@ -659,10 +659,10 @@ function cmake.compile_commands_from_soft_link()
 end
 
 function cmake.compile_commands_from_preset()
-  if config.build_directory == nil then return end
+  if config.build_directory == nil or const.lsp_type == nil then return end
 
   local buf = vim.api.nvim_get_current_buf()
-  local clients = vim.lsp.get_active_clients({ name = config.lsp_type })
+  local clients = vim.lsp.get_active_clients({ name = const.lsp_type })
   for _, client in ipairs(clients) do
     local lspbufs = vim.lsp.get_buffers_by_client_id(client.id)
     for _, bufid in ipairs(lspbufs) do
@@ -674,7 +674,7 @@ function cmake.compile_commands_from_preset()
 end
 
 function cmake.clangd_on_new_config(new_config)
-  config.lsp_type = "clangd"
+  const.lsp_type = "clangd"
 
   local found = false
   local arg = "--compile-commands-dir=" .. config.build_directory.filename
@@ -688,11 +688,10 @@ function cmake.clangd_on_new_config(new_config)
   if found ~= true then
     table.insert(new_config.cmd, arg)
   end
-  vim.notify("DEBUG: " .. arg)
 end
 
 function cmake.ccls_on_new_config(new_config)
-  config.lsp_type = "ccls"
+  const.lsp_type = "ccls"
 
   new_config.init_options.compilationDatabaseDirectory = config.build_directory.filename
 end
