@@ -128,6 +128,7 @@ function cmake.generate(opt, callback)
       if type(callback) == "function" then
         callback()
       end
+      cmake.configure_compile_commands()
     end,
     cmake_console_position = const.cmake_console_position,
     cmake_show_console = const.cmake_show_console,
