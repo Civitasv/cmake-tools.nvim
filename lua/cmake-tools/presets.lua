@@ -3,19 +3,27 @@ local Path = require("plenary.path")
 local presets = {}
 
 -- Checks if there is a CMakePresets.json or CMakeUserPresets.json file
+-- in the current directory, a CMakeUserPresets.json is
+-- preferred over CMakePresets.json as CMakePresets.json
+-- is implicitly included by CMakeUserPresets.json
 function presets.check()
   -- helper function to find the config file
   -- returns file path if found, nil otherwise
   local function findcfg()
     local files = vim.fn.readdir(".")
     local file = nil
+    local presetFiles = {}
     for _, f in ipairs(files) do -- iterate over files in current directory
-      if f == "CMakePresets.json" or f == "CMakeUserPresets.json" then -- if a kits config file is found
-        file = vim.fn.resolve("./" .. f)
-        break
+      if f == "CMakePresets.json" or f == "CMakeUserPresets.json" then -- if a preset file is found
+        presetFiles[#presetFiles + 1] = vim.fn.resolve("./" .. f)
       end
     end
-
+    table.sort(presetFiles, function(a, b)
+      return a < b
+    end)
+    if #presetFiles > 0 then
+      file = presetFiles[#presetFiles]
+    end
     return file
   end
 
@@ -30,19 +38,29 @@ end
 -- This function mutates dest.
 local function merge_table_list_by_key(dst, src, key)
   if not dst[key] then
-    dst[key]={}
+    dst[key] = {}
   end
   vim.list_extend(dst[key], src[key])
 end
 
-
 -- Decodes a Cmake[User]Presets.json and its "includes", if any
+-- CMakeUserPresets.json implicitly includes CMakePresets.json if it exists
 local function decode(file)
   local data = vim.fn.json_decode(vim.fn.readfile(file))
   if not data then
-    error(string.format('Could not parse %s', file))
+    error(string.format("Could not parse %s", file))
   end
-  local includes = data['include']
+  local includes = data["include"]
+  local isUserPreset = string.find(file, "CMakeUserPresets.json")
+  if not includes and isUserPreset then
+    local parentDir = vim.fs.dirname(file)
+    local parentPreset = parentDir .. "/CMakePresets.json"
+    if vim.fn.filereadable(parentPreset) then
+      includes = {
+        parentPreset,
+      }
+    end
+  end
   if not includes then
     return data
   end
@@ -50,9 +68,8 @@ local function decode(file)
   for _, f in ipairs(includes) do
     local fdata = vim.fn.json_decode(vim.fn.readfile(f))
     local thisFilePresetKeys = vim.tbl_filter(function(key)
-                                                return string.find(key, "Presets")
-                                              end,
-                                           vim.tbl_keys(fdata))
+      return string.find(key, "Presets")
+    end, vim.tbl_keys(fdata))
 
     for _, eachPreset in ipairs(thisFilePresetKeys) do
       merge_table_list_by_key(data, fdata, eachPreset)
@@ -147,12 +164,12 @@ function presets.get_build_dir(preset)
 
     if p_preset.inherits then
       local inherits = p_preset.inherits
-      local set_dir_by_parent = function (parent)
-          local ppreset = presets.get_preset_by_name(parent, "configurePresets")
-          local ppreset_build_dir = helper(ppreset)
-          if ppreset_build_dir ~= "" then
-            build_dir = ppreset_build_dir
-          end
+      local set_dir_by_parent = function(parent)
+        local ppreset = presets.get_preset_by_name(parent, "configurePresets")
+        local ppreset_build_dir = helper(ppreset)
+        if ppreset_build_dir ~= "" then
+          build_dir = ppreset_build_dir
+        end
       end
 
       -- According to `https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html`,
