@@ -3,6 +3,8 @@ local Path = require("plenary.path")
 local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
 
+local vim = vim -- Localize LSP errors to a single line: [Undefined global 'vim']
+
 local utils = {
   job = nil,
 }

@@ -1,6 +1,8 @@
 --- The cmake-tools plugin for neovim v0.7.0+.
 -- This plugin is intended to support cmake integration in neovim.
 
+local vim = vim -- Localize LSP errors to a single line: [Undefined global 'vim']
+
 local cmake_tools = require("cmake-tools")
 local has_nvim_dap, _ = pcall(require, "dap")
 
@@ -37,6 +39,16 @@ vim.api.nvim_create_user_command(
   }
 )
 
+--- CMake clean rebuild
+vim.api.nvim_create_user_command(
+  "CMakeCleanReBuild", -- name
+  cmake_tools.clean_rebuild, -- command
+  { -- opts
+    nargs = "*",
+    bang = true,
+    desc = "CMake Clean Re-build",
+  }
+)
 --- CMake install
 vim.api.nvim_create_user_command(
   "CMakeInstall", -- name

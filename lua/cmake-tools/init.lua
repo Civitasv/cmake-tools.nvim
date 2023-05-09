@@ -1,4 +1,4 @@
---- cmake-tools's API
+-- cmake-tools's API
 local has_nvim_dap, dap = pcall(require, "dap")
 local utils = require("cmake-tools.utils")
 local Types = require("cmake-tools.types")
@@ -9,6 +9,8 @@ local kits = require("cmake-tools.kits")
 local presets = require("cmake-tools.presets")
 
 local config = Config:new(const)
+
+local vim = vim -- Localize LSP errors to a single line: [Undefined global 'vim']
 
 local cmake = {}
 
@@ -175,10 +177,8 @@ function cmake.build(opt, callback)
 
   local fargs = opt.fargs or {}
 
-  --[[ if not config.build_directory:exists() then ]]
-  -- first, configure it
-  return cmake.generate({ bang = false, fargs = {} }, function()
-    -- then, build it
+  local experimental = 0
+  if experimental == 1 then
     if config.build_target == nil then
       return vim.schedule(function()
         cmake.select_build_target(function()
@@ -218,9 +218,89 @@ function cmake.build(opt, callback)
       cmake_show_console = const.cmake_show_console,
       cmake_console_size = const.cmake_console_size
     })
-  end)
-  --[[ end ]]
+  else
+    --[[ if not config.build_directory:exists() then ]]
+    -- first, configure it
+    return cmake.generate({ bang = false, fargs = {} }, function()
+      -- then, build it
+      if config.build_target == nil then
+        return vim.schedule(function()
+          cmake.select_build_target(function()
+            vim.schedule(function()
+              cmake.build(opt, callback)
+            end)
+          end, false)
+        end)
+      end
+
+      local args
+      local presets_file = presets.check()
+
+      if presets_file and config.build_preset then
+        args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
+      else
+        args = { "--build", config.build_directory.filename }
+      end
+
+      vim.list_extend(args, config.build_options)
+
+      if config.build_target == "all" then
+        vim.list_extend(args, { "--target", "all" })
+        vim.list_extend(args, fargs)
+      else
+        vim.list_extend(args, { "--target", config.build_target })
+        vim.list_extend(args, fargs)
+      end
+
+      return utils.run(const.cmake_command, {}, args, {
+        on_success = function()
+          if type(callback) == "function" then
+            callback()
+          end
+        end,
+        cmake_console_position = const.cmake_console_position,
+        cmake_show_console = const.cmake_show_console,
+        cmake_console_size = const.cmake_console_size
+      })
+    end)
+  end
 end
+
+--- Clean Rebuild: Clean the project and then Rebuild the target
+--- [See dependancy discussion here]
+function cmake.clean_rebuild(opt, callback)
+  if not utils.has_active_job() then
+    return
+  end
+
+  -- Check of project is configured
+  if config.build_directory == nil then
+    local fargs = fargs or opt.fargs
+    return cmake.generate({opt = opt.bang , fargs = fargs }, function()
+        cmake.clean_rebuild(opt, callback)
+      end)
+  end
+
+  -- Check if build type is selected and loop back
+  if config.build_type == nil then
+    return cmake.select_build_type(function()
+        cmake.clean_rebuild(opt, callback)
+      end)
+  end
+
+  -- Check if build target is selected and loop back
+  if config.build_target == nil then
+    return cmake.select_build_target(function()
+        cmake.clean_rebuild(opt, callback)
+      end)
+  end
+
+  -- finally clean and build
+  return cmake.clean(function()
+    cmake.build(opt, callback)
+  end)
+end
+
 
 function cmake.stop()
   if not utils.job or utils.job.is_shutdown then

@@ -38,10 +38,10 @@ Example:
 ```json
 {
   "name": "My Compiler Kit",
-  
+
   <!-- For windows if CMakeKits are used as there are default msvc compilers. Ignore if CMakeUserPrests are used. -->
-  "generator":"Ninja", 
-  
+  "generator":"Ninja",
+
   "compilers": {
     "C": "/usr/bin/gcc",
     "CXX": "/usr/bin/g++",
@@ -87,7 +87,8 @@ Read more about cmake variants from [vscode-cmake-tools docs](https://github.com
 | CMakeOpen                  | Open CMake console                                                                                                                                                                                                                                                                                                     |
 | CMakeClose                 | Close CMake console                                                                                                                                                                                                                                                                                                    |
 | CMakeInstall               | Install CMake targets. Additional arguments will be passed to CMake.                                                                                                                                                                                                                                                   |
-| CMakeClean                 | Clean target                                                                                                                                                                                                                                                                                                           |
+| CMakeClean                 | Cleans All targets, intermediates and deps                                                                                                                                                                                                                                                                             |
+| CMakeCleanReBuild          | Cleans All targets, intermediates and deps  and build target & target deps                                                                                                                                                                                                                                             |
 | CMakeStop                  | Stop CMake process                                                                                                                                                                                                                                                                                                     |
 
 ## Setup

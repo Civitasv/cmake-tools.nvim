@@ -2,6 +2,8 @@ local Path = require("plenary.path")
 
 local presets = {}
 
+local vim = vim -- Localize LSP errors to a single line: [Undefined global 'vim']
+
 -- Checks if there is a CMakePresets.json or CMakeUserPresets.json file
 -- in the current directory, a CMakeUserPresets.json is
 -- preferred over CMakePresets.json as CMakePresets.json

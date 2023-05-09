@@ -1,6 +1,8 @@
 --[[ local utils = require("cmake-tools.utils") ]]
 local variants = {}
 
+local vim = vim -- Localize LSP errors to a single line: [Undefined global 'vim']
+
 local syaml = require("simpleyaml")
 
 -- fallback if no cmake-variants.[yaml|json] is found
