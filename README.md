@@ -1,6 +1,6 @@
 # CMake Tools for Neovim
 
-https://user-images.githubusercontent.com/37768049/211132987-c620fc47-d5a0-49e1-8e7d-5da9ac528428.mp4
+![Demo](demo.gif)
 
 > CREDIT:
 >
