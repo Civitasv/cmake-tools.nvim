@@ -2,6 +2,7 @@ local Job = require("plenary.job")
 local Path = require("plenary.path")
 local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
+local const = require("cmake-tools.const")
 
 local vim = vim -- Localize LSP errors to a single line: [Undefined global 'vim']
 
@@ -71,9 +72,16 @@ function utils.execute(executable, opts)
   -- print("EXECUTABLE", executable)
   local set_bufname = "file " .. opts.bufname
   local prefix = string.format("%s %d new", opts.cmake_console_position, opts.cmake_console_size)
-
   utils.close_cmake_console();
-  vim.cmd(prefix .. " | term " .. executable)
+
+  -- This launches the executable target from its exact build directory. Useful if executable produces an out.txt file.
+  if const.cmake_launch_from_build_directory == true then
+    local suffix = string.format(" cd %s && %s", opts.cmake_launch_path, executable)
+    vim.cmd(prefix .. " | term " .. suffix)
+  else
+    vim.cmd(prefix .. " | term " .. executable)
+  end
+
   vim.opt_local.relativenumber = false
   vim.opt_local.number = false
   vim.cmd(set_bufname)

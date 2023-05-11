@@ -353,6 +353,11 @@ function cmake.open()
   utils.show_cmake_console(const.cmake_console_position, const.cmake_console_size)
 end
 
+local getPath = function(str,sep)
+    sep=sep or'/'
+    return str:match("(.*"..sep..")")
+end
+
 -- Run executable targets
 function cmake.run(opt, callback)
   if not utils.has_active_job() then
@@ -384,19 +389,25 @@ function cmake.run(opt, callback)
       vim.schedule(function()
         result = config:get_launch_target()
         -- print(utils.dump(result))
-        local target_path = result.data
         -- print("TARGET", target_path)
+        local target_path = result.data
         local is_win32 = vim.fn.has("win32")
         if (is_win32 == 1) then
           -- Prints the output in the same cmake window as in wsl/linux
+          local new_s= getPath(target_path, '/')
+          -- print(getPath(target_path,sep))
           return utils.execute(target_path, {
             bufname = vim.fn.expand("%:p"),
+            cmake_launch_path = new_s,
             cmake_console_position = const.cmake_console_position,
             cmake_console_size = const.cmake_console_size
           })
         else
+          -- print("target_path: " .. target_path)
+          local new_s= getPath(target_path, '/')
           return utils.execute('"' .. target_path .. '"', {
             bufname = vim.fn.expand("%:t:r"),
+            cmake_launch_path = new_s,
             cmake_console_position = const.cmake_console_position,
             cmake_console_size = const.cmake_console_size
           })
