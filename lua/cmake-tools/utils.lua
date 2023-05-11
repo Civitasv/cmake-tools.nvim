@@ -75,7 +75,7 @@ function utils.execute(executable, opts)
   utils.close_cmake_console();
 
   -- This launches the executable target from its exact build directory. Useful if executable produces an out.txt file.
-  if const.cmake_launch_from_build_directory == true then
+  if const.cmake_launch_from_built_binary_directory == true then
     local suffix = string.format(" cd %s && %s", opts.cmake_launch_path, executable)
     vim.cmd(prefix .. " | term " .. suffix)
   else
