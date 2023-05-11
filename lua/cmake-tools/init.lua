@@ -777,4 +777,32 @@ function cmake.ccls_on_new_config(new_config)
   new_config.init_options.compilationDatabaseDirectory = config.build_directory.filename
 end
 
+-- preload the autocmd if the following option is true. only saves cmakelists.txt files
+if const.cmake_regenerate_on_save == true then
+  vim.api.nvim_create_autocmd("BufWritePost", {
+    group = vim.api.nvim_create_augroup("cmaketools", {clear = true}),
+    pattern  = "CMakeLists.txt",
+    callback = function()
+      local buf = vim.api.nvim_get_current_buf()
+
+      -- TODO: do some logic here to check if buffer is actually modified, and only if it is modified,
+      -- execute the generate, otherwise return. This is to avoid unnecessary regenerattion
+      local buf_modified  = vim.api.nvim_buf_get_option(buf, 'modified')
+      -- print("buf_modified: " .. utils.dump(buf_modified))
+      -- if not vim.api.nvim_buf_get_option(buf, "modified") then
+      --   return
+      -- end
+
+      vim.schedule(
+        function()
+          cmake.generate({ bang = false, fargs = {} },
+            function()
+              -- no function here
+            end)
+        end)
+      -- print("buffer is not modified... not saving!")
+    end,
+  })
+end
+
 return cmake
