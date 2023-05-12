@@ -1,7 +1,7 @@
 local Path = require("plenary.path")
 local scandir = require("plenary.scandir")
 local Result = require("cmake-tools.result")
-local utils = require("cmake-tools.utils")
+-- local utils = require("cmake-tools.utils") -- Fails lua check. Uncomment this for testing
 local Types = require("cmake-tools.types")
 local variants = require("cmake-tools.variants")
 
@@ -118,7 +118,7 @@ function Config:check_launch_target()
     return codemodel_targets
   end
   codemodel_targets = codemodel_targets.data
-  -- print("ALL TARGETS", dump(codemodel_targets))
+  -- print("ALL TARGETS", utils.dump(codemodel_targets)) -- uncomment utils in preamble (import section) to enable this. disabling for Lua check in CI/CD pipleine
 
   for _, target in ipairs(codemodel_targets) do
     if self.launch_target == target["name"] then
@@ -149,6 +149,73 @@ function Config:get_launch_target()
   end
   local target_info = check_result.data
 
+  -- print(utils.dump(target_info))
+  local target_path = target_info["artifacts"][1]["path"]
+  target_path = Path:new(target_path)
+  if not target_path:is_absolute() then
+    -- then it is a relative path, based on build directory
+    local build_directory = Path:new(vim.loop.cwd(), self.build_directory)
+    target_path = build_directory / target_path
+  end
+  -- else it is an absolute path
+
+  if not target_path:is_file() then
+    return Result:new(
+      Types.SELECTED_LAUNCH_TARGET_NOT_BUILT,
+      nil,
+      "Selected target is not built: " .. target_path.filename
+    )
+  end
+
+  return Result:new(Types.SUCCESS, target_path.filename, "yeah, that's good")
+end
+
+-- Check if build target exists
+function Config:check_build_target()
+  -- 1. not configured
+  local build_directory = Path:new(vim.loop.cwd(), self.build_directory)
+  if not build_directory:exists() then
+    return Result:new(Types.NOT_CONFIGURED, nil, "You need to configure it first")
+  end
+
+  -- 2. not select build target yet
+  -- print("SELECTED", self.build_target)
+  if not self.build_target then
+    return Result:new(Types.NOT_SELECT_BUILD_TARGET, nil, "You need to select Build target first")
+  end
+
+  local codemodel_targets = self:get_codemodel_targets()
+  if codemodel_targets.code ~= Types.SUCCESS then
+    return codemodel_targets
+  end
+  codemodel_targets = codemodel_targets.data
+  -- print("ALL TARGETS", utils.dump(codemodel_targets)) -- uncomment utils in preamble (import section) to enable this. disabling for Lua check in CI/CD pipleine
+
+  for _, target in ipairs(codemodel_targets) do
+    if self.build_target == target["name"] then
+      local target_info = self:get_code_model_target_info(target)
+      -- local type = target_info["type"]:lower():gsub("_", " ")
+      -- print("TYPE",type)
+      return Result:new(Types.SUCCESS, target_info, "Success")
+    end
+  end
+
+  return Result:new(
+    Types.NOT_A_BUILD_TARGET,
+    nil,
+    "Unable to find the following target: " .. self.build_target
+  )
+end
+
+-- Retrieve launch target path: self.launch_target
+-- it will first check if this launch target is built
+function Config:get_build_target()
+  local check_result = self:check_build_target()
+  if check_result.code ~= Types.SUCCESS then
+    return check_result
+  end
+  local target_info = check_result.data
+  -- print(utils.dump(target_info))
   local target_path = target_info["artifacts"][1]["path"]
   target_path = Path:new(target_path)
   if not target_path:is_absolute() then

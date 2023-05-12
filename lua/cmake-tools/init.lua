@@ -1,4 +1,4 @@
---- cmake-tools's API
+-- cmake-tools's API
 local has_nvim_dap, dap = pcall(require, "dap")
 local utils = require("cmake-tools.utils")
 local Types = require("cmake-tools.types")
@@ -175,52 +175,82 @@ function cmake.build(opt, callback)
 
   local fargs = opt.fargs or {}
 
-  --[[ if not config.build_directory:exists() then ]]
-  -- first, configure it
-  return cmake.generate({ bang = false, fargs = {} }, function()
-    -- then, build it
-    if config.build_target == nil then
-      return vim.schedule(function()
-        cmake.select_build_target(function()
-          vim.schedule(function()
-            cmake.build(opt, callback)
-          end)
-        end, false)
-      end)
-    end
+  if config.build_target == nil then
+    return vim.schedule(function()
+      cmake.select_build_target(function()
+        vim.schedule(function()
+          cmake.build(opt, callback)
+        end)
+      end, false)
+    end)
+  end
 
-    local args
-    local presets_file = presets.check()
+  local args
+  local presets_file = presets.check()
 
-    if presets_file and config.build_preset then
-      args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
-    else
-      args = { "--build", config.build_directory.filename }
-    end
+  if presets_file and config.build_preset then
+    args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
+  else
+    args = { "--build", config.build_directory.filename }
+  end
 
-    vim.list_extend(args, config.build_options)
+  vim.list_extend(args, config.build_options)
 
-    if config.build_target == "all" then
-      vim.list_extend(args, { "--target", "all" })
-      vim.list_extend(args, fargs)
-    else
-      vim.list_extend(args, { "--target", config.build_target })
-      vim.list_extend(args, fargs)
-    end
+  if config.build_target == "all" then
+    vim.list_extend(args, { "--target", "all" })
+    vim.list_extend(args, fargs)
+  else
+    vim.list_extend(args, { "--target", config.build_target })
+    vim.list_extend(args, fargs)
+  end
 
-    return utils.run(const.cmake_command, {}, args, {
-      on_success = function()
-        if type(callback) == "function" then
-          callback()
-        end
-      end,
-      cmake_console_position = const.cmake_console_position,
-      cmake_show_console = const.cmake_show_console,
-      cmake_console_size = const.cmake_console_size
-    })
-  end)
-  --[[ end ]]
+  return utils.run(const.cmake_command, {}, args, {
+    on_success = function()
+      if type(callback) == "function" then
+        callback()
+      end
+    end,
+    cmake_console_position = const.cmake_console_position,
+    cmake_show_console = const.cmake_show_console,
+    cmake_console_size = const.cmake_console_size
+  })
 end
+
+--- Clean Rebuild: Clean the project and then Rebuild the target
+--- [See dependancy discussion here]
+function cmake.clean_rebuild(opt, callback)
+  if not utils.has_active_job() then
+    return
+  end
+
+  -- Check of project is configured
+  if config.build_directory == nil then
+    local fargs = opt.fargs or {}
+    return cmake.generate({opt = opt.bang , fargs = fargs }, function()
+        cmake.clean_rebuild(opt, callback)
+      end)
+  end
+
+  -- Check if build type is selected and loop back
+  if config.build_type == nil then
+    return cmake.select_build_type(function()
+        cmake.clean_rebuild(opt, callback)
+      end)
+  end
+
+  -- Check if build target is selected and loop back
+  if config.build_target == nil then
+    return cmake.select_build_target(function()
+        cmake.clean_rebuild(opt, callback)
+      end)
+  end
+
+  -- finally clean and build
+  return cmake.clean(function()
+    cmake.build(opt, callback)
+  end)
+end
+
 
 function cmake.stop()
   if not utils.job or utils.job.is_shutdown then
@@ -273,6 +303,11 @@ function cmake.open()
   utils.show_cmake_console(const.cmake_console_position, const.cmake_console_size)
 end
 
+local getPath = function(str,sep)
+    sep = sep or'/'
+    return str:match("(.*"..sep..")")
+end
+
 -- Run executable targets
 function cmake.run(opt, callback)
   if not utils.has_active_job() then
@@ -304,19 +339,25 @@ function cmake.run(opt, callback)
       vim.schedule(function()
         result = config:get_launch_target()
         -- print(utils.dump(result))
-        local target_path = result.data
         -- print("TARGET", target_path)
+        local target_path = result.data
         local is_win32 = vim.fn.has("win32")
         if (is_win32 == 1) then
           -- Prints the output in the same cmake window as in wsl/linux
+          local new_s = getPath(target_path, '/')
+          -- print(getPath(target_path,sep))
           return utils.execute(target_path, {
             bufname = vim.fn.expand("%:p"),
+            cmake_launch_path = new_s,
             cmake_console_position = const.cmake_console_position,
             cmake_console_size = const.cmake_console_size
           })
         else
+          -- print("target_path: " .. target_path)
+          local new_s= getPath(target_path, '/')
           return utils.execute('"' .. target_path .. '"', {
             bufname = vim.fn.expand("%:t:r"),
+            cmake_launch_path = new_s,
             cmake_console_position = const.cmake_console_position,
             cmake_console_size = const.cmake_console_size
           })
@@ -695,6 +736,30 @@ function cmake.ccls_on_new_config(new_config)
   const.lsp_type = "ccls"
 
   new_config.init_options.compilationDatabaseDirectory = config.build_directory.filename
+end
+
+-- preload the autocmd if the following option is true. only saves cmakelists.txt files
+if const.cmake_regenerate_on_save == true then
+  vim.api.nvim_create_autocmd("BufWritePre", {
+    group = vim.api.nvim_create_augroup("cmaketools", {clear = true}),
+    pattern  = "CMakeLists.txt",
+    callback = function()
+      local buf = vim.api.nvim_get_current_buf()
+      -- Check if buffer is actually modified, and only if it is modified,
+      -- execute the :CMakeGenerate, otherwise return. This is to avoid unnecessary regenerattion
+      local buf_modified  = vim.api.nvim_buf_get_option(buf, 'modified')
+      if buf_modified then
+        vim.schedule(
+          function()
+            cmake.generate({ bang = false, fargs = {} },
+              function()
+                -- no function here
+              end)
+          end)
+      end
+      -- print("buffer is not modified... not saving!")
+    end,
+  })
 end
 
 return cmake

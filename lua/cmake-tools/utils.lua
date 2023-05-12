@@ -2,6 +2,7 @@ local Job = require("plenary.job")
 local Path = require("plenary.path")
 local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
+local const = require("cmake-tools.const")
 
 local utils = {
   job = nil,
