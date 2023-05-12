@@ -793,22 +793,18 @@ if const.cmake_regenerate_on_save == true then
     pattern  = "CMakeLists.txt",
     callback = function()
       local buf = vim.api.nvim_get_current_buf()
-
-      -- TODO: do some logic here to check if buffer is actually modified, and only if it is modified,
-      -- execute the generate, otherwise return. This is to avoid unnecessary regenerattion
+      -- Check if buffer is actually modified, and only if it is modified,
+      -- execute the :CMakeGenerate, otherwise return. This is to avoid unnecessary regenerattion
       local buf_modified  = vim.api.nvim_buf_get_option(buf, 'modified')
-      -- print("buf_modified: " .. utils.dump(buf_modified))
-      -- if not vim.api.nvim_buf_get_option(buf, "modified") then
-      --   return
-      -- end
-
-      vim.schedule(
-        function()
-          cmake.generate({ bang = false, fargs = {} },
-            function()
-              -- no function here
-            end)
-        end)
+      if buf_modified then
+        vim.schedule(
+          function()
+            cmake.generate({ bang = false, fargs = {} },
+              function()
+                -- no function here
+              end)
+          end)
+      end
       -- print("buffer is not modified... not saving!")
     end,
   })
