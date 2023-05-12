@@ -100,6 +100,8 @@ require("cmake-tools").setup {
   cmake_command = "cmake",
   cmake_build_directory = "",
   cmake_build_directory_prefix = "cmake_build_", -- when cmake_build_directory is "", this option will be activated
+  cmake_regenerate_on_save = true, -- Saving a modified CMakeLists.txt file automatically generates the project with :CMakeGenerate
+  cmake_launch_from_built_binary_directory = true, -- WPI: See #47 and #34 for context
   cmake_generate_options = { "-D", "CMAKE_EXPORT_COMPILE_COMMANDS=1" },
   cmake_soft_link_compile_commands = true, -- if softlink compile commands json file
   cmake_build_options = {},
