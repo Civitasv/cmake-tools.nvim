@@ -352,7 +352,7 @@ function cmake.open()
 end
 
 local getPath = function(str,sep)
-    sep=sep or'/'
+    sep = sep or'/'
     return str:match("(.*"..sep..")")
 end
 
