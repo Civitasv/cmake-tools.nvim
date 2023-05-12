@@ -273,7 +273,7 @@ function cmake.clean_rebuild(opt, callback)
 
   -- Check of project is configured
   if config.build_directory == nil then
-    local fargs = fargs or opt.fargs
+    local fargs = opt.fargs or {}
     return cmake.generate({opt = opt.bang , fargs = fargs }, function()
         cmake.clean_rebuild(opt, callback)
       end)
