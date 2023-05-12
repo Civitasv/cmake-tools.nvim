@@ -788,7 +788,7 @@ end
 
 -- preload the autocmd if the following option is true. only saves cmakelists.txt files
 if const.cmake_regenerate_on_save == true then
-  vim.api.nvim_create_autocmd("BufWritePost", {
+  vim.api.nvim_create_autocmd("BufWritePre", {
     group = vim.api.nvim_create_augroup("cmaketools", {clear = true}),
     pattern  = "CMakeLists.txt",
     callback = function()
