@@ -5,8 +5,6 @@ local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
 local variants = require("cmake-tools.variants")
 
-local vim = vim -- Localize LSP errors to a single line: [Undefined global 'vim']
-
 local Config = {
   build_directory = nil,
   query_directory = nil,

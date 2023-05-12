@@ -1,7 +1,5 @@
 local kits = {}
 
-local vim = vim -- Localize LSP errors to a single line: [Undefined global 'vim']
-
 -- checks if there is a cmake-kits.json file and parses it to a Lua table
 function kits.parse()
   -- helper function to find the config file

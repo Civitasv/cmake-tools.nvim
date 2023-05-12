@@ -10,8 +10,6 @@ local presets = require("cmake-tools.presets")
 
 local config = Config:new(const)
 
-local vim = vim -- Localize LSP errors to a single line: [Undefined global 'vim']
-
 local cmake = {}
 
 --- Setup cmake-tools

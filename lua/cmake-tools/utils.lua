@@ -4,8 +4,6 @@ local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
 local const = require("cmake-tools.const")
 
-local vim = vim -- Localize LSP errors to a single line: [Undefined global 'vim']
-
 local utils = {
   job = nil,
 }
@@ -70,13 +68,16 @@ function utils.execute(executable, opts)
   -- save all
   vim.cmd("wall")
   -- print("EXECUTABLE", executable)
-  local set_bufname = "file " .. opts.bufname
+  local set_bufname = "file '" .. opts.bufname .. "'"
+  print(set_bufname)
+
   local prefix = string.format("%s %d new", opts.cmake_console_position, opts.cmake_console_size)
   utils.close_cmake_console();
 
   -- This launches the executable target from its exact build directory. Useful if executable produces an out.txt file.
   if const.cmake_launch_from_built_binary_directory == true then
     local suffix = string.format(" cd %s && %s", opts.cmake_launch_path, executable)
+    -- local suffix = " cd " .. opts.cmake_launch_path .. " && " .. executable
     vim.cmd(prefix .. " | term " .. suffix)
   else
     vim.cmd(prefix .. " | term " .. executable)
@@ -84,9 +85,20 @@ function utils.execute(executable, opts)
 
   vim.opt_local.relativenumber = false
   vim.opt_local.number = false
-  vim.cmd(set_bufname)
+  vim.cmd(set_bufname) -- preserves behaviour
   vim.bo.buflisted = false
   vim.cmd("startinsert")
+
+  --   local bufnr = vim.api.nvim_get_current_buf()
+  -- local buf_name = vim.api.nvim_buf_get_name(bufnr)
+  -- print(buf_name)
+
+  -- print("bufs: " .. utils.dump(bufs))
+  -- local tmp_str ="tmp_str: "
+  -- for i, name in ipairs(bufs) do
+  --   tmp_str = tmp_str .. ", \n" .. vim.api.nvim_buf_get_name(name)
+  --   print(tmp_str)
+  -- end
 end
 
 function utils.softlink(src, target)
