@@ -175,93 +175,45 @@ function cmake.build(opt, callback)
 
   local fargs = opt.fargs or {}
 
-  local experimental = 0
-  if experimental == 1 then
-    if config.build_target == nil then
-      return vim.schedule(function()
-        cmake.select_build_target(function()
-          vim.schedule(function()
-            cmake.build(opt, callback)
-          end)
-        end, false)
-      end)
-    end
-
-    local args
-    local presets_file = presets.check()
-
-    if presets_file and config.build_preset then
-      args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
-    else
-      args = { "--build", config.build_directory.filename }
-    end
-
-    vim.list_extend(args, config.build_options)
-
-    if config.build_target == "all" then
-      vim.list_extend(args, { "--target", "all" })
-      vim.list_extend(args, fargs)
-    else
-      vim.list_extend(args, { "--target", config.build_target })
-      vim.list_extend(args, fargs)
-    end
-
-    return utils.run(const.cmake_command, {}, args, {
-      on_success = function()
-        if type(callback) == "function" then
-          callback()
-        end
-      end,
-      cmake_console_position = const.cmake_console_position,
-      cmake_show_console = const.cmake_show_console,
-      cmake_console_size = const.cmake_console_size
-    })
-  else
-    --[[ if not config.build_directory:exists() then ]]
-    -- first, configure it
-    return cmake.generate({ bang = false, fargs = {} }, function()
-      -- then, build it
-      if config.build_target == nil then
-        return vim.schedule(function()
-          cmake.select_build_target(function()
-            vim.schedule(function()
-              cmake.build(opt, callback)
-            end)
-          end, false)
+  if config.build_target == nil then
+    return vim.schedule(function()
+      cmake.select_build_target(function()
+        vim.schedule(function()
+          cmake.build(opt, callback)
         end)
-      end
-
-      local args
-      local presets_file = presets.check()
-
-      if presets_file and config.build_preset then
-        args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
-      else
-        args = { "--build", config.build_directory.filename }
-      end
-
-      vim.list_extend(args, config.build_options)
-
-      if config.build_target == "all" then
-        vim.list_extend(args, { "--target", "all" })
-        vim.list_extend(args, fargs)
-      else
-        vim.list_extend(args, { "--target", config.build_target })
-        vim.list_extend(args, fargs)
-      end
-
-      return utils.run(const.cmake_command, {}, args, {
-        on_success = function()
-          if type(callback) == "function" then
-            callback()
-          end
-        end,
-        cmake_console_position = const.cmake_console_position,
-        cmake_show_console = const.cmake_show_console,
-        cmake_console_size = const.cmake_console_size
-      })
+      end, false)
     end)
   end
+
+  local args
+  local presets_file = presets.check()
+
+  if presets_file and config.build_preset then
+    args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
+  else
+    args = { "--build", config.build_directory.filename }
+  end
+
+  vim.list_extend(args, config.build_options)
+
+  if config.build_target == "all" then
+    vim.list_extend(args, { "--target", "all" })
+    vim.list_extend(args, fargs)
+  else
+    vim.list_extend(args, { "--target", config.build_target })
+    vim.list_extend(args, fargs)
+  end
+
+  return utils.run(const.cmake_command, {}, args, {
+    on_success = function()
+      if type(callback) == "function" then
+        callback()
+      end
+    end,
+    cmake_console_position = const.cmake_console_position,
+    cmake_show_console = const.cmake_show_console,
+    cmake_console_size = const.cmake_console_size
+  })
 end
 
 --- Clean Rebuild: Clean the project and then Rebuild the target
