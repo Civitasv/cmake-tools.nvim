@@ -68,16 +68,41 @@ function utils.execute(executable, opts)
   -- save all
   vim.cmd("wall")
   -- print("EXECUTABLE", executable)
-  local set_bufname = "file " .. opts.bufname
-  local prefix = string.format("%s %d new", opts.cmake_console_position, opts.cmake_console_size)
+  if const.cmake_launch_from_built_binary_directory then
+    utils.job = Job:new({
+      command = executable,
+      args = {},
+      cwd = opts.cmake_launch_path,
+      on_stdout = vim.schedule_wrap(append_to_cmake_console),
+      on_stderr = vim.schedule_wrap(append_to_cmake_console),
+      on_exit = vim.schedule_wrap(function(_, code, signal)
+        append_to_cmake_console("Exited with code " .. (signal == 0 and code or 128 + signal))
+        if code == 0 and signal == 0 then
+          if opts.on_success then
+            opts.on_success()
+          end
+        elseif opts.cmake_show_console == "only_on_error" then
+          utils.show_cmake_console(opts.cmake_console_position, opts.cmake_console_size)
+          vim.api.nvim_command("cbottom")
+        end
+      end),
+    })
 
-  utils.close_cmake_console();
-  vim.cmd(prefix .. " | term " .. executable)
-  vim.opt_local.relativenumber = false
-  vim.opt_local.number = false
-  vim.cmd(set_bufname)
-  vim.bo.buflisted = false
-  vim.cmd("startinsert")
+    utils.job:start()
+    return utils.job
+  else
+    local set_bufname = "file " .. opts.bufname
+    local prefix = string.format("%s %d new", opts.cmake_console_position, opts.cmake_console_size)
+    utils.close_cmake_console();
+    vim.cmd(prefix .. " | term " .. executable)
+    vim.opt_local.relativenumber = false
+    vim.opt_local.number = false
+    vim.cmd(set_bufname)
+    vim.bo.buflisted = false
+    vim.cmd("startinsert")
+  end
+
+
 end
 
 function utils.softlink(src, target)
