@@ -4,7 +4,6 @@ local const = {
   cmake_command = "cmake",                                          -- cmake command path
   cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" }, -- it will be activated when invoke `cmake.generate`
   cmake_regenerate_on_save = true,
-  cmake_launch_from_built_binary_directory = true,
   cmake_soft_link_compile_commands = true,
   cmake_compile_commands_from_preset = false,
   cmake_build_options = {},              -- it will be activated when invoke `cmake.build`
