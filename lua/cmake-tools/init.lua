@@ -226,23 +226,23 @@ function cmake.clean_rebuild(opt, callback)
   -- Check of project is configured
   if config.build_directory == nil then
     local fargs = opt.fargs or {}
-    return cmake.generate({opt = opt.bang , fargs = fargs }, function()
-        cmake.clean_rebuild(opt, callback)
-      end)
+    return cmake.generate({ opt = opt.bang, fargs = fargs }, function()
+      cmake.clean_rebuild(opt, callback)
+    end)
   end
 
   -- Check if build type is selected and loop back
   if config.build_type == nil then
     return cmake.select_build_type(function()
-        cmake.clean_rebuild(opt, callback)
-      end)
+      cmake.clean_rebuild(opt, callback)
+    end)
   end
 
   -- Check if build target is selected and loop back
   if config.build_target == nil then
     return cmake.select_build_target(function()
-        cmake.clean_rebuild(opt, callback)
-      end)
+      cmake.clean_rebuild(opt, callback)
+    end)
   end
 
   -- finally clean and build
@@ -250,7 +250,6 @@ function cmake.clean_rebuild(opt, callback)
     cmake.build(opt, callback)
   end)
 end
-
 
 function cmake.stop()
   if not utils.job or utils.job.is_shutdown then
@@ -303,9 +302,9 @@ function cmake.open()
   utils.show_cmake_console(const.cmake_console_position, const.cmake_console_size)
 end
 
-local getPath = function(str,sep)
-    sep = sep or'/'
-    return str:match("(.*"..sep..")")
+local getPath = function(str, sep)
+  sep = sep or "/"
+  return str:match("(.*" .. sep .. ")")
 end
 
 -- Run executable targets
@@ -344,7 +343,7 @@ function cmake.run(opt, callback)
         local is_win32 = vim.fn.has("win32")
         if (is_win32 == 1) then
           -- Prints the output in the same cmake window as in wsl/linux
-          local new_s = getPath(target_path, '/')
+          local new_s = getPath(target_path, "/")
           -- print(getPath(target_path,sep))
           return utils.execute(target_path, {
             bufname = vim.fn.expand("%:p"),
@@ -354,7 +353,7 @@ function cmake.run(opt, callback)
           })
         else
           -- print("target_path: " .. target_path)
-          local new_s= getPath(target_path, '/')
+          local new_s = getPath(target_path, "/")
           return utils.execute('"' .. target_path .. '"', {
             bufname = vim.fn.expand("%:t:r"),
             cmake_launch_path = new_s,
@@ -741,13 +740,13 @@ end
 -- preload the autocmd if the following option is true. only saves cmakelists.txt files
 if const.cmake_regenerate_on_save == true then
   vim.api.nvim_create_autocmd("BufWritePre", {
-    group = vim.api.nvim_create_augroup("cmaketools", {clear = true}),
+    group    = vim.api.nvim_create_augroup("cmaketools", { clear = true }),
     pattern  = "CMakeLists.txt",
     callback = function()
-      local buf = vim.api.nvim_get_current_buf()
+      local buf          = vim.api.nvim_get_current_buf()
       -- Check if buffer is actually modified, and only if it is modified,
       -- execute the :CMakeGenerate, otherwise return. This is to avoid unnecessary regenerattion
-      local buf_modified  = vim.api.nvim_buf_get_option(buf, 'modified')
+      local buf_modified = vim.api.nvim_buf_get_option(buf, "modified")
       if buf_modified then
         vim.schedule(
           function()
