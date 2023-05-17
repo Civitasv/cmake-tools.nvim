@@ -67,16 +67,36 @@ end
 function utils.execute(executable, opts)
   -- save all
   vim.cmd("wall")
-  print("EXECUTABLE", executable)
+  -- print("EXECUTABLE", executable)
   local set_bufname = "file " .. opts.bufname
   local prefix = string.format("%s %d new", opts.cmake_console_position, opts.cmake_console_size)
 
   utils.close_cmake_console();
+
+  -- TODO: Create a common output stream for all cmake related tasks and split running cmake tasks into terminals
+    -- This requires support form either 'pleanary.nvim-plenary-job', or 'jobstart()' api
+
+  -- check if buufer exists. If it exists, delete it!
+  local all_buffs = vim.api.nvim_list_bufs()
+  -- local temp = " " -- This is only for testing
+  for _, buf_nr in ipairs(all_buffs) do
+    local name = vim.api.nvim_buf_get_name(buf_nr)
+    local test = string.match(name, set_bufname) == set_bufname
+    -- print(test)
+    -- temp = temp .. name ..": " .. tostring(test) .. ", "
+    if test then
+      -- the buffer is already avaliable
+      vim.api.nvim_buf_delete(buf_nr,{force=true})
+      vim.cmd(set_bufname)
+      break
+    end
+  end
+  -- print(temp)
+
   vim.cmd(prefix .. " | term " .. "cd " .. opts.cmake_launch_path .. " && " .. executable)
   vim.opt_local.relativenumber = false
   vim.opt_local.number = false
-  vim.cmd(set_bufname)
-  vim.bo.buflisted = false
+  vim.bo.buflisted = false -- We set this to true, so that we can detect in in vim.api.nvim_list_bufs(), a few lines above.
   vim.cmd("startinsert")
 end
 

@@ -761,4 +761,17 @@ if const.cmake_regenerate_on_save == true then
   })
 end
 
+-- For win32, we have a command to escape insert mode after proccess extis
+-- because, we want to scroll the buffer output after completion of execution
+local is_win32 = vim.fn.has("win32")
+if (is_win32 == 1) then
+  vim.api.nvim_create_autocmd("TermClose", {
+    group    = "cmaketools",
+    callback =  function()
+      vim.cmd.stopinsert()
+      vim.api.nvim_feedkeys('<C-\\><C-n><CR>', 'n', false)
+    end
+  })
+end
+
 return cmake
