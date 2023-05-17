@@ -71,6 +71,8 @@ function utils.execute(executable, opts)
   local set_bufname = "file " .. opts.bufname
   local prefix = string.format("%s %d new", opts.cmake_console_position, opts.cmake_console_size)
 
+  utils.close_cmake_console();
+
   -- TODO: Create a common output stream for all cmake related tasks and split running cmake tasks into terminals
     -- This requires support form either 'pleanary.nvim-plenary-job', or 'jobstart()' api
 
@@ -79,23 +81,22 @@ function utils.execute(executable, opts)
   -- local temp = " " -- This is only for testing
   for _, buf_nr in ipairs(all_buffs) do
     local name = vim.api.nvim_buf_get_name(buf_nr)
-    local test = string.match(name, opts.cmake_launch_path) == opts.cmake_launch_path
+    local test = string.match(name, set_bufname) == set_bufname
     -- print(test)
     -- temp = temp .. name ..": " .. tostring(test) .. ", "
     if test then
       -- the buffer is already avaliable
       vim.api.nvim_buf_delete(buf_nr,{force=true})
+      vim.cmd(set_bufname)
       break
     end
   end
   -- print(temp)
 
-  utils.close_cmake_console();
   vim.cmd(prefix .. " | term " .. "cd " .. opts.cmake_launch_path .. " && " .. executable)
-  vim.cmd(set_bufname)
   vim.opt_local.relativenumber = false
   vim.opt_local.number = false
-  vim.bo.buflisted = true -- We set this to true, so that we can detect in in vim.api.nvim_list_bufs(), a few lines above.
+  vim.bo.buflisted = false -- We set this to true, so that we can detect in in vim.api.nvim_list_bufs(), a few lines above.
   vim.cmd("startinsert")
 end
 
