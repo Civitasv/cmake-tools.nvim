@@ -421,7 +421,7 @@ if has_nvim_dap then
           local dap_config = {
             name = config.launch_target,
             program = target_path,
-            cwd = cwd = getPath(result.data, "/"),
+            cwd = getPath(result.data, "/"),
             args = cmake:get_launch_args(),
           }
           -- close cmake console
