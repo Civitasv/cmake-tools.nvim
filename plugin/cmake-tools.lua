@@ -93,6 +93,16 @@ vim.api.nvim_create_user_command(
   }
 )
 
+--- CMake launch args
+vim.api.nvim_create_user_command(
+  "CMakeLaunchArgs", -- name
+  cmake_tools.launch_args, -- command
+  { -- opts
+    nargs = "*",
+    desc = "CMake launch args",
+  }
+)
+
 if has_nvim_dap then
   --- CMake debug
   vim.api.nvim_create_user_command(

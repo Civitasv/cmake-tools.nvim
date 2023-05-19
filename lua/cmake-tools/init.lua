@@ -349,7 +349,8 @@ function cmake.run(opt, callback)
             bufname = vim.fn.expand("%:p"),
             cmake_launch_path = new_s,
             cmake_console_position = const.cmake_console_position,
-            cmake_console_size = const.cmake_console_size
+            cmake_console_size = const.cmake_console_size,
+            cmake_launch_args = cmake:get_launch_args()
           })
         else
           -- print("target_path: " .. target_path)
@@ -358,11 +359,22 @@ function cmake.run(opt, callback)
             bufname = vim.fn.expand("%:t:r"),
             cmake_launch_path = new_s,
             cmake_console_position = const.cmake_console_position,
-            cmake_console_size = const.cmake_console_size
+            cmake_console_size = const.cmake_console_size,
+            cmake_launch_args = cmake:get_launch_args()
           })
         end
       end)
     end)
+  end
+end
+
+function cmake.launch_args(opt)
+  if not utils.has_active_job() then
+    return
+  end
+
+  if (cmake.get_launch_target() ~= nil) then
+    config.launch_args[cmake.get_launch_target()] = utils.deepcopy(opt.fargs);
   end
 end
 
@@ -410,6 +422,7 @@ if has_nvim_dap then
             name = config.launch_target,
             program = target_path,
             cwd = vim.loop.cwd(),
+            args = cmake:get_launch_args(),
           }
           -- close cmake console
           cmake.close()
@@ -651,6 +664,13 @@ end
 
 function cmake.get_launch_target()
   return config.launch_target
+end
+
+function cmake.get_launch_args()
+  if (cmake.get_launch_target() == nil) then
+    return nil
+  end
+  return config.launch_args[cmake.get_launch_target()]
 end
 
 function cmake.get_build_type()

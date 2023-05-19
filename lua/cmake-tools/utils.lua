@@ -91,9 +91,16 @@ function utils.execute(executable, opts)
       break
     end
   end
-  -- print(temp)
 
-  vim.cmd(prefix .. " | term " .. "cd " .. opts.cmake_launch_path .. " && " .. executable)
+  -- print(temp)
+  local cmd =  prefix .. " | term " .. "cd " .. opts.cmake_launch_path .. " && " .. executable
+  if (opts.cmake_launch_args ~= nil) then
+    for _, arg in ipairs(opts.cmake_launch_args) do
+      cmd = cmd .. ' "' .. arg .. '"'
+    end
+  end
+
+  vim.cmd(cmd)
   vim.opt_local.relativenumber = false
   vim.opt_local.number = false
   vim.bo.buflisted = false -- We set this to true, so that we can detect in in vim.api.nvim_list_bufs(), a few lines above.
