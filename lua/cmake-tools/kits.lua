@@ -8,7 +8,7 @@ function kits.parse()
     local files = vim.fn.readdir(".")
     local file = nil
     for _, f in ipairs(files) do -- iterate over files in current directory
-      if (f == "cmake-kits.json" or f == "CMakeKits.json")  then -- if a kits config file is found
+      if (f == "cmake-kits.json" or f == "CMakeKits.json") then -- if a kits config file is found
         file = vim.fn.resolve("./" .. f)
         break
       end
@@ -88,13 +88,13 @@ function kits.build_env_and_args(kit_name)
     end
   end
   if kit.generator then
-      table.insert(args, "-G " .. kit.generator)
+    table.insert(args, "-G " .. kit.generator)
   end
   if kit.host_architecture then
-      table.insert(args, "-T host=" .. kit.host_architecture)
+    table.insert(args, "-T host=" .. kit.host_architecture)
   end
   if kit.target_architecture then
-      table.insert(args, "-A " .. kit.target_architecture)
+    table.insert(args, "-A " .. kit.target_architecture)
   end
   if kit.toolchainFile then
     add_args({ "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=" .. kit.toolchainFile })

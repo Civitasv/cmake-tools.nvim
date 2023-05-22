@@ -74,7 +74,7 @@ function utils.execute(executable, opts)
   utils.close_cmake_console();
 
   -- TODO: Create a common output stream for all cmake related tasks and split running cmake tasks into terminals
-    -- This requires support form either 'pleanary.nvim-plenary-job', or 'jobstart()' api
+  -- This requires support form either 'pleanary.nvim-plenary-job', or 'jobstart()' api
 
   -- check if buufer exists. If it exists, delete it!
   local all_buffs = vim.api.nvim_list_bufs()
@@ -86,14 +86,14 @@ function utils.execute(executable, opts)
     -- temp = temp .. name ..": " .. tostring(test) .. ", "
     if test then
       -- the buffer is already avaliable
-      vim.api.nvim_buf_delete(buf_nr,{force=true})
+      vim.api.nvim_buf_delete(buf_nr, { force = true })
       vim.cmd(set_bufname)
       break
     end
   end
 
   -- print(temp)
-  local cmd =  prefix .. " | term " .. "cd " .. opts.cmake_launch_path .. " && " .. executable
+  local cmd = prefix .. " | term " .. "cd " .. opts.cmake_launch_path .. " && " .. executable
   if (opts.cmake_launch_args ~= nil) then
     for _, arg in ipairs(opts.cmake_launch_args) do
       cmd = cmd .. ' "' .. arg .. '"'

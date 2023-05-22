@@ -787,9 +787,9 @@ local is_win32 = vim.fn.has("win32")
 if (is_win32 == 1) then
   vim.api.nvim_create_autocmd("TermClose", {
     group    = "cmaketools",
-    callback =  function()
+    callback = function()
       vim.cmd.stopinsert()
-      vim.api.nvim_feedkeys('<C-\\><C-n><CR>', 'n', false)
+      vim.api.nvim_feedkeys("<C-\\><C-n><CR>", "n", false)
     end
   })
 end
