@@ -1,6 +1,6 @@
 # CMake Tools for Neovim
 
-![Demo](demo.gif)
+![Demo](images/demo.gif)
 
 > CREDIT:
 >
