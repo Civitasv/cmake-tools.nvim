@@ -225,4 +225,45 @@ function presets.get_build_dir(preset)
   return build_dir
 end
 
+-- Retrieve generator from preset
+function presets.get_generator(preset)
+  local function helper(_preset)
+    local generator = nil
+
+    if not _preset then
+      return generator
+    end
+
+    if _preset.inherits then
+      local inherits = _preset.inherits
+      local set_generator_by_parent = function (parent)
+        local ppresset  = presets.get_preset_by_name(parent, "configurePresets")
+        local ppreset_generator = helper(ppresset)
+        if ppreset_generator ~= nil then
+          generator = ppreset_generator
+        end
+      end
+
+      if type(inherits) == "table" then
+        for i = #inherits,1 ,-1 do
+          local parent = inherits[i]
+
+          set_generator_by_parent(parent)
+        end
+      elseif type(inherits) == "string" then
+        set_generator_by_parent(inherits)
+      end
+    end
+
+    if _preset.generator then
+      generator = _preset.generator
+    end
+
+    return generator
+  end
+
+  local generator = helper(preset)
+  return generator
+end
+
 return presets

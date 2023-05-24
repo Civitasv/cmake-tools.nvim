@@ -61,10 +61,22 @@ function cmake.generate(opt, callback)
     end
     config:generate_build_directory()
 
+    local generator = presets.get_generator(
+      presets.get_preset_by_name(config.configure_preset, "configurePresets")
+    )
+
+
     local args = {
       "--preset",
       config.configure_preset,
+      "-B",
+      config.build_directory.filename,
+      "-S",
+      ".",
     }
+    if generator ~= nil then
+      vim.list_extend(args, {"-G", generator})
+    end
     vim.list_extend(args, config.generate_options)
     vim.list_extend(args, fargs)
 
