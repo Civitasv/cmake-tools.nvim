@@ -22,6 +22,12 @@ local const = {
     runInTerminal = true,
     console = "integratedTerminal",
   },
+  cmake_use_terminals = true,
+  cmake_terminal_opts = {
+    keep_single_terminal_static = true,
+    only_1_terminal_per_tab = true,
+    single_terminal_window_per_tab = true,
+  }
 }
 
 return const
