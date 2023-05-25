@@ -6,6 +6,9 @@ local const = require("cmake-tools.const")
 
 local utils = {
   job = nil,
+  main_term_job = nil,
+  run_term_job = {},
+  debug_term_job = {},
 }
 
 local function notify(msg, log_level)
@@ -182,6 +185,41 @@ function utils.has_active_job()
     .. " Stop it before trying to run a new CMake task."
   )
   return false
+end
+
+-- Error Checking in CMake Task: https://stackoverflow.com/questions/7402587/run-command2-only-if-command1-succeeded-in-cmd-windows-shell
+---Check if main terminal has active job
+function utils.main_term_has_active_job(terminal_buffer_name)
+
+  -- Lookup the terminal buffer idx from it's name
+  local terminal_buffer_idx = nil
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    local name = vim.api.nvim_buf_get_name(bufnr)
+    if name == terminal_buffer_name then
+      terminal_buffer_idx = bufnr
+      break
+    end
+  end
+
+  -- If terminal is found, then get the last line in the buffer, and check for substring: 'CMake Task Finished'
+  if terminal_buffer_idx then
+
+    -- Get lines, and check for substring
+    local term_proc = vim.fn.jobpid(vim.api.nvim_buf_get_var(terminal_buffer_idx, 'terminal_job_id'))
+    local term_child_procs = vim.api.nvim_get_proc_children(term_proc)
+    if next(term_child_procs) == nil then
+      return false -- Term has no child process. New process can be spwanned
+    end
+      utils.error(
+        "A CMake task is already running: "
+        .. utils.main_term_job
+        .. " Stop it before trying to run a new CMake Build/Generate/Clean/CleanRebuild/Install."
+      )
+      return true -- Child processes exist. Cannot launch new task
+  else
+    utils.error("Main CMake Console does not exist! : CMAKE ERROR!")
+    return true
+  end
 end
 
 function utils.rmdir(dir)
