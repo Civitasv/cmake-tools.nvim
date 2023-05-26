@@ -143,72 +143,64 @@ end
 function utils.run(cmd, env, args, opts)
   -- save all
   vim.cmd("wall")
-  vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
-  opts.cmake_show_console = opts.cmake_show_console == "always"
-  if opts.cmake_show_console then
-    utils.show_cmake_console(opts.cmake_console_position, opts.cmake_console_size)
-  end
-
-  utils.job = Job:new({
-    command = cmd,
-    args = next(env) and { "-E", "env", table.concat(env, " "), "cmake", unpack(args) } or args,
-    cwd = vim.loop.cwd(),
-    on_stdout = vim.schedule_wrap(append_to_cmake_console),
-    on_stderr = vim.schedule_wrap(append_to_cmake_console),
-    on_exit = vim.schedule_wrap(function(_, code, signal)
-      append_to_cmake_console("Exited with code " .. (signal == 0 and code or 128 + signal))
-      if code == 0 and signal == 0 then
-        if opts.on_success then
-          opts.on_success()
-        end
-      elseif opts.cmake_show_console == "only_on_error" then
-        utils.show_cmake_console(opts.cmake_console_position, opts.cmake_console_size)
-        vim.api.nvim_command("cbottom")
-      end
-    end),
-  })
-
-  utils.job:start()
-  return utils.job
-end
-
-function utils.execute2(executable, opts)
-  print('executable:')
-  vim.print(executable)
-  print('opts:')
-  vim.print(opts)
-end
-
-
-function utils.run2(cmd, env, args, opts)
-  print('cmd:')
-  vim.print(cmd)
-  print('env:')
-  vim.print(env)
-  print('args:')
-  vim.print(table.concat(args, " "))
-  print('opts:')
-  vim.print(opts)
-  vim.schedule(
-    function ()
-      utils.start_proccess_in_terminal(opts.terminal_buffer_name, cmd .. " " .. table.concat(args, " "))
+  if const.cmake_use_terminals == true then
+    if opts.cmake_launch_path then
+      cmd = "cd " .. opts.cmake_launch_path .. " && " .. cmd
     end
-  )
-end
+    -- TODO: vim.schedule this
+    utils.start_proccess_in_terminal(opts.terminal_buffer_name, cmd .. " " .. table.concat(args, " "))
 
+  else -- Use QuickFix Lists
+    vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
+    opts.cmake_show_console = opts.cmake_show_console == "always"
+    if opts.cmake_show_console then
+      utils.show_cmake_console(opts.cmake_console_position, opts.cmake_console_size)
+    end
+
+    utils.job = Job:new({
+      command = cmd,
+      args = next(env) and { "-E", "env", table.concat(env, " "), "cmake", unpack(args) } or args,
+      cwd = vim.loop.cwd(),
+      on_stdout = vim.schedule_wrap(append_to_cmake_console),
+      on_stderr = vim.schedule_wrap(append_to_cmake_console),
+      on_exit = vim.schedule_wrap(function(_, code, signal)
+        append_to_cmake_console("Exited with code " .. (signal == 0 and code or 128 + signal))
+        if code == 0 and signal == 0 then
+          if opts.on_success then
+            opts.on_success()
+          end
+        elseif opts.cmake_show_console == "only_on_error" then
+          utils.show_cmake_console(opts.cmake_console_position, opts.cmake_console_size)
+          vim.api.nvim_command("cbottom")
+        end
+      end),
+    })
+
+    utils.job:start()
+    return utils.job
+  end
+end
 
 --- Check if exists active job.
 -- @return true if not exists else false
-function utils.has_active_job()
-  if not utils.job or utils.job.is_shutdown then
+function utils.has_active_job(terminal_buffer_name)
+  if const.cmake_use_terminals == true then
+    local term_already_existed, terminal_buffer_idx = utils.create_term_if_term_did_not_exist(terminal_buffer_name)
+    -- if utils.terminal_has_active_job(terminal_buffer_name) then
+    --   return true
+    -- end
     return true
+  else -- Using QuickFix Lists
+    if not utils.job or utils.job.is_shutdown then
+      return true
+    end
+    utils.error(
+      "A CMake task is already running: "
+      .. utils.job.command
+      .. " Stop it before trying to run a new CMake task."
+    )
+    return false
   end
-  utils.error(
-    "A CMake task is already running: "
-    .. utils.job.command
-    .. " Stop it before trying to run a new CMake task."
-  )
-  return false
 end
 
 -- Error Checking in CMake Task: https://stackoverflow.com/questions/7402587/run-command2-only-if-command1-succeeded-in-cmd-windows-shell
@@ -305,7 +297,7 @@ function utils.start_proccess_in_terminal(terminal_buffer_name, cmd)
   if terminal_buffer_idx ~= nil then
     local term_job_id = vim.api.nvim_buf_get_var(terminal_buffer_idx, 'terminal_job_id')
     -- vim.cmd("norm G")
-    print('term_job_id:' .. term_job_id)
+    -- print('term_job_id:' .. term_job_id)
     local final_cmd = cmd .. string.char(13) -- String char 13 is the <Enter Key>
     vim.api.nvim_chan_send(term_job_id, final_cmd)
 

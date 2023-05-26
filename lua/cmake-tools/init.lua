@@ -12,115 +12,19 @@ local config = Config:new(const)
 
 local cmake = {}
 
-_G._cmake_debug = true
-_G.dprint = function (data)
-  if _cmake_debug then
-    print(data)
-  else
-    -- do nothing
-  end
-end
-
-function cmake.startup_check()
-  -- Whenever we run the first CMake Tools Command, this is et
-  if config.cmake_startup == nil then -- Set this as the buffer is not created yet
-    vim.notify('CMake StartUp!' ,vim.log.levels.INFO , { title = "CMake" })
-    config.cmake_startup = true -- Global access for keeping state
-  end
-end
-
 --- Setup cmake-tools
 function cmake.setup(values)
   const = vim.tbl_deep_extend("force", const, values)
   config = Config:new(const)
 end
 
-----------------------------------------------------------------------
-------------------- CMake Wrappers for old config --------------------
-----------------------------------------------------------------------
-
-function cmake.generate(opt, callback)
-  if const.cmake_use_terminals == true then
-    cmake.generate_new(opt, callback)
-  else
-    cmake.generate_old(opt, callback)
-  end
-end
-
-function cmake.build(opt, callback)
-  if const.cmake_use_terminals == true then
-    cmake.build_new(opt, callback)
-  else
-    cmake.buiild_old(opt, callback)
-  end
-end
-
-function cmake.clean(callback)
-  if const.cmake_use_terminals == true then
-    cmake.clean_new(callback)
-  else
-    cmake.clean_old(callback)
-  end
-end
-
-function cmake.clean_rebuild(opt, callback)
-  if const.cmake_use_terminals == true then
-    cmake.clean_rebuild_new(opt, callback)
-  else
-    cmake.clean_rebuild_old(opt, callback)
-  end
-end
-
-function cmake.stop()
-  if const.cmake_use_terminals == true then
-    cmake.stop_new(opts)
-  else
-    cmake.stop_old()
-  end
-end
-
-function cmake.install(opt)
-  if const.cmake_use_terminals == true then
-    cmake.install_new(opt)
-  else
-    cmake.install_old(opt)
-  end
-end
-
-function cmake.close()
-  if const.cmake_use_terminals == true then
-    cmake.close_new()
-  else
-    cmake.close_old()
-  end
-end
-
-function cmake.open()
-  if const.cmake_use_terminals == true then
-    cmake.open_new()
-  else
-    cmake.open_old()
-  end
-end
-
-function cmake.run()
-  if const.cmake_use_terminals == true then
-    cmake.run_new()
-  else
-    cmake.run_old()
-  end
-end
-
-----------------------------------------------------------------------
--------------------------- CMake Old Funcs ---------------------------
-----------------------------------------------------------------------
-
 --- Generate build system for this project.
 -- Think it as `cmake .`
-function cmake.generate_old(opt, callback)
-  if not utils.has_active_job() then
+function cmake.generate(opt, callback)
+  if not utils.has_active_job(const.cmake_terminal_opts.main_terminal_name) then
     return
   end
+
 
   local result = utils.get_cmake_configuration()
   if result.code ~= Types.SUCCESS then
@@ -130,8 +34,8 @@ function cmake.generate_old(opt, callback)
   local clean = opt.bang
   local fargs = opt.fargs or {}
   if clean then
-    return cmake.clean_old(function()
-      cmake.generate_old({ fargs = fargs }, callback)
+    return cmake.clean(function()
+      cmake.generate({ fargs = fargs }, callback)
     end)
   end
 
@@ -143,7 +47,7 @@ function cmake.generate_old(opt, callback)
     -- this will also set value for build type from preset.
     -- default to be "Debug"
     return cmake.select_configure_preset(function()
-      cmake.generate_old(opt, callback)
+      cmake.generate(opt, callback)
     end)
   end
 
@@ -173,6 +77,7 @@ function cmake.generate_old(opt, callback)
         end
         cmake.configure_compile_commands()
       end,
+      terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
       cmake_console_position = const.cmake_console_position,
       cmake_show_console = const.cmake_show_console,
       cmake_console_size = const.cmake_console_size
@@ -184,7 +89,7 @@ function cmake.generate_old(opt, callback)
   local kits_config = kits.parse()
   if kits_config and not config.kit then
     return cmake.select_kit(function()
-      cmake.generate_old(opt, callback)
+      cmake.generate(opt, callback)
     end)
   end
 
@@ -193,7 +98,7 @@ function cmake.generate_old(opt, callback)
   -- get build variant from "Debug, Release, RelWithDebInfo, MinSizeRel"
   if not config.build_type then
     return cmake.select_build_type(function()
-      cmake.generate_old(opt, callback)
+      cmake.generate(opt, callback)
     end)
   end
 
@@ -227,6 +132,7 @@ function cmake.generate_old(opt, callback)
       end
       cmake.configure_compile_commands()
     end,
+    terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
     cmake_console_position = const.cmake_console_position,
     cmake_show_console = const.cmake_show_console,
     cmake_console_size = const.cmake_console_size
@@ -234,8 +140,8 @@ function cmake.generate_old(opt, callback)
 end
 
 --- Clean targets
-function cmake.clean_old(callback)
-  if not utils.has_active_job() then
+function cmake.clean(callback)
+  if not utils.has_active_job(const.cmake_terminal_opts.main_terminal_name) then
     return
   end
 
@@ -252,6 +158,7 @@ function cmake.clean_old(callback)
         callback()
       end
     end,
+    terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
     cmake_console_position = const.cmake_console_position,
     cmake_show_console = const.cmake_show_console,
     cmake_console_size = const.cmake_console_size
@@ -260,8 +167,8 @@ end
 
 --- Build this project using the make toolchain of target platform
 --- think it as `cmake --build .`
-function cmake.build_old(opt, callback)
-  if not utils.has_active_job() then
+function cmake.build(opt, callback)
+  if not utils.has_active_job(const.cmake_terminal_opts.main_terminal_name) then
     return
   end
 
@@ -276,7 +183,7 @@ function cmake.build_old(opt, callback)
     return vim.schedule(function()
       cmake.select_build_target(function()
         vim.schedule(function()
-          cmake.build_old(opt, callback)
+          cmake.build(opt, callback)
         end)
       end, false)
     end)
@@ -307,6 +214,7 @@ function cmake.build_old(opt, callback)
         callback()
       end
     end,
+    terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
     cmake_console_position = const.cmake_console_position,
     cmake_show_console = const.cmake_show_console,
     cmake_console_size = const.cmake_console_size
@@ -315,60 +223,66 @@ end
 
 --- Clean Rebuild: Clean the project and then Rebuild the target
 --- [See dependancy discussion here]
-function cmake.clean_rebuild_old(opt, callback)
-  if not utils.has_active_job() then
+function cmake.clean_rebuild(opt, callback)
+  if not utils.has_active_job(const.cmake_terminal_opts.main_terminal_name) then
     return
   end
 
   -- Check of project is configured
   if config.build_directory == nil then
     local fargs = opt.fargs or {}
-    return cmake.generate_old({ opt = opt.bang, fargs = fargs }, function()
-      cmake.clean_rebuild_old(opt, callback)
+    return cmake.generate({ opt = opt.bang, fargs = fargs }, function()
+      cmake.clean_rebuild(opt, callback)
     end)
   end
 
   -- Check if build type is selected and loop back
   if config.build_type == nil then
     return cmake.select_build_type(function()
-      cmake.clean_rebuild_old(opt, callback)
+      cmake.clean_rebuild(opt, callback)
     end)
   end
 
   -- Check if build target is selected and loop back
   if config.build_target == nil then
     return cmake.select_build_target(function()
-      cmake.clean_rebuild_old(opt, callback)
+      cmake.clean_rebuild(opt, callback)
     end)
   end
 
   -- finally clean and build
-  return cmake.clean_old(function()
-    cmake.build_old(opt, callback)
+  return cmake.clean(function()
+    cmake.build(opt, callback)
   end)
 end
 
-function cmake.stop_old()
+-- TODO: Not implemented for teminals
+function cmake.stop()
   if not utils.job or utils.job.is_shutdown then
     utils.error("CMake Tools isn't running")
     return
   end
 
-  utils.job:shutdown(1, 9)
-
-  if vim.fn.has("win32") == 1 then
-    -- Kill all children
-    for _, pid in ipairs(vim.api.nvim_get_proc_children(utils.job.pid)) do
-      vim.loop.kill(pid, 9)
-    end
+  if const.cmake_use_terminals == true then
+    utils.start_proccess_in_terminal(const.cmake_terminal_opts.main_terminal_name, "\3\r") -- This is the <C-c> or Ctrl + c option
   else
-    vim.loop.kill(utils.job.pid, 9)
+    utils.job:shutdown(1, 9)
+
+    if vim.fn.has("win32") == 1 then
+      -- Kill all children
+      for _, pid in ipairs(vim.api.nvim_get_proc_children(utils.job.pid)) do
+        vim.loop.kill(pid, 9)
+      end
+    else
+      vim.loop.kill(utils.job.pid, 9)
+    end
   end
 end
 
 --- CMake install targets
-function cmake.install_old(opt)
-  if not utils.has_active_job() then
+-- TODO: Not implemented for teminals
+function cmake.install(opt)
+  if not utils.has_active_job(const.cmake_terminal_opts.main_terminal_name) then
     return
   end
 
@@ -390,12 +304,12 @@ function cmake.install_old(opt)
 end
 
 --- CMake close cmake console
-function cmake.close_old()
+function cmake.close()
   utils.close_cmake_console()
 end
 
 --- CMake open cmake console
-function cmake.open_old()
+function cmake.open()
   utils.show_cmake_console(const.cmake_console_position, const.cmake_console_size)
 end
 
@@ -405,8 +319,8 @@ local getPath = function(str, sep)
 end
 
 -- Run executable targets
-function cmake.run_old(opt, callback)
-  if not utils.has_active_job() then
+function cmake.run(opt, callback)
+  if not utils.has_active_job(const.cmake_terminal_opts.main_terminal_name) then
     return
   end
 
@@ -415,8 +329,8 @@ function cmake.run_old(opt, callback)
   -- print(Types[result_code])
   if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
     -- Configure it
-    return cmake.generate_old({ bang = false, fargs = utils.deepcopy(opt.fargs) }, function()
-      cmake.run_old(opt, callback)
+    return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) }, function()
+      cmake.run(opt, callback)
     end)
   elseif result_code == Types.NOT_SELECT_LAUNCH_TARGET
       or result_code == Types.NOT_A_LAUNCH_TARGET
@@ -425,13 +339,13 @@ function cmake.run_old(opt, callback)
     -- Re Select a target that could launch
     return cmake.select_launch_target(function()
       vim.schedule(function()
-        cmake.run_old(opt, callback)
+        cmake.run(opt, callback)
       end)
     end, false)
   else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT
     -- Build select launch target every time
     config.build_target = config.launch_target
-    return cmake.build_old({ fargs = utils.deepcopy(opt.fargs) }, function()
+    return cmake.build({ fargs = utils.deepcopy(opt.fargs) }, function()
       vim.schedule(function()
         result = config:get_launch_target()
         -- print(utils.dump(result))
@@ -452,506 +366,26 @@ function cmake.run_old(opt, callback)
         else
           -- print("target_path: " .. target_path)
           local new_s = getPath(target_path, "/")
-          return utils.execute('"' .. target_path .. '"', {
-            bufname = vim.fn.expand("%:t:r"),
-            cmake_launch_path = new_s,
-            cmake_console_position = const.cmake_console_position,
-            cmake_console_size = const.cmake_console_size,
-            cmake_launch_args = cmake:get_launch_args()
-          })
+          if const.cmake_use_terminals == true then
+            local exec_name = {'"' .. target_path .. '"',}
+            utils.run(const.cmake_command, {}, exec_name, {
+              terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
+              cmake_launch_path = new_s,
+              cmake_console_position = const.cmake_console_position,
+              cmake_show_console = const.cmake_show_console,
+              cmake_console_size = const.cmake_console_size,
+              cmake_launch_args = cmake:get_launch_args()
+            })
+          else -- Old QuickFix Lists
+            return utils.execute('"' .. target_path .. '"', {
+              bufname = vim.fn.expand("%:t:r"),
+              cmake_launch_path = new_s,
+              cmake_console_position = const.cmake_console_position,
+              cmake_console_size = const.cmake_console_size,
+              cmake_launch_args = cmake:get_launch_args()
+            })
+            end
         end
-      end)
-    end)
-  end
-end
-
-----------------------------------------------------------------------
--------------------------- CMake New Funcs ---------------------------
-----------------------------------------------------------------------
-
-function cmake.sandbox(opt, callback)
-  local term_already_existed, terminal_buffer_idx = utils.create_term_if_term_did_not_exist(const.cmake_terminal_opts.main_terminal_name)
-
-  -- dprint('Sandbox Command!' .. ', term_already_existed: ' .. tostring(term_already_existed) .. ', terminal_buffer_idx: ' .. tostring(terminal_buffer_idx))
-
-  local testing = utils.terminal_has_active_job(const.cmake_terminal_opts.main_terminal_name)
-  print('term has active job?: ' .. tostring(testing))
-
-end
-
-function cmake.launch_test_command()
-  -- Send job to term
-  print("proc: " .. tostring(utils.start_proccess_in_terminal(const.cmake_terminal_opts.main_terminal_name, 'Start-Sleep -Seconds 1 && ls')))
-end
-
-function cmake.generate_new(opt, callback)
-  -- If term did not already exist, create it.
-  local term_already_existed, terminal_buffer_idx = utils.create_term_if_term_did_not_exist(const.cmake_terminal_opts.main_terminal_name)
-
-  -- if utils.terminal_has_active_job(const.cmake_terminal_opts.main_terminal_name) then
-  --   return
-  -- end
-
-  local result = utils.get_cmake_configuration()
-  if result.code ~= Types.SUCCESS then
-    return utils.error(result.message)
-  end
-
-  local clean = opt.bang
-  local fargs = opt.fargs or {}
-  if clean then
-    return cmake.clean_new(function()
-      cmake.generate_new({ fargs = fargs }, callback)
-    end)
-  end
-
-  -- if exists presets, preset include all info that cmake
-  -- needed to execute, so we don't use cmake-kits.json and
-  -- cmake-variants.[json|yaml] event they exist.
-  local presets_file = presets.check()
-  if presets_file and not config.configure_preset then
-    -- this will also set value for build type from preset.
-    -- default to be "Debug"
-    return cmake.select_configure_preset(function()
-      cmake.generate_new(opt, callback)
-    end)
-  end
-
-  if presets_file and config.configure_preset then
-    -- if exsist preset file and set configure preset, then
-    -- set build directory to the `binaryDir` option of `configurePresets`
-    local build_directory = presets.get_build_dir(
-      presets.get_preset_by_name(config.configure_preset, "configurePresets")
-    )
-    if build_directory ~= "" then
-      config:update_build_dir(build_directory)
-    end
-    config:generate_build_directory()
-
-    local args = {
-      "--preset",
-      config.configure_preset,
-    }
-    vim.list_extend(args, config.generate_options)
-    vim.list_extend(args, fargs)
-
-    --[[ print(unpack(args)) ]]
-    return utils.run2(const.cmake_command, {}, args, {
-      on_success = function()
-        if type(callback) == "function" then
-          callback()
-        end
-        cmake.configure_compile_commands()
-      end,
-      terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
-      cmake_console_position = const.cmake_console_position,
-      cmake_show_console = const.cmake_show_console,
-      cmake_console_size = const.cmake_console_size
-    })
-  end
-
-  -- if exists cmake-kits.json, kit is used to set
-  -- environmental variables and args.
-  local kits_config = kits.parse()
-  if kits_config and not config.kit then
-    return cmake.select_kit(function()
-      cmake.generate_new(opt, callback)
-    end)
-  end
-
-  -- specify build type, if exists cmake-variants.json,
-  -- this will get build variant from it. Or this will
-  -- get build variant from "Debug, Release, RelWithDebInfo, MinSizeRel"
-  if not config.build_type then
-    return cmake.select_build_type(function()
-      cmake.generate_new(opt, callback)
-    end)
-  end
-
-  -- cmake kits, if cmake-kits.json doesn't exist, kit_option will
-  -- be {env={}, args={}}, so it's okay.
-  local kit_option = kits.build_env_and_args(config.kit)
-
-  if const.cmake_build_directory ~= "" then
-    config:update_build_dir(const.cmake_build_directory)
-  else
-    config:update_build_dir(const.cmake_build_directory_prefix .. config.build_type)
-  end
-
-  config:generate_build_directory()
-
-  local args = {
-    "-B",
-    config.build_directory.filename,
-    "-S",
-    ".",
-  }
-  vim.list_extend(args, variants.build_arglist(config.build_type))
-  vim.list_extend(args, kit_option.args)
-  vim.list_extend(args, config.generate_options)
-  vim.list_extend(args, fargs)
-
-  return utils.run2(const.cmake_command, kit_option.env, args, {
-    on_success = function()
-      if type(callback) == "function" then
-        callback()
-      end
-      cmake.configure_compile_commands()
-    end,
-    terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
-    cmake_console_position = const.cmake_console_position,
-    cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size,
-    cmake_terminal_position = const.cmake_terminal_opts.terminal_split_direction ,
-    cmake_show_terminal = const.cmake_terminal_opts.show_terminal,
-    cmake_focus_on_terminal = const.cmake_terminal_opts.focus_on_terminal,
-    cmake_terminal_size = const.cmake_terminal_opts.terminal_split_size
-  })
-end
-
-function cmake.clean_new(callback)
-  -- If term did not already exist, create it.
-  local term_already_existed, terminal_buffer_idx = utils.create_term_if_term_did_not_exist(const.cmake_terminal_opts.main_terminal_name)
-
-  if utils.terminal_has_active_job(const.cmake_main_console_name) then
-    return
-  end
-
-  local result = utils.get_cmake_configuration()
-  if result.code ~= Types.SUCCESS then
-    return utils.error(result.message)
-  end
-
-  local args = { "--build", config.build_directory.filename, "--target", "clean" }
-
-  return utils.run2(const.cmake_command, {}, args, {
-    on_success = function()
-      if type(callback) == "function" then
-        callback()
-      end
-    end,
-    terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
-    cmake_terminal_position = const.cmake_terminal_opts.terminal_split_direction ,
-    cmake_show_terminal = const.cmake_terminal_opts.show_terminal,
-    cmake_focus_on_terminal = const.cmake_terminal_opts.focus_on_terminal,
-    cmake_terminal_size = const.cmake_terminal_opts.terminal_split_size
-  })
-end
-
-function cmake.build_new(opt, callback)
-  -- If term did not already exist, create it.
-  local term_already_existed, terminal_buffer_idx = utils.create_term_if_term_did_not_exist(const.cmake_terminal_opts.main_terminal_name)
-
-  if utils.terminal_has_active_job(const.cmake_main_console_name) then
-    return
-  end
-
-  local result = utils.get_cmake_configuration()
-  if result.code ~= Types.SUCCESS then
-    return utils.error(result.message)
-  end
-
-  local fargs = opt.fargs or {}
-
-  if config.build_target == nil then
-    return vim.schedule(function()
-      cmake.select_build_target(function()
-        vim.schedule(function()
-          cmake.build_new(opt, callback)
-        end)
-      end, false)
-    end)
-  end
-
-  local args
-  local presets_file = presets.check()
-
-  if presets_file and config.build_preset then
-    args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
-  else
-    args = { "--build", config.build_directory.filename }
-  end
-
-  vim.list_extend(args, config.build_options)
-
-  if config.build_target == "all" then
-    vim.list_extend(args, { "--target", "all" })
-    vim.list_extend(args, fargs)
-  else
-    vim.list_extend(args, { "--target", config.build_target })
-    vim.list_extend(args, fargs)
-  end
-
-  return utils.run2(const.cmake_command, {}, args, {
-    on_success = function()
-      if type(callback) == "function" then
-        callback()
-      end
-    end,
-    terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
-    cmake_console_position = const.cmake_console_position,
-    cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size
-  })
-end
-
-function cmake.clean_rebuild_new(opt, callback)
-  -- If term did not already exist, create it.
-  local term_already_existed, terminal_buffer_idx = utils.create_term_if_term_did_not_exist('main_term_name') -- TODO: use const.main_term_name
-
-  if utils.terminal_has_active_job(const.cmake_main_console_name) then
-    return
-  end
-
-  -- Check of project is configured
-  if config.build_directory == nil then
-    local fargs = opt.fargs or {}
-    return cmake.generate_new({ opt = opt.bang, fargs = fargs }, function()
-      cmake.clean_rebuild_new(opt, callback)
-    end)
-  end
-
-  -- Check if build type is selected and loop back
-  if config.build_type == nil then
-    return cmake.select_build_type(function()
-      cmake.clean_rebuild_new(opt, callback)
-    end)
-  end
-
-  -- Check if build target is selected and loop back
-  if config.build_target == nil then
-    return cmake.select_build_target(function()
-      cmake.clean_rebuild_new(opt, callback)
-    end)
-  end
-
-  -- finally clean and build
-  return cmake.clean_new(function()
-    cmake.build_new(opt, callback)
-  end)
-end
-
-function cmake.stop_new(opts)
-  if opts.stop_all_cmake_tasks == true then -- For stopping all child procs in each terminal
-    -- Get the list of all procs for each of the terminal buffer lists
-    local all_child_procs = {}
-
-    -- First get child procs from the run_executable_terminals
-    for _, terminal_name in ipairs(config.run_executable_terminals) do
-      local child_procs = utils.get_child_procs_from_parent_terminal(terminal_name)
-      if child_procs ~= nil then
-        for _, child_proc in ipairs(child_procs) do
-          table.insert(all_child_procs, child_proc)
-        end
-      else
-        utils.notify(
-          "CMake: RUN terminal: " .. terminal_name .. " does not have any task running!",
-          vim.log.levels.INFO
-        )
-      end
-    end
-
-    -- Second get child procs from the debug_executable_terminals
-    for _, terminal_name in ipairs(config.debug_executable_terminals) do
-      local child_procs = utils.get_child_procs_from_parent_terminal(terminal_name)
-      if child_procs ~= nil then
-        for _, child_proc in ipairs(child_procs) do
-          table.insert(all_child_procs, child_proc)
-        end
-      else
-        utils.notify(
-          "CMake: DEBUG terminal: " .. terminal_name .. " does not have any task running!",
-          vim.log.levels.INFO
-        )
-      end
-    end
-
-    -- Third get child procs from the main_terminal
-    local child_procs = utils.get_child_procs_from_parent_terminal(config.main_terminal)
-    if child_procs ~= nil then
-      for _, child_proc in ipairs(child_procs) do
-        table.insert(all_child_procs, child_proc)
-      end
-    else
-      utils.notify(
-        "CMake: Main terminal: " .. config.main_terminal .. " does not have any task running!",
-        vim.log.levels.INFO
-      )
-    end
-
-    -- Finally kill all child procs
-    if next(all_child_procs) ~= nil then
-      for _, pid in ipairs(all_child_procs) do
-        vim.loop.kill(pid, 9)
-      end
-    else
-      utils.notify(
-        "CMake: Main terminal no have any task running!",
-        vim.log.levels.INFO
-      )
-    end
-  elseif opts.stop_main_cmake_tasks then -- Stop only the main cmake task
-    -- Get the list of all procs for each of the terminal buffer lists
-    local all_child_procs = {}
-
-    -- Get child procs from the main_terminal
-    local child_procs = utils.get_child_procs_from_parent_terminal(config.main_terminal)
-    if child_procs ~= nil then
-      for _, child_proc in ipairs(child_procs) do
-        table.insert(all_child_procs, child_proc)
-      end
-    else
-      utils.notify(
-        "CMake: Main terminal: " .. config.main_terminal .. " does not have any task running!",
-        vim.log.levels.INFO
-      )
-    end
-
-    -- Finally kill all child procs
-    if next(all_child_procs) ~= nil then
-      for _, pid in ipairs(all_child_procs) do
-        vim.loop.kill(pid, 9)
-      end
-    else
-      utils.notify(
-        "CMake: Main terminal no have any task running!",
-        vim.log.levels.INFO
-      )
-    end
-  else -- Stop all run and debug tasks
-    -- Get the list of all procs for each of the terminal buffer lists
-    local all_child_procs = {}
-
-    -- First get child procs from the run_executable_terminals
-    for _, terminal_name in ipairs(config.run_executable_terminals) do
-      local child_procs = utils.get_child_procs_from_parent_terminal(terminal_name)
-      if child_procs ~= nil then
-        for _, child_proc in ipairs(child_procs) do
-          table.insert(all_child_procs, child_proc)
-        end
-      else
-        utils.notify(
-          "CMake: RUN terminal: " .. terminal_name .. " does not have any task running!",
-          vim.log.levels.INFO
-        )
-      end
-    end
-
-    -- Second get child procs from the debug_executable_terminals
-    for _, terminal_name in ipairs(config.debug_executable_terminals) do
-      local child_procs = utils.get_child_procs_from_parent_terminal(terminal_name)
-      if child_procs ~= nil then
-        for _, child_proc in ipairs(child_procs) do
-          table.insert(all_child_procs, child_proc)
-        end
-      else
-        utils.notify(
-          "CMake: DEBUG terminal: " .. terminal_name .. " does not have any task running!",
-          vim.log.levels.INFO
-        )
-      end
-    end
-
-    -- Third get child procs from the main_terminal
-    local child_procs = utils.get_child_procs_from_parent_terminal(config.main_terminal)
-    if child_procs ~= nil then
-      for _, child_proc in ipairs(child_procs) do
-        table.insert(all_child_procs, child_proc)
-      end
-    else
-      utils.notify(
-        "CMake: Main terminal: " .. config.main_terminal .. " does not have any task running!",
-        vim.log.levels.INFO
-      )
-    end
-
-    -- Finally kill all child procs
-    if next(all_child_procs) ~= nil then
-      for _, pid in ipairs(all_child_procs) do
-        vim.loop.kill(pid, 9)
-      end
-    else
-      utils.notify(
-        "CMake: Main terminal no have any task running!",
-        vim.log.levels.INFO
-      )
-    end
-  end
-end
-
-function cmake.install_new(opt)
-  -- If term did not already exist, create it.
-  local term_already_existed, terminal_buffer_idx = utils.create_term_if_term_did_not_exist(const.cmake_terminal_opts.main_terminal_name)
-
-  if utils.terminal_has_active_job(const.cmake_main_console_name) then
-    return
-  end
-
-  local result = utils.get_cmake_configuration()
-  if result.code ~= Types.SUCCESS then
-    return utils.error(result.message)
-  end
-
-  local fargs = opt.fargs
-
-  local args = { "--install", config.build_directory.filename }
-  vim.list_extend(args, fargs)
-
-  return utils.run2(const.cmake_command, {}, args, {
-    cmake_console_position = const.cmake_console_position,
-    cmake_show_console     = const.cmake_show_console,
-    cmake_console_size     = const.cmake_console_size
-  })
-end
-
-function cmake.run_new(opt, callback)
-  local term_already_existed, terminal_buffer_idx = utils.create_term_if_term_did_not_exist(const.cmake_terminal_opts.main_terminal_name)
-
-  if utils.terminal_has_active_job(const.cmake_main_console_name) then
-    return
-  end
-
-  local result = config:get_launch_target()
-  local result_code = result.code
-  -- print(Types[result_code])
-  if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
-    -- Configure it
-    return cmake.generate_new({ bang = false, fargs = utils.deepcopy(opt.fargs) }, function()
-      cmake.run_new(opt, callback)
-    end)
-  elseif result_code == Types.NOT_SELECT_LAUNCH_TARGET
-      or result_code == Types.NOT_A_LAUNCH_TARGET
-      or result_code == Types.NOT_EXECUTABLE
-  then
-    -- Re Select a target that could launch
-    return cmake.select_launch_target(function()
-      vim.schedule(function()
-        cmake.run_new(opt, callback)
-      end)
-    end, false)
-  else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT
-    -- Build select launch target every time
-    config.build_target = config.launch_target
-
-    local opt = {} -- TODO: Verify if opt is correct
-    return cmake.build_new({ fargs = utils.deepcopy(opt.fargs) }, function()
-      vim.schedule(function()
-        result = config:get_launch_target()
-        -- print(utils.dump(result))
-        -- print("TARGET", target_path)
-        local target_path = result.data
-        -- Prints the output in the same cmake window as in wsl/linux
-        local new_s = getPath(target_path, "/")
-        -- print(getPath(target_path,sep))
-        -- print("target_path: " .. target_path
-        return utils.run2('"' .. target_path .. '"', {
-          bufname = vim.fn.expand("%:t:r"),
-          terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name, -- TODO: Use other terminals
-          cmake_launch_path = new_s,
-          cmake_console_position = const.cmake_console_position,
-          cmake_console_size = const.cmake_console_size,
-          cmake_launch_args = cmake:get_launch_args()
-        })
       end)
     end)
   end
@@ -959,7 +393,7 @@ end
 
 --[[ Selectors ]]
 function cmake.launch_args(opt)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_terminal_opts.main_terminal_name) then
     return
   end
 
@@ -971,7 +405,7 @@ end
 if has_nvim_dap then
   -- Debug execuable targets
   function cmake.debug(opt, callback)
-    if not utils.has_active_job() then
+    if not utils.has_active_job(const.cmake_terminal_opts.main_terminal_name) then
       return
     end
 
@@ -1024,7 +458,7 @@ if has_nvim_dap then
 end
 
 function cmake.select_build_type(callback)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_terminal_opts.main_terminal_name) then
     return
   end
   local result = utils.get_cmake_configuration()
@@ -1063,7 +497,7 @@ function cmake.select_build_type(callback)
 end
 
 function cmake.select_kit(callback)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_terminal_opts.main_terminal_name) then
     return
   end
   local result = utils.get_cmake_configuration()
@@ -1098,7 +532,7 @@ function cmake.select_kit(callback)
 end
 
 function cmake.select_configure_preset(callback)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_terminal_opts.main_terminal_name) then
     return
   end
   local result = utils.get_cmake_configuration()
@@ -1140,7 +574,7 @@ function cmake.select_configure_preset(callback)
 end
 
 function cmake.select_build_preset(callback)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_terminal_opts.main_terminal_name) then
     return
   end
   local result = utils.get_cmake_configuration()
