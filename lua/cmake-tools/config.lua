@@ -18,6 +18,9 @@ local Config = {
   kit = nil,
   configure_preset = nil,
   build_preset = nil,
+  main_terminal = nil,
+  run_executable_terminals = {},
+  debug_executable_terminals = {}
 }
 
 function Config:new(const)

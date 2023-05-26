@@ -3,6 +3,7 @@ local Path = require("plenary.path")
 local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
 local const = require("cmake-tools.const")
+local config = require("cmake-tools.config")
 
 local utils = {
   job = nil,
@@ -75,9 +76,6 @@ function utils.execute(executable, opts)
   local prefix = string.format("%s %d new", opts.cmake_console_position, opts.cmake_console_size)
 
   utils.close_cmake_console();
-
-  -- TODO: Create a common output stream for all cmake related tasks and split running cmake tasks into terminals
-  -- This requires support form either 'pleanary.nvim-plenary-job', or 'jobstart()' api
 
   -- check if buufer exists. If it exists, delete it!
   local all_buffs = vim.api.nvim_list_bufs()
@@ -189,7 +187,7 @@ end
 
 -- Error Checking in CMake Task: https://stackoverflow.com/questions/7402587/run-command2-only-if-command1-succeeded-in-cmd-windows-shell
 ---Check if main terminal has active job
-function utils.main_term_has_active_job(terminal_buffer_name)
+function utils.termnal_has_active_job(terminal_buffer_name)
   -- Lookup the terminal buffer idx from it's name
   local terminal_buffer_idx = nil
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
@@ -215,12 +213,12 @@ function utils.main_term_has_active_job(terminal_buffer_name)
     )
     return true -- Child processes exist. Cannot launch new task
   else
-    utils.error("Main CMake Console does not exist! : CMAKE ERROR!")
+    utils.error("Main CMake Console does not exist! : CMAKE ACTIVE JOB ERROR!")
     return true
   end
 end
 
-function utils.create_if_term_does_not_exist(terminal_buffer_name)
+function utils.create_term_if_term_did_not_exist(terminal_buffer_name)
   -- Lookup the terminal buffer idx from it's name
   local terminal_buffer_idx = nil
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
@@ -239,6 +237,29 @@ function utils.create_if_term_does_not_exist(terminal_buffer_name)
     terminal_buffer_idx = vim.api.nvim_get_current_buf()                 -- Get the buffer idx
     vim.api.nvim_buf_set_name(terminal_buffer_idx, terminal_buffer_name) -- Set the buffer name
     return false, terminal_buffer_idx
+  end
+end
+
+function utils.get_child_procs_from_parent_terminal(terminal_buffer_name)
+
+  -- Lookup the terminal buffer idx from it's name
+  local terminal_buffer_idx = nil
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    local name = vim.api.nvim_buf_get_name(bufnr)
+    if name == terminal_buffer_name then
+      terminal_buffer_idx = bufnr
+      break
+    end
+  end
+
+  -- If terminal buffer exists, then get its child procs
+  if terminal_buffer_idx then
+    local term_proc = vim.fn.jobpid(vim.api.nvim_buf_get_var(terminal_buffer_idx, 'terminal_job_id'))
+    -- TODO: Check if term_proc is nil and try using :h nvim_get_proc()
+    return vim.api.nvim_get_proc_children(term_proc)
+  else
+    utils.error("CMake Console: " .. terminal_buffer_name .. " does not exist! : CMAKE INTERNAL PROC ERROR!")
+    return nil
   end
 end
 
