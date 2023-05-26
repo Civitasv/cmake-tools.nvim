@@ -27,6 +27,8 @@ local const = {
     keep_single_terminal_static = true,
     only_1_terminal_per_tab = true,
     single_terminal_window_per_tab = true,
+    terminal_split_direction = 'below',
+    terminal_split_size = 15,
   }
 }
 

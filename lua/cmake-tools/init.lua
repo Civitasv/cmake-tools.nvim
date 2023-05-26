@@ -453,6 +453,10 @@ end
 -------------------------- CMake New Funcs ---------------------------
 ----------------------------------------------------------------------
 
+function cmake.sandbox(opt, callback)
+  print('Sandbox Command')
+end
+
 function cmake.generate_new(opt, callback)
 
   -- If term did not already exist, create it.

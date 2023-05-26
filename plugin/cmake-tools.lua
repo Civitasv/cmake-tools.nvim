@@ -6,6 +6,17 @@ local has_nvim_dap, _ = pcall(require, "dap")
 
 ---------------- Commands ------------------
 
+--- CMake Test Command
+vim.api.nvim_create_user_command(
+  "CMakeSandbox", -- name
+  cmake_tools.sandbox, -- command
+  { -- opts
+    nargs = "*",
+    bang = true,
+    desc = "CMake Snadbox configure",
+  }
+)
+
 --- CMake
 vim.api.nvim_create_user_command(
   "CMakeGenerate", -- name
