@@ -18,6 +18,7 @@ local Config = {
   kit = nil,
   configure_preset = nil,
   build_preset = nil,
+  cmake_startup = nil,
   main_terminal = nil,
   run_executable_terminals = {},
   debug_executable_terminals = {}

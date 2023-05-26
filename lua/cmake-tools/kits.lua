@@ -84,7 +84,7 @@ function kits.build_env_and_args(kit_name)
   -- if exists `compilers` option, then set variable for cmake
   if kit.compilers then
     for lang, compiler in pairs(kit.compilers) do
-      add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=" .. compiler })
+      add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=" .. "'" .. compiler .. "'" })
     end
   end
   if kit.generator then

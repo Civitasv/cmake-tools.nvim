@@ -8,12 +8,23 @@ local has_nvim_dap, _ = pcall(require, "dap")
 
 --- CMake Test Command
 vim.api.nvim_create_user_command(
-  "CMakeSandbox", -- name
+  "CMakeASandbox", -- name
   cmake_tools.sandbox, -- command
   { -- opts
     nargs = "*",
     bang = true,
-    desc = "CMake Snadbox configure",
+    desc = "CMake Sandbox configure",
+  }
+)
+
+--- CMake Test Command
+vim.api.nvim_create_user_command(
+  "CMakeASleep", -- name
+  cmake_tools.launch_test_command, -- command
+  { -- opts
+    nargs = "*",
+    bang = true,
+    desc = "CMake Terminal Sleep Command",
   }
 )
 

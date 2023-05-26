@@ -3,6 +3,7 @@ local Path = require("plenary.path")
 local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
 local const = require("cmake-tools.const")
+local os_config = require("cmake-tools.os_config")
 local config = require("cmake-tools.config")
 
 local utils = {
@@ -171,6 +172,31 @@ function utils.run(cmd, env, args, opts)
   return utils.job
 end
 
+function utils.execute2(executable, opts)
+  print('executable:')
+  vim.print(executable)
+  print('opts:')
+  vim.print(opts)
+end
+
+
+function utils.run2(cmd, env, args, opts)
+  print('cmd:')
+  vim.print(cmd)
+  print('env:')
+  vim.print(env)
+  print('args:')
+  vim.print(table.concat(args, " "))
+  print('opts:')
+  vim.print(opts)
+  vim.schedule(
+    function ()
+      utils.start_proccess_in_terminal(opts.terminal_buffer_name, cmd .. " " .. table.concat(args, " "))
+    end
+  )
+end
+
+
 --- Check if exists active job.
 -- @return true if not exists else false
 function utils.has_active_job()
@@ -187,7 +213,7 @@ end
 
 -- Error Checking in CMake Task: https://stackoverflow.com/questions/7402587/run-command2-only-if-command1-succeeded-in-cmd-windows-shell
 ---Check if main terminal has active job
-function utils.termnal_has_active_job(terminal_buffer_name)
+function utils.terminal_has_active_job(terminal_buffer_name)
   -- Lookup the terminal buffer idx from it's name
   local terminal_buffer_idx = nil
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
@@ -198,9 +224,8 @@ function utils.termnal_has_active_job(terminal_buffer_name)
     end
   end
 
-  -- If terminal is found, then get the last line in the buffer, and check for substring: 'CMake Task Finished'
+  -- If terminal is found, then get the list of chil procs
   if terminal_buffer_idx then
-    -- Get lines, and check for substring
     local term_proc = vim.fn.jobpid(vim.api.nvim_buf_get_var(terminal_buffer_idx, 'terminal_job_id'))
     local term_child_procs = vim.api.nvim_get_proc_children(term_proc)
     if next(term_child_procs) == nil then
@@ -213,35 +238,35 @@ function utils.termnal_has_active_job(terminal_buffer_name)
     )
     return true -- Child processes exist. Cannot launch new task
   else
-    utils.error("Main CMake Console does not exist! : CMAKE ACTIVE JOB ERROR!")
-    return true
+    return false
   end
 end
 
 function utils.create_term_if_term_did_not_exist(terminal_buffer_name)
   -- Lookup the terminal buffer idx from it's name
-  local terminal_buffer_idx = nil
+  local terminal_buffer_idx
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
     local name = vim.api.nvim_buf_get_name(bufnr)
-    if name == terminal_buffer_name then
+    -- print('buffer names: ' .. name)
+    if string.match(name, terminal_buffer_name) == terminal_buffer_name then
       terminal_buffer_idx = bufnr
       break
     end
   end
 
-  if terminal_buffer_idx ~= nil then
+  if terminal_buffer_idx then
     return true, terminal_buffer_idx
   else
-    -- TODO: replace 'below' with const.position
-    vim.cmd(':' .. 'below' .. 'sp | :term')                              -- Creater terminal in a split
-    terminal_buffer_idx = vim.api.nvim_get_current_buf()                 -- Get the buffer idx
-    vim.api.nvim_buf_set_name(terminal_buffer_idx, terminal_buffer_name) -- Set the buffer name
+    os_config.start_local_shell(const.cmake_terminal_opts.terminal_split_direction)
+    vim.cmd(':setlocal laststatus=3') -- Let there be a single status/lualine in the neovim instance
+    terminal_buffer_idx = vim.api.nvim_get_current_buf()                                 -- Get the buffer idx
+    local terminal_name = vim.fn.fnamemodify(terminal_buffer_name, ":t")                 -- Extract only the terminal name
+    vim.api.nvim_buf_set_name(0, terminal_name)                                          -- Set the buffer name
     return false, terminal_buffer_idx
   end
 end
 
 function utils.get_child_procs_from_parent_terminal(terminal_buffer_name)
-
   -- Lookup the terminal buffer idx from it's name
   local terminal_buffer_idx = nil
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
@@ -260,6 +285,41 @@ function utils.get_child_procs_from_parent_terminal(terminal_buffer_name)
   else
     utils.error("CMake Console: " .. terminal_buffer_name .. " does not exist! : CMAKE INTERNAL PROC ERROR!")
     return nil
+  end
+end
+
+function utils.start_proccess_in_terminal(terminal_buffer_name, cmd)
+  -- Lookup the terminal buffer idx from it's name
+  local terminal_buffer_idx = nil
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    local name = vim.api.nvim_buf_get_name(bufnr)
+    if string.match(name, terminal_buffer_name) == terminal_buffer_name then
+      terminal_buffer_idx = bufnr
+      break
+    end
+  end
+
+  -- print('terminal_buffer_name: ' .. terminal_buffer_name .. ", terminal_buffer_idx: " .. tostring(terminal_buffer_idx))
+
+  -- If terminal is found, then get the last line in the buffer, and check for substring: 'CMake Task Finished'
+  if terminal_buffer_idx ~= nil then
+    local term_job_id = vim.api.nvim_buf_get_var(terminal_buffer_idx, 'terminal_job_id')
+    -- vim.cmd("norm G")
+    print('term_job_id:' .. term_job_id)
+    local final_cmd = cmd .. string.char(13) -- String char 13 is the <Enter Key>
+    vim.api.nvim_chan_send(term_job_id, final_cmd)
+
+    ----------- All this is testing to check if we can somehow prevent the user from spamming multiple CMake <Taks> Commands, all at once.
+    -- local final_cmd = os_config.get_process_wrapper_for(cmd)
+    -- vim.cmd("call chansend(" .. term_job_id .. ', "\x1b\x5b\x41\\<cr>")')
+    -- vim.cmd("call chansend(" .. term_job_id .. ",\"\\<Esc>[A\\<CR>\"))
+    -- vim.cmd("call chansend(" .. term_job_id .. ', "\x1b\x5b\x41\\<cr>")')
+    -- vim.cmd("call feedkeys('\\<CR>', 't')")
+    -- vim.api.nvim_chan_send(term_job_id, vim.api.nvim_feedkeys("<CR>", 'n', true))
+    -- vim.api.nvim_feedkeys("\\<CR>", 'i', true)
+    return true -- Child processes exist. Cannot launch new task
+  else
+    return false
   end
 end
 
