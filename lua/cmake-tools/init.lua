@@ -70,18 +70,36 @@ function cmake.generate(opt, callback)
     vim.list_extend(args, fargs)
 
     --[[ print(unpack(args)) ]]
-    return utils.run(const.cmake_command, {}, args, {
-      on_success = function()
-        if type(callback) == "function" then
-          callback()
-        end
-        cmake.configure_compile_commands()
-      end,
-      terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
-      cmake_console_position = const.cmake_console_position,
-      cmake_show_console = const.cmake_show_console,
-      cmake_console_size = const.cmake_console_size
-    })
+    if const.cmake_use_terminals == true then
+      return
+      -- vim.schedule(function()
+          utils.run(const.cmake_command, {}, args, {
+            on_success = function()
+              if type(callback) == "function" then
+                callback()
+              end
+              cmake.configure_compile_commands()
+            end,
+            terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
+            cmake_console_position = const.cmake_console_position,
+            cmake_show_console = const.cmake_show_console,
+            cmake_console_size = const.cmake_console_size
+          })
+      -- end)
+    else
+      return utils.run(const.cmake_command, {}, args, {
+        on_success = function()
+          if type(callback) == "function" then
+            callback()
+          end
+          cmake.configure_compile_commands()
+        end,
+        terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
+        cmake_console_position = const.cmake_console_position,
+        cmake_show_console = const.cmake_show_console,
+        cmake_console_size = const.cmake_console_size
+      })
+    end
   end
 
   -- if exists cmake-kits.json, kit is used to set
@@ -125,18 +143,36 @@ function cmake.generate(opt, callback)
   vim.list_extend(args, config.generate_options)
   vim.list_extend(args, fargs)
 
-  return utils.run(const.cmake_command, kit_option.env, args, {
-    on_success = function()
-      if type(callback) == "function" then
-        callback()
-      end
-      cmake.configure_compile_commands()
-    end,
-    terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
-    cmake_console_position = const.cmake_console_position,
-    cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size
-  })
+  if const.cmake_use_terminals == true then
+    return
+    -- vim.schedule(function()
+        utils.run(const.cmake_command, kit_option.env, args, {
+          on_success = function()
+            if type(callback) == "function" then
+              callback()
+            end
+            cmake.configure_compile_commands()
+          end,
+          terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
+          cmake_console_position = const.cmake_console_position,
+          cmake_show_console = const.cmake_show_console,
+          cmake_console_size = const.cmake_console_size
+        })
+    -- end)
+  else
+    return utils.run(const.cmake_command, kit_option.env, args, {
+      on_success = function()
+        if type(callback) == "function" then
+          callback()
+        end
+        cmake.configure_compile_commands()
+      end,
+      terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
+      cmake_console_position = const.cmake_console_position,
+      cmake_show_console = const.cmake_show_console,
+      cmake_console_size = const.cmake_console_size
+    })
+  end
 end
 
 --- Clean targets
@@ -152,17 +188,34 @@ function cmake.clean(callback)
 
   local args = { "--build", config.build_directory.filename, "--target", "clean" }
 
-  return utils.run(const.cmake_command, {}, args, {
-    on_success = function()
-      if type(callback) == "function" then
-        callback()
-      end
-    end,
-    terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
-    cmake_console_position = const.cmake_console_position,
-    cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size
-  })
+  if const.cmake_use_terminals == true then
+    return
+    -- vim.schedule(function()
+        utils.run(const.cmake_command, {}, args, {
+          on_success = function()
+            if type(callback) == "function" then
+              callback()
+            end
+          end,
+          terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
+          cmake_console_position = const.cmake_console_position,
+          cmake_show_console = const.cmake_show_console,
+          cmake_console_size = const.cmake_console_size
+        })
+    -- end)
+  else
+    return utils.run(const.cmake_command, {}, args, {
+      on_success = function()
+        if type(callback) == "function" then
+          callback()
+        end
+      end,
+      terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
+      cmake_console_position = const.cmake_console_position,
+      cmake_show_console = const.cmake_show_console,
+      cmake_console_size = const.cmake_console_size
+    })
+  end
 end
 
 --- Build this project using the make toolchain of target platform
@@ -208,17 +261,34 @@ function cmake.build(opt, callback)
     vim.list_extend(args, fargs)
   end
 
-  return utils.run(const.cmake_command, {}, args, {
-    on_success = function()
-      if type(callback) == "function" then
-        callback()
-      end
-    end,
-    terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
-    cmake_console_position = const.cmake_console_position,
-    cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size
-  })
+  if const.cmake_use_terminals == true then
+    return
+        -- vim.schedule(function()
+            utils.run(const.cmake_command, {}, args, {
+              on_success = function()
+                if type(callback) == "function" then
+                  callback()
+                end
+              end,
+              terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
+              cmake_console_position = const.cmake_console_position,
+              cmake_show_console = const.cmake_show_console,
+              cmake_console_size = const.cmake_console_size
+            })
+          -- end)
+  else
+    return utils.run(const.cmake_command, {}, args, {
+      on_success = function()
+        if type(callback) == "function" then
+          callback()
+        end
+      end,
+      terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
+      cmake_console_position = const.cmake_console_position,
+      cmake_show_console = const.cmake_show_console,
+      cmake_console_size = const.cmake_console_size
+    })
+  end
 end
 
 --- Clean Rebuild: Clean the project and then Rebuild the target
@@ -345,38 +415,53 @@ function cmake.run(opt, callback)
   else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT
     -- Build select launch target every time
     config.build_target = config.launch_target
-    return cmake.build({ fargs = utils.deepcopy(opt.fargs) }, function()
-      vim.schedule(function()
-        result = config:get_launch_target()
-        -- print(utils.dump(result))
-        -- print("TARGET", target_path)
-        local target_path = result.data
-        local is_win32 = vim.fn.has("win32")
-        if (is_win32 == 1) then
-          -- Prints the output in the same cmake window as in wsl/linux
-          local new_s = getPath(target_path, "/")
-          -- print(getPath(target_path,sep))
-          return utils.execute(target_path, {
-            bufname = vim.fn.expand("%:p"),
-            cmake_launch_path = new_s,
-            cmake_console_position = const.cmake_console_position,
-            cmake_console_size = const.cmake_console_size,
-            cmake_launch_args = cmake:get_launch_args()
-          })
-        else
-          -- print("target_path: " .. target_path)
-          local new_s = getPath(target_path, "/")
-          if const.cmake_use_terminals == true then
-            local exec_name = {'"' .. target_path .. '"',}
-            utils.run(const.cmake_command, {}, exec_name, {
+    -- print("Result target is :" .. config.build_target)
+    if const.cmake_use_terminals == true then
+      print("TARGET")
+      return
+      -- vim.schedule(function()
+      -- cmake.build({ fargs = utils.deepcopy(opt.fargs) }, function()
+          cmake.build({}, function()
+            result = config:get_launch_target()
+            -- print(utils.dump(result))
+            local target_path = result.data
+            print("TARGET", target_path)
+            local new_s = getPath(target_path, "/")
+            local executable = '"' .. target_path .. '"'
+            local args = {} -- TODO: implement args
+            return utils.run(executable, {}, args, {
               terminal_buffer_name = const.cmake_terminal_opts.main_terminal_name,
+              run_task = true,
               cmake_launch_path = new_s,
               cmake_console_position = const.cmake_console_position,
               cmake_show_console = const.cmake_show_console,
               cmake_console_size = const.cmake_console_size,
               cmake_launch_args = cmake:get_launch_args()
             })
-          else -- Old QuickFix Lists
+            -- end)
+          end)
+    else
+      return cmake.build({ fargs = utils.deepcopy(opt.fargs) }, function()
+        -- vim.schedule(function()
+          result = config:get_launch_target()
+          -- print(utils.dump(result))
+          -- print("TARGET", target_path)
+          local target_path = result.data
+          local is_win32 = vim.fn.has("win32")
+          if (is_win32 == 1) then
+            -- Prints the output in the same cmake window as in wsl/linux
+            local new_s = getPath(target_path, "/")
+            -- print(getPath(target_path,sep))
+            return utils.execute(target_path, {
+              bufname = vim.fn.expand("%:p"),
+              cmake_launch_path = new_s,
+              cmake_console_position = const.cmake_console_position,
+              cmake_console_size = const.cmake_console_size,
+              cmake_launch_args = cmake:get_launch_args()
+            })
+          else
+            -- print("target_path: " .. target_path)
+            local new_s = getPath(target_path, "/")
             return utils.execute('"' .. target_path .. '"', {
               bufname = vim.fn.expand("%:t:r"),
               cmake_launch_path = new_s,
@@ -384,10 +469,10 @@ function cmake.run(opt, callback)
               cmake_console_size = const.cmake_console_size,
               cmake_launch_args = cmake:get_launch_args()
             })
-            end
-        end
+          end
+        -- end)
       end)
-    end)
+    end
   end
 end
 

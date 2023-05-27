@@ -143,13 +143,38 @@ end
 function utils.run(cmd, env, args, opts)
   -- save all
   vim.cmd("wall")
+  -- print("target is :" .. cmd .. " " .. tostring(env) .. " ")
+  -- vim.print(opts.cmake_launch_path)
   if const.cmake_use_terminals == true then
-    if opts.cmake_launch_path then
-      cmd = "cd " .. opts.cmake_launch_path .. " && " .. cmd
-    end
-    -- TODO: vim.schedule this
-    utils.start_proccess_in_terminal(opts.terminal_buffer_name, cmd .. " " .. table.concat(args, " "))
+    -- print("ln :opts.cmake_launch_path: " .. tostring(opts.cmake_launch_path))
+    if opts.run_task then
+      print("ln2 :opts.cmake_launch_path: " .. tostring(opts.cmake_launch_path))
+      if opts.cmake_launch_path then
+        cmd = "cd " .. opts.cmake_launch_path .. " && " .. cmd
+      end
 
+      if (opts.cmake_launch_args ~= nil) then
+        for _, arg in ipairs(opts.cmake_launch_args) do
+          cmd = cmd .. ' "' .. arg .. '"'
+        end
+      end
+
+      -- print('run task cmd: ')
+      -- vim.print("vim.print:" .. cmd)
+
+      -- TODO: Implement on_success callback handler for chaining commands
+      -- vim.schedule(function()
+        utils.start_proccess_in_terminal(opts.terminal_buffer_name, cmd)
+      -- end)
+    else -- All other tasks
+      -- print("ln3 :opts.cmake_launch_path: " .. tostring(opts.cmake_launch_path))
+      if opts.cmake_launch_path then
+        cmd = "cd " .. opts.cmake_launch_path .. " && " .. cmd
+      end
+      -- vim.schedule(function ()
+        utils.start_proccess_in_terminal(opts.terminal_buffer_name, cmd .. " " .. table.concat(args, " "))
+      -- end)
+    end
   else -- Use QuickFix Lists
     vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
     opts.cmake_show_console = opts.cmake_show_console == "always"
@@ -185,7 +210,8 @@ end
 -- @return true if not exists else false
 function utils.has_active_job(terminal_buffer_name)
   if const.cmake_use_terminals == true then
-    local term_already_existed, terminal_buffer_idx = utils.create_term_if_term_did_not_exist(terminal_buffer_name)
+    -- local term_already_existed, terminal_buffer_idx = utils.create_term_if_term_did_not_exist(terminal_buffer_name)
+    utils.create_term_if_term_did_not_exist(terminal_buffer_name)
     -- if utils.terminal_has_active_job(terminal_buffer_name) then
     --   return true
     -- end
@@ -249,11 +275,10 @@ function utils.create_term_if_term_did_not_exist(terminal_buffer_name)
   if terminal_buffer_idx then
     return true, terminal_buffer_idx
   else
-    os_config.start_local_shell(const.cmake_terminal_opts.terminal_split_direction)
-    vim.cmd(':setlocal laststatus=3') -- Let there be a single status/lualine in the neovim instance
-    terminal_buffer_idx = vim.api.nvim_get_current_buf()                                 -- Get the buffer idx
-    local terminal_name = vim.fn.fnamemodify(terminal_buffer_name, ":t")                 -- Extract only the terminal name
-    vim.api.nvim_buf_set_name(0, terminal_name)                                          -- Set the buffer name
+    terminal_buffer_idx = os_config.start_local_shell(const.cmake_terminal_opts.terminal_split_direction)
+    vim.cmd(':setlocal laststatus=3')                                    -- Let there be a single status/lualine in the neovim instance
+    local terminal_name = vim.fn.fnamemodify(terminal_buffer_name, ":t") -- Extract only the terminal name and reassign it
+    vim.api.nvim_buf_set_name(terminal_buffer_idx, terminal_name)        -- Set the buffer name
     return false, terminal_buffer_idx
   end
 end

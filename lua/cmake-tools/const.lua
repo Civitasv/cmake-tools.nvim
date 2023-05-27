@@ -29,7 +29,7 @@ local const = {
     single_terminal_window_per_tab = true,
     show_terminal = true,
     focus_on_terminal = true,
-    terminal_split_direction = 'below',
+    terminal_split_direction = "horizontal", -- "horizontal" "vertical"
     terminal_split_size = 15,
     main_terminal_name = "CMake Main Terminal",
   }
