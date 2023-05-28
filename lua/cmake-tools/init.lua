@@ -78,7 +78,9 @@ function cmake.generate(opt, callback)
       end,
       cmake_console_position = const.cmake_console_position,
       cmake_show_console = const.cmake_show_console,
-      cmake_console_size = const.cmake_console_size
+      cmake_console_size = const.cmake_console_size,
+      cmake_use_terminals = const.cmake_use_terminals,
+      cmake_terminal_opts = const.cmake_terminal_opts
     })
   end
 
@@ -132,7 +134,9 @@ function cmake.generate(opt, callback)
     end,
     cmake_console_position = const.cmake_console_position,
     cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size
+    cmake_console_size = const.cmake_console_size,
+    cmake_use_terminals = const.cmake_use_terminals,
+    cmake_terminal_opts = const.cmake_terminal_opts
   })
 end
 
@@ -157,7 +161,9 @@ function cmake.clean(callback)
     end,
     cmake_console_position = const.cmake_console_position,
     cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size
+    cmake_console_size = const.cmake_console_size,
+    cmake_use_terminals = const.cmake_use_terminals,
+    cmake_terminal_opts = const.cmake_terminal_opts
   })
 end
 
@@ -212,7 +218,9 @@ function cmake.build(opt, callback)
     end,
     cmake_console_position = const.cmake_console_position,
     cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size
+    cmake_console_size = const.cmake_console_size,
+    cmake_use_terminals = const.cmake_use_terminals,
+    cmake_terminal_opts = const.cmake_terminal_opts
   })
 end
 
@@ -288,7 +296,9 @@ function cmake.install(opt)
   return utils.run(const.cmake_command, {}, args, {
     cmake_console_position = const.cmake_console_position,
     cmake_show_console     = const.cmake_show_console,
-    cmake_console_size     = const.cmake_console_size
+    cmake_console_size     = const.cmake_console_size,
+    cmake_use_terminals    = const.cmake_use_terminals,
+    cmake_terminal_opts    = const.cmake_terminal_opts
   })
 end
 
@@ -350,7 +360,9 @@ function cmake.run(opt, callback)
             cmake_launch_path = new_s,
             cmake_console_position = const.cmake_console_position,
             cmake_console_size = const.cmake_console_size,
-            cmake_launch_args = cmake:get_launch_args()
+            cmake_launch_args = cmake:get_launch_args(),
+            cmake_use_terminals = const.cmake_use_terminals,
+            cmake_terminal_opts = const.cmake_terminal_opts
           })
         else
           -- print("target_path: " .. target_path)
@@ -360,7 +372,9 @@ function cmake.run(opt, callback)
             cmake_launch_path = new_s,
             cmake_console_position = const.cmake_console_position,
             cmake_console_size = const.cmake_console_size,
-            cmake_launch_args = cmake:get_launch_args()
+            cmake_launch_args = cmake:get_launch_args(),
+            cmake_use_terminals = const.cmake_use_terminals,
+            cmake_terminal_opts = const.cmake_terminal_opts
           })
         end
       end)

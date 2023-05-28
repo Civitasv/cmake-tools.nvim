@@ -67,41 +67,47 @@ end
 function utils.execute(executable, opts)
   -- save all
   vim.cmd("wall")
-  -- print("EXECUTABLE", executable)
-  local set_bufname = "file " .. opts.bufname
-  local prefix = string.format("%s %d new", opts.cmake_console_position, opts.cmake_console_size)
 
-  utils.close_cmake_console();
+  if opts.cmake_use_terminals_opt then
+    print('testing from exectue()')
+    vim.print(opts.cmake_terminal_opts)
+  else
+    -- print("EXECUTABLE", executable)
+    local set_bufname = "file " .. opts.bufname
+    local prefix = string.format("%s %d new", opts.cmake_console_position, opts.cmake_console_size)
 
-  -- check if buufer exists. If it exists, delete it!
-  local all_buffs = vim.api.nvim_list_bufs()
-  -- local temp = " " -- This is only for testing
-  for _, buf_nr in ipairs(all_buffs) do
-    local name = vim.api.nvim_buf_get_name(buf_nr)
-    local test = string.match(name, set_bufname) == set_bufname
-    -- print(test)
-    -- temp = temp .. name ..": " .. tostring(test) .. ", "
-    if test then
-      -- the buffer is already avaliable
-      vim.api.nvim_buf_delete(buf_nr, { force = true })
-      vim.cmd(set_bufname)
-      break
+    utils.close_cmake_console();
+
+    -- check if buufer exists. If it exists, delete it!
+    local all_buffs = vim.api.nvim_list_bufs()
+    -- local temp = " " -- This is only for testing
+    for _, buf_nr in ipairs(all_buffs) do
+      local name = vim.api.nvim_buf_get_name(buf_nr)
+      local test = string.match(name, set_bufname) == set_bufname
+      -- print(test)
+      -- temp = temp .. name ..": " .. tostring(test) .. ", "
+      if test then
+        -- the buffer is already avaliable
+        vim.api.nvim_buf_delete(buf_nr, { force = true })
+        vim.cmd(set_bufname)
+        break
+      end
     end
-  end
 
-  -- print(temp)
-  local cmd = prefix .. " | term " .. "cd " .. opts.cmake_launch_path .. " && " .. executable
-  if (opts.cmake_launch_args ~= nil) then
-    for _, arg in ipairs(opts.cmake_launch_args) do
-      cmd = cmd .. ' "' .. arg .. '"'
+    -- print(temp)
+    local cmd = prefix .. " | term " .. "cd " .. opts.cmake_launch_path .. " && " .. executable
+    if (opts.cmake_launch_args ~= nil) then
+      for _, arg in ipairs(opts.cmake_launch_args) do
+        cmd = cmd .. ' "' .. arg .. '"'
+      end
     end
-  end
 
-  vim.cmd(cmd)
-  vim.opt_local.relativenumber = false
-  vim.opt_local.number = false
-  vim.bo.buflisted = false -- We set this to true, so that we can detect in in vim.api.nvim_list_bufs(), a few lines above.
-  vim.cmd("startinsert")
+    vim.cmd(cmd)
+    vim.opt_local.relativenumber = false
+    vim.opt_local.number = false
+    vim.bo.buflisted = false -- We set this to true, so that we can detect in in vim.api.nvim_list_bufs(), a few lines above.
+    vim.cmd("startinsert")
+  end
 end
 
 function utils.softlink(src, target)
@@ -138,35 +144,129 @@ end
 function utils.run(cmd, env, args, opts)
   -- save all
   vim.cmd("wall")
-  vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
-  opts.cmake_show_console = opts.cmake_show_console == "always"
-  if opts.cmake_show_console then
-    utils.show_cmake_console(opts.cmake_console_position, opts.cmake_console_size)
-  end
 
-  utils.job = Job:new({
-    command = cmd,
-    args = next(env) and { "-E", "env", table.concat(env, " "), "cmake", unpack(args) } or args,
-    cwd = vim.loop.cwd(),
-    on_stdout = vim.schedule_wrap(append_to_cmake_console),
-    on_stderr = vim.schedule_wrap(append_to_cmake_console),
-    on_exit = vim.schedule_wrap(function(_, code, signal)
-      append_to_cmake_console("Exited with code " .. (signal == 0 and code or 128 + signal))
-      if code == 0 and signal == 0 then
-        if opts.on_success then
-          opts.on_success()
+  if opts.cmake_use_terminals_opt then
+    print('testing from run()')
+    vim.print(opts.cmake_terminal_opts)
+  else
+    vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
+    opts.cmake_show_console = opts.cmake_show_console == "always"
+    if opts.cmake_show_console then
+      utils.show_cmake_console(opts.cmake_console_position, opts.cmake_console_size)
+    end
+
+    utils.job = Job:new({
+      command = cmd,
+      args = next(env) and { "-E", "env", table.concat(env, " "), "cmake", unpack(args) } or args,
+      cwd = vim.loop.cwd(),
+      on_stdout = vim.schedule_wrap(append_to_cmake_console),
+      on_stderr = vim.schedule_wrap(append_to_cmake_console),
+      on_exit = vim.schedule_wrap(function(_, code, signal)
+        append_to_cmake_console("Exited with code " .. (signal == 0 and code or 128 + signal))
+        if code == 0 and signal == 0 then
+          if opts.on_success then
+            opts.on_success()
+          end
+        elseif opts.cmake_show_console == "only_on_error" then
+          utils.show_cmake_console(opts.cmake_console_position, opts.cmake_console_size)
+          vim.api.nvim_command("cbottom")
         end
-      elseif opts.cmake_show_console == "only_on_error" then
-        utils.show_cmake_console(opts.cmake_console_position, opts.cmake_console_size)
-        vim.api.nvim_command("cbottom")
-      end
-    end),
-  })
+      end),
+    })
 
-  utils.job:start()
-  return utils.job
+    utils.job:start()
+    return utils.job
+  end
 end
 
+function utils.get_buffer_number_from_name(buffer_name)
+  local buffers = vim.api.nvim_list_bufs()
+  for _, buffer in ipairs(buffers) do
+    local name = vim.api.nvim_buf_get_name(buffer)
+    if string.match(name, buffer_name) == buffer_name then
+      return buffer
+    end
+  end
+  return nil -- Buffer with the given name not found
+end
+
+function utils.delete_buffers_except(buffer_name, buffer_list)
+  for _, buffer in ipairs(buffer_list) do
+    local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buffer), ':t')
+    -- print('name....................' .. name)
+    if name == buffer_name then
+      -- print('name: ' .. name .. ', bufnr: ' .. buffer)
+    else
+      vim.cmd(':bw! ' .. buffer)
+    end
+  end
+end
+
+function utils.symmetric_difference(list1, list2)
+  local unique_numbers = {}
+
+  local list1_set = {}
+  local list2_set = {}
+
+  -- Create a set from list1
+  for _, number in ipairs(list1) do
+    list1_set[number] = true
+  end
+
+  -- Create a set from list2 and add numbers to unique_numbers if not in list1
+  for _, number in ipairs(list2) do
+    if not list1_set[number] then
+      table.insert(unique_numbers, number)
+    end
+    list2_set[number] = true
+  end
+
+  -- Add numbers from list1 that are not in list2 to unique_numbers
+  for _, number in ipairs(list1) do
+    if not list2_set[number] then
+      table.insert(unique_numbers, number)
+    end
+  end
+
+  return unique_numbers
+end
+
+function utils.delete_scratch_buffers()
+  local buffers = vim.api.nvim_list_bufs()
+  for _, buffer in ipairs(buffers) do
+    local name = vim.api.nvim_buf_get_name(buffer)
+    if string.match(name, '^scratch_') then
+      vim.api.nvim_buf_delete(buffer, { force = true })
+    end
+  end
+end
+
+function utils.start_local_shell(opts)
+  local buffers_before = vim.api.nvim_list_bufs()
+
+  -- Now create the plit
+  vim.cmd(':' .. opts.split_direction .. ' ' .. opts.split_size .. 'sp | :term') -- Creater terminal in a split
+  local new_name = vim.fn.fnamemodify(opts.main_terminal_name, ":t")             -- Extract only the terminal name and reassign it
+  -- print('new_name: ' .. new_name)
+  -- print('buffers_before:')
+  -- vim.print(buffers_before)
+  -- vim.api.nvim_buf_set_option(vim.api.nvim_get_current_buf(), 'bufhidden', 'hide')
+  vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), new_name) -- Set the buffer name
+  vim.cmd(':setlocal laststatus=3')                                   -- Let there be a single status/lualine in the neovim instance
+
+  -- Renamming a terminal buffer creates a new hidden buffer, so duplicate terminals need to be deleted
+  local new_buffers_list = vim.api.nvim_list_bufs()
+  -- print('new_buffers_list:')
+  -- vim.print(new_buffers_list)
+  local diff_buffers_list = utils.symmetric_difference(buffers_before, new_buffers_list)
+  -- print('diff_buffers_list:')
+  -- vim.print(diff_buffers_list)
+  utils.delete_buffers_except(opts.main_terminal_name, diff_buffers_list)
+  utils.delete_scratch_buffers()
+
+  local new_buffer_idx = utils.get_buffer_number_from_name(opts.main_terminal_name)
+  return new_buffer_idx
+end
 
 --- Check if exists active job.
 -- @return true if not exists else false
