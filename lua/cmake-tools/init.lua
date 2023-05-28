@@ -210,6 +210,8 @@ function cmake.build(opt, callback)
     vim.list_extend(args, fargs)
   end
 
+  print('running from build')
+
   return utils.run(const.cmake_command, {}, args, {
     on_success = function()
       if type(callback) == "function" then
@@ -344,6 +346,20 @@ function cmake.run(opt, callback)
   else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT
     -- Build select launch target every time
     config.build_target = config.launch_target
+    if const.cmake_use_terminals then
+      result = config:get_launch_target()
+      local target_path = result.data
+      local new_s = vim.fn.fnamemodify(target_path, ":h")
+      return utils.execute(target_path, {
+        bufname = vim.fn.expand("%:p"),
+        cmake_launch_path = new_s,
+        cmake_console_position = const.cmake_console_position,
+        cmake_console_size = const.cmake_console_size,
+        cmake_launch_args = cmake:get_launch_args(),
+        cmake_use_terminals = const.cmake_use_terminals,
+        cmake_terminal_opts = const.cmake_terminal_opts
+      })
+    end
     return cmake.build({ fargs = utils.deepcopy(opt.fargs) }, function()
       vim.schedule(function()
         result = config:get_launch_target()

@@ -22,7 +22,7 @@ local const = {
     runInTerminal = true,
     console = "integratedTerminal",
   },
-  cmake_use_terminals = true,
+  cmake_use_terminals = false,
   cmake_terminal_opts = {
     split_direction = "horizontal",   -- "horizontal", "vertical"
     split_size = 10,

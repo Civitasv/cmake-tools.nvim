@@ -71,13 +71,13 @@ function utils.execute(executable, opts)
   if opts.cmake_use_terminals then
     print('testing from exectue()')
     vim.print(opts.cmake_terminal_opts)
-    local _, buffer_idx = utils.create_terminal_if_not_created(opts.cmake_terminal_opts.main_terminal_name, opts.cmake_terminal_opts)
-    utils.send_data_to_terminal(buffer_idx, executable)
+    local _, buffer_idx = utils.create_terminal_if_not_created(opts.cmake_terminal_opts.main_terminal_name,
+      opts.cmake_terminal_opts)
     if utils.check_if_term_is_running_child_procs(buffer_idx) then
       notify('CMake task is running in terminal', vim.log.levels.ERROR)
       return
     end
-    utils.send_data_to_terminal(buffer_idx, executable)
+    utils.send_data_to_terminal(buffer_idx, executable, false)
   else
     -- print("EXECUTABLE", executable)
     local set_bufname = "file " .. opts.bufname
@@ -155,7 +155,8 @@ function utils.run(cmd, env, args, opts)
   if opts.cmake_use_terminals then
     print('testing from run()')
     vim.print(opts.cmake_terminal_opts)
-    local _, buffer_idx = utils.create_terminal_if_not_created(opts.cmake_terminal_opts.main_terminal_name, opts.cmake_terminal_opts)
+    local _, buffer_idx = utils.create_terminal_if_not_created(opts.cmake_terminal_opts.main_terminal_name,
+      opts.cmake_terminal_opts)
     if utils.check_if_term_is_running_child_procs(buffer_idx) then
       notify('CMake task is running in terminal', vim.log.levels.ERROR)
       return
@@ -163,7 +164,7 @@ function utils.run(cmd, env, args, opts)
     for _, arg in ipairs(args) do
       cmd = cmd .. " " .. arg
     end
-    utils.send_data_to_terminal(buffer_idx, cmd)
+    utils.send_data_to_terminal(buffer_idx, cmd, true)
   else
     vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
     opts.cmake_show_console = opts.cmake_show_console == "always"
@@ -207,12 +208,17 @@ function utils.check_if_term_is_running_child_procs(terminal_buffer_idx)
   end
 end
 
-function utils.send_data_to_terminal(buffer_idx, cmd)
-  print('buffer_idx: ' .. buffer_idx .. ', cmd: ' ..cmd)
-  local chan = vim.api.nvim_buf_get_var(buffer_idx,"terminal_job_id")
+function utils.send_data_to_terminal(buffer_idx, cmd, wrap)
+  print('buffer_idx: ' .. buffer_idx .. ', cmd: ' .. cmd)
+  local chan = vim.api.nvim_buf_get_var(buffer_idx, "terminal_job_id")
   if vim.fn.has('win32') == 1 then
     -- print('win32')
-    cmd = "Start-Process -FilePath pwsh -ArgumentList '-Command " .. cmd .." ' -PassThru -NoNewWindow | Wait-Process \r"
+    if wrap then
+      cmd = "Start-Process -FilePath pwsh -ArgumentList '-Command " ..
+          cmd .. " ' -PassThru -NoNewWindow | Wait-Process \r"
+    else
+      cmd = cmd .. " \r"
+    end
   end
   vim.api.nvim_chan_send(chan, cmd)
 end
@@ -221,7 +227,7 @@ function utils.create_terminal_if_not_created(term_name, opts)
   local term_idx = nil
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
     -- local name = vim.api.nvim_buf_get_name(bufnr)
-    local name =  vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ':t')
+    local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ':t')
     if string.match(term_name, name) == term_name then
       term_idx = bufnr
       -- print('term_name: ' .. term_name .. ", term_idx: " .. term_idx)
@@ -305,8 +311,8 @@ function utils.start_local_shell(opts)
   -- Now create the plit
   vim.cmd(':' .. opts.split_direction .. ' ' .. opts.split_size .. 'sp | :term') -- Creater terminal in a split
   local new_name = vim.fn.fnamemodify(opts.main_terminal_name, ":t")             -- Extract only the terminal name and reassign it
-  vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), new_name) -- Set the buffer name
-  vim.cmd(':setlocal laststatus=3')                                   -- Let there be a single status/lualine in the neovim instance
+  vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), new_name)            -- Set the buffer name
+  vim.cmd(':setlocal laststatus=3')                                              -- Let there be a single status/lualine in the neovim instance
 
   -- Renamming a terminal buffer creates a new hidden buffer, so duplicate terminals need to be deleted
   local new_buffers_list = vim.api.nvim_list_bufs()
