@@ -73,7 +73,6 @@ function utils.execute(executable, opts)
     vim.print(opts.cmake_terminal_opts)
     local _, buffer_idx = utils.create_terminal_if_not_created(opts.cmake_terminal_opts.main_terminal_name, opts.cmake_terminal_opts)
     utils.send_data_to_terminal(buffer_idx, executable)
-    -- vim.api.nvim_chan_send(vim.api.nvim_buf_get_var(buffer_idx,"terminal_job_id"), "Start-Process -FilePath pwsh -ArgumentList '-Command Start-Sleep -Seconds 5 && ls && echo \"done!\" ' -PassThru -NoNewWindow | Wait-Process \r")
     if utils.check_if_term_is_running_child_procs(buffer_idx) then
       notify('CMake task is running in terminal', vim.log.levels.ERROR)
       return
@@ -161,8 +160,10 @@ function utils.run(cmd, env, args, opts)
       notify('CMake task is running in terminal', vim.log.levels.ERROR)
       return
     end
+    for _, arg in ipairs(args) do
+      cmd = cmd .. " " .. arg
+    end
     utils.send_data_to_terminal(buffer_idx, cmd)
-    -- vim.api.nvim_chan_send(vim.api.nvim_buf_get_var(buffer_idx,"terminal_job_id"), "Start-Process -FilePath pwsh -ArgumentList '-Command Start-Sleep -Seconds 5 && ls && echo \"done!\" ' -PassThru -NoNewWindow | Wait-Process \r")
   else
     vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
     opts.cmake_show_console = opts.cmake_show_console == "always"
@@ -204,14 +205,16 @@ function utils.check_if_term_is_running_child_procs(terminal_buffer_idx)
   else
     return false
   end
-
-  vim.print(vim.api.nvim_get_proc_children(vim.api.nvim_buf_get_var(vim.api.nvim_win_get_buf(vim.api.nvim_get_current_buf()),"terminal_job_pid")))
 end
 
 function utils.send_data_to_terminal(buffer_idx, cmd)
   print('buffer_idx: ' .. buffer_idx .. ', cmd: ' ..cmd)
   local chan = vim.api.nvim_buf_get_var(buffer_idx,"terminal_job_id")
-  vim.api.nvim_chan_send(chan, "Start-Process -FilePath pwsh -ArgumentList '-Command Start-Sleep -Seconds 5 && ls && echo \"done!\" ' -PassThru -NoNewWindow | Wait-Process \r")
+  if vim.fn.has('win32') == 1 then
+    -- print('win32')
+    cmd = "Start-Process -FilePath pwsh -ArgumentList '-Command " .. cmd .." ' -PassThru -NoNewWindow | Wait-Process \r"
+  end
+  vim.api.nvim_chan_send(chan, cmd)
 end
 
 function utils.create_terminal_if_not_created(term_name, opts)
