@@ -343,7 +343,7 @@ function cmake.run(opt, callback)
         local is_win32 = vim.fn.has("win32")
         if (is_win32 == 1) then
           -- Prints the output in the same cmake window as in wsl/linux
-          local new_s = getPath(target_path, "/")
+          local new_s = vim.fn.fnamemodify(target_path, ":h")
           -- print(getPath(target_path,sep))
           return utils.execute(target_path, {
             bufname = vim.fn.expand("%:p"),

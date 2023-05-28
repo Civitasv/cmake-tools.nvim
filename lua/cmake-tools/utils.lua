@@ -73,9 +73,6 @@ function utils.execute(executable, opts)
 
   utils.close_cmake_console();
 
-  -- TODO: Create a common output stream for all cmake related tasks and split running cmake tasks into terminals
-  -- This requires support form either 'pleanary.nvim-plenary-job', or 'jobstart()' api
-
   -- check if buufer exists. If it exists, delete it!
   local all_buffs = vim.api.nvim_list_bufs()
   -- local temp = " " -- This is only for testing
@@ -169,6 +166,7 @@ function utils.run(cmd, env, args, opts)
   utils.job:start()
   return utils.job
 end
+
 
 --- Check if exists active job.
 -- @return true if not exists else false
