@@ -18,6 +18,7 @@ local Config = {
   kit = nil,
   configure_preset = nil,
   build_preset = nil,
+  run_terminals = {} -- TODO Multiple terminals
 }
 
 function Config:new(const)

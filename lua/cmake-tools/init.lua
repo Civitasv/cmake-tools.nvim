@@ -78,6 +78,7 @@ function cmake.generate(opt, callback)
       end,
       cmake_console_position = const.cmake_console_position,
       cmake_show_console = const.cmake_show_console,
+      cmake_launch_path = vim.loop.cwd(),
       cmake_console_size = const.cmake_console_size,
       cmake_use_terminals = const.cmake_use_terminals,
       cmake_terminal_opts = const.cmake_terminal_opts
@@ -104,7 +105,7 @@ function cmake.generate(opt, callback)
 
   -- cmake kits, if cmake-kits.json doesn't exist, kit_option will
   -- be {env={}, args={}}, so it's okay.
-  local kit_option = kits.build_env_and_args(config.kit, const.cmake_use_terminals)
+  local kit_option = kits.build_env_and_args(config.kit, const.cmake_terminal_opts)
 
   if const.cmake_build_directory ~= "" then
     config:update_build_dir(const.cmake_build_directory)
@@ -135,6 +136,7 @@ function cmake.generate(opt, callback)
     cmake_console_position = const.cmake_console_position,
     cmake_show_console = const.cmake_show_console,
     cmake_console_size = const.cmake_console_size,
+    cmake_launch_path = vim.loop.cwd(),
     cmake_use_terminals = const.cmake_use_terminals,
     cmake_terminal_opts = const.cmake_terminal_opts
   })
@@ -162,6 +164,7 @@ function cmake.clean(callback)
     cmake_console_position = const.cmake_console_position,
     cmake_show_console = const.cmake_show_console,
     cmake_console_size = const.cmake_console_size,
+    cmake_launch_path = vim.loop.cwd(),
     cmake_use_terminals = const.cmake_use_terminals,
     cmake_terminal_opts = const.cmake_terminal_opts
   })
@@ -210,8 +213,6 @@ function cmake.build(opt, callback)
     vim.list_extend(args, fargs)
   end
 
-  print('running from build')
-
   return utils.run(const.cmake_command, {}, args, {
     on_success = function()
       if type(callback) == "function" then
@@ -221,6 +222,7 @@ function cmake.build(opt, callback)
     cmake_console_position = const.cmake_console_position,
     cmake_show_console = const.cmake_show_console,
     cmake_console_size = const.cmake_console_size,
+    cmake_launch_path = vim.loop.cwd(),
     cmake_use_terminals = const.cmake_use_terminals,
     cmake_terminal_opts = const.cmake_terminal_opts
   })
@@ -299,6 +301,7 @@ function cmake.install(opt)
     cmake_console_position = const.cmake_console_position,
     cmake_show_console     = const.cmake_show_console,
     cmake_console_size     = const.cmake_console_size,
+    cmake_launch_path      = vim.loop.cwd(),
     cmake_use_terminals    = const.cmake_use_terminals,
     cmake_terminal_opts    = const.cmake_terminal_opts
   })

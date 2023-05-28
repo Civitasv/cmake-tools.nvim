@@ -59,7 +59,7 @@ function kits.get_by_name(kit_name)
 end
 
 -- given a kit, build an argument list for CMake
-function kits.build_env_and_args(kit_name, cmake_use_terminals)
+function kits.build_env_and_args(kit_name, opts)
   local kit = kits.get_by_name(kit_name)
   local args = {}
   local env = {}
@@ -84,10 +84,10 @@ function kits.build_env_and_args(kit_name, cmake_use_terminals)
   -- if exists `compilers` option, then set variable for cmake
   if kit.compilers then
     for lang, compiler in pairs(kit.compilers) do
-      if cmake_use_terminals then
+      if opts.launch_task_in_a_child_process then
         add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=" .. "\\\"" .. compiler .. "\\\"" }) -- This is for passing to child process
       else
-        add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=" .. compiler })
+        add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=\"" .. compiler .. "\"" })
       end
     end
   end

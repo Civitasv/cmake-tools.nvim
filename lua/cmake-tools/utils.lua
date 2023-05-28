@@ -69,15 +69,37 @@ function utils.execute(executable, opts)
   vim.cmd("wall")
 
   if opts.cmake_use_terminals then
-    print('testing from exectue()')
-    vim.print(opts.cmake_terminal_opts)
+    -- print('testing from exectue()')
+    -- vim.print(opts.cmake_terminal_opts)
+    -- print('opts.cmake_launch_path: ')
+    -- vim.print(opts.cmake_launch_path)
+    -- print('executable ')
+    -- vim.print(executable)
+
     local _, buffer_idx = utils.create_terminal_if_not_created(opts.cmake_terminal_opts.main_terminal_name,
       opts.cmake_terminal_opts)
+
     if utils.check_if_term_is_running_child_procs(buffer_idx) then
       notify('CMake task is running in terminal', vim.log.levels.ERROR)
       return
     end
-    utils.send_data_to_terminal(buffer_idx, executable, false)
+
+    -- Reposition the terminal buffer, before sending commands
+    utils.reposition_term(buffer_idx)
+
+    -- Prepare Launch path if sending to terminal
+    local launch_path = opts.cmake_launch_path
+    if opts.cmake_terminal_opts.launch_executable_in_a_child_process then
+      launch_path = "\\\"" .. opts.cmake_launch_path .. "\\\""
+    end
+
+    -- Launch form main directory
+    if opts.cmake_terminal_opts.launch_executable_from_build_directory == true then
+      executable = "cd " .. launch_path .. " && " .. executable
+    end
+
+    -- Send final cmd to terminal
+    utils.send_data_to_terminal(buffer_idx, executable, opts.cmake_terminal_opts.launch_executable_in_a_child_process)
   else
     -- print("EXECUTABLE", executable)
     local set_bufname = "file " .. opts.bufname
@@ -153,18 +175,40 @@ function utils.run(cmd, env, args, opts)
   vim.cmd("wall")
 
   if opts.cmake_use_terminals then
-    print('testing from run()')
-    vim.print(opts.cmake_terminal_opts)
+    -- print('testing from run()')
+    -- vim.print(opts.cmake_terminal_opts)
+
     local _, buffer_idx = utils.create_terminal_if_not_created(opts.cmake_terminal_opts.main_terminal_name,
       opts.cmake_terminal_opts)
+
     if utils.check_if_term_is_running_child_procs(buffer_idx) then
       notify('CMake task is running in terminal', vim.log.levels.ERROR)
       return
     end
+
+    -- Reposition the terminal buffer, before sending commands
+    utils.reposition_term(buffer_idx)
+
+    -- Prepare Launch path form
+    local launch_path = opts.cmake_launch_path
+    if opts.cmake_terminal_opts.launch_task_in_a_child_process then
+      launch_path = "\\\"" .. opts.cmake_launch_path .. "\\\""
+    end
+
+    -- Launch form main directory
+    if opts.cmake_terminal_opts.launch_executable_from_build_directory then
+      cmd = "cd " .. launch_path .. " && " .. cmd
+    end
+
+    -- Add args to the cmd
     for _, arg in ipairs(args) do
       cmd = cmd .. " " .. arg
     end
-    utils.send_data_to_terminal(buffer_idx, cmd, true)
+
+    -- Send final cmd to terminal
+    -- TODO: Find a way to use opts.on_success()
+    -- opts.on_success()
+    utils.send_data_to_terminal(buffer_idx, cmd, opts.cmake_terminal_opts.launch_task_in_a_child_process)
   else
     vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
     opts.cmake_show_console = opts.cmake_show_console == "always"
@@ -200,8 +244,8 @@ function utils.check_if_term_is_running_child_procs(terminal_buffer_idx)
   local main_pid = vim.api.nvim_buf_get_var(terminal_buffer_idx, "terminal_job_pid")
   local child_procs = vim.api.nvim_get_proc_children(main_pid)
   if next(child_procs) then
-    print('child procs:')
-    vim.print(child_procs)
+    -- print('child procs:')
+    -- vim.print(child_procs)
     return true
   else
     return false
@@ -209,7 +253,7 @@ function utils.check_if_term_is_running_child_procs(terminal_buffer_idx)
 end
 
 function utils.send_data_to_terminal(buffer_idx, cmd, wrap)
-  print('buffer_idx: ' .. buffer_idx .. ', cmd: ' .. cmd)
+  -- print('buffer_idx: ' .. buffer_idx .. ', cmd: ' .. cmd)
   local chan = vim.api.nvim_buf_get_var(buffer_idx, "terminal_job_id")
   if vim.fn.has('win32') == 1 then
     -- print('win32')
@@ -219,6 +263,10 @@ function utils.send_data_to_terminal(buffer_idx, cmd, wrap)
     else
       cmd = cmd .. " \r"
     end
+  elseif vim.fn.has('macunix') == 1 then
+    -- TODO: Process wrapper for mac
+  elseif vim.fn.has('wsl') == 1 then
+    -- TODO: Process wrapper for unix
   end
   vim.api.nvim_chan_send(chan, cmd)
 end
@@ -255,7 +303,7 @@ function utils.get_buffer_number_from_name(buffer_name)
   return nil -- Buffer with the given name not found
 end
 
-function utils.delete_buffers_except(buffer_name, buffer_list)
+function utils.delete_duplicate_terminal_buffers_except(buffer_name, buffer_list)
   for _, buffer in ipairs(buffer_list) do
     local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buffer), ':t')
     -- print('name....................' .. name)
@@ -321,11 +369,16 @@ function utils.start_local_shell(opts)
   local diff_buffers_list = utils.symmetric_difference(buffers_before, new_buffers_list)
   -- print('diff_buffers_list:')
   -- vim.print(diff_buffers_list)
-  utils.delete_buffers_except(opts.main_terminal_name, diff_buffers_list)
+  utils.delete_duplicate_terminal_buffers_except(opts.main_terminal_name, diff_buffers_list)
   utils.delete_scratch_buffers()
 
   local new_buffer_idx = utils.get_buffer_number_from_name(opts.main_terminal_name)
   return new_buffer_idx
+end
+
+function utils.reposition_term(buffer_idx)
+  -- TODO: Reposition Windows
+  -- print('Reposition! ... window: ' .. buffer_idx)
 end
 
 --- Check if exists active job.
