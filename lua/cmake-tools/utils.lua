@@ -2,7 +2,7 @@ local Job = require("plenary.job")
 local Path = require("plenary.path")
 local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
-local const = require("cmake-tools.const")
+-- local const = require("cmake-tools.const")
 
 local utils = {
   job = nil,
@@ -81,8 +81,20 @@ function utils.execute(executable, opts)
     -- print('executable ')
     -- vim.print(executable)
 
-    local _, buffer_idx = utils.create_terminal_if_not_created(opts.cmake_terminal_opts.main_terminal_name,
+    -- Check if executable target is built first, as sometimes it is cleaned and user tries to run
+    if executable == nil then
+      notify("You must build the executable first!... Use \":CMakeBuild\"", vim.log.levels.ERROR)
+      return
+    end
+    print('Executable' .. executable)
+
+    -- Get pure executable name
+    executable = vim.fn.fnamemodify(executable, ":t")
+
+    local _, buffer_idx = utils.create_terminal_if_not_created(executable,
       opts.cmake_terminal_opts)
+
+    print('bufferidx: ' .. buffer_idx)
 
     if utils.check_if_term_is_running_child_procs(buffer_idx) then
       notify("CMake task is running in terminal", vim.log.levels.ERROR)
@@ -98,13 +110,20 @@ function utils.execute(executable, opts)
       launch_path = "\\\"" .. opts.cmake_launch_path .. "\\\""
     end
 
-    -- Launch form main directory
-    if opts.cmake_terminal_opts.launch_executable_from_build_directory == true then
+
+    -- Launch form executable's build directory by default
+    -- if opts.cmake_terminal_opts.launch_executable_from_build_directory == true then
+    if utils.iswin32 then
+      -- Weird windows thing: executables that are not in path only work as ".\executable" and not "executable" on the cmdline (even if focus is in the same directory)
+      executable = "cd " .. launch_path .. " && .\\" .. executable
+    else
       executable = "cd " .. launch_path .. " && " .. executable
     end
+    -- end
 
     -- Send final cmd to terminal
-    utils.send_data_to_terminal(buffer_idx, executable, opts.cmake_terminal_opts.launch_executable_in_a_child_process)
+    utils.send_data_to_terminal(buffer_idx, executable,
+      { wrap = opts.cmake_terminal_opts.launch_executable_in_a_child_process })
   else
     -- print("EXECUTABLE", executable)
     local set_bufname = "file " .. opts.bufname
@@ -180,10 +199,11 @@ function utils.run(cmd, env, args, opts)
   vim.cmd("wall")
 
   if opts.cmake_use_terminals then
+    local prefix = "[CMake] "
     -- print('testing from run()')
     -- vim.print(opts.cmake_terminal_opts)
 
-    local _, buffer_idx = utils.create_terminal_if_not_created(opts.cmake_terminal_opts.main_terminal_name,
+    local _, buffer_idx = utils.create_terminal_if_not_created(prefix .. opts.cmake_terminal_opts.main_terminal_name,
       opts.cmake_terminal_opts)
 
     if utils.check_if_term_is_running_child_procs(buffer_idx) then
@@ -195,12 +215,13 @@ function utils.run(cmd, env, args, opts)
     utils.reposition_term(buffer_idx)
 
     -- Prepare Launch path form
-    local launch_path = utils.prepare_launch_path(opts.cmake_launch_path, opts.cmake_terminal_opts.launch_task_in_a_child_process)
+    local launch_path = utils.prepare_launch_path(opts.cmake_launch_path,
+      opts.cmake_terminal_opts.launch_task_in_a_child_process)
 
-    -- Launch form main directory
-    if opts.cmake_terminal_opts.launch_executable_from_build_directory then
-      cmd = "cd " .. launch_path .. " && " .. cmd
-    end
+    -- Launch form executable's build directory by default
+    -- if opts.cmake_terminal_opts.launch_executable_from_build_directory then
+    cmd = "cd " .. launch_path .. " && " .. cmd
+    -- end
 
     -- Add args to the cmd
     for _, arg in ipairs(args) do
@@ -210,7 +231,7 @@ function utils.run(cmd, env, args, opts)
     -- Send final cmd to terminal
     -- TODO: Find a way to use opts.on_success()
     -- opts.on_success()
-    utils.send_data_to_terminal(buffer_idx, cmd, opts.cmake_terminal_opts.launch_task_in_a_child_process)
+    utils.send_data_to_terminal(buffer_idx, cmd, { wrap = opts.cmake_terminal_opts.launch_task_in_a_child_process })
   else
     vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
     opts.cmake_show_console = opts.cmake_show_console == "always"
@@ -246,20 +267,20 @@ function utils.check_if_term_is_running_child_procs(terminal_buffer_idx)
   local main_pid = vim.api.nvim_buf_get_var(terminal_buffer_idx, "terminal_job_pid")
   local child_procs = vim.api.nvim_get_proc_children(main_pid)
   if next(child_procs) then
-    -- print('child procs:')
-    -- vim.print(child_procs)
+    print('child procs:')
+    vim.print(child_procs)
     return true
   else
     return false
   end
 end
 
-function utils.send_data_to_terminal(buffer_idx, cmd, wrap)
+function utils.send_data_to_terminal(buffer_idx, cmd, opts)
   -- print('buffer_idx: ' .. buffer_idx .. ', cmd: ' .. cmd)
   local chan = vim.api.nvim_buf_get_var(buffer_idx, "terminal_job_id")
   if utils.iswin32 then
     -- print('win32')
-    if wrap then
+    if opts.wrap then
       cmd = "Start-Process -FilePath pwsh -ArgumentList '-Command " ..
           cmd .. " ' -PassThru -NoNewWindow | Wait-Process \r"
     else
@@ -271,7 +292,7 @@ function utils.send_data_to_terminal(buffer_idx, cmd, wrap)
     -- TODO: Process wrapper for wsl
   elseif utils.islinux then
     -- Process wrapper for Linux
-    if wrap then
+    if opts.wrap then
       cmd = cmd .. " \n"
     else
       cmd = cmd .. " \n"
@@ -282,31 +303,41 @@ end
 
 function utils.create_terminal_if_not_created(term_name, opts)
   local term_idx = nil
+  print('term_name much before........ ' .. term_name)
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    -- local name = vim.api.nvim_buf_get_name(bufnr)
-    local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
-    if string.match(term_name, name) == term_name then
+    local name = vim.api.nvim_buf_get_name(bufnr)
+    print('name before: ' .. name)
+    name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
+    print('name after: ' .. name)
+    if name == term_name then
       term_idx = bufnr
-      -- print('term_name: ' .. term_name .. ", term_idx: " .. term_idx)
+      print('term_name: ' .. term_name .. ", term_idx: " .. term_idx)
     else
-      -- print('name: ' .. name .. "bufnr: " .. bufnr)
+      print('name: ' .. name .. "bufnr: " .. bufnr)
     end
+    print(' ')
   end
+  print('term_name: ' .. term_name)
+  print("term_idx: " .. tostring(term_idx))
 
   if term_idx ~= nil then
     return true, term_idx
   else
-    term_idx = utils.start_local_shell(opts)
+    print('to start_term term_name: ' .. term_name)
+    term_idx = utils.start_local_shell(term_name, opts)
     return false, term_idx
   end
 end
 
 function utils.get_buffer_number_from_name(buffer_name)
   local buffers = vim.api.nvim_list_bufs()
-  for _, buffer in ipairs(buffers) do
-    local name = vim.api.nvim_buf_get_name(buffer)
-    if string.match(name, buffer_name) == buffer_name then
-      return buffer
+  for _, bufnr in ipairs(buffers) do
+    local name = vim.api.nvim_buf_get_name(bufnr)
+    name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
+    -- print('get_buffer_number_from_name: ' .. name .. ", required name: " .. buffer_name)
+    if name == buffer_name then
+      -- print(' HIT! get_buffer_number_from_name: ' .. name .. ", required name: " .. buffer_name)
+      return bufnr
     end
   end
   return nil -- Buffer with the given name not found
@@ -316,8 +347,9 @@ function utils.delete_duplicate_terminal_buffers_except(buffer_name, buffer_list
   for _, buffer in ipairs(buffer_list) do
     local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buffer), ":t")
     -- print('name....................' .. name)
+    -- if string.match(name, buffer_name) == name then
     if name == buffer_name then
-      -- print('name: ' .. name .. ', bufnr: ' .. buffer)
+      -- print('DONOT Delete: name in delete duplicate: ' .. name .. ', bufnr: ' .. buffer)
     else
       vim.cmd(":bw! " .. buffer)
     end
@@ -362,14 +394,16 @@ function utils.delete_scratch_buffers()
   end
 end
 
-function utils.start_local_shell(opts)
+function utils.start_local_shell(term_name, opts)
   local buffers_before = vim.api.nvim_list_bufs()
 
   -- Now create the plit
   vim.cmd(":" .. opts.split_direction .. " " .. opts.split_size .. "sp | :term") -- Creater terminal in a split
-  local new_name = vim.fn.fnamemodify(opts.main_terminal_name, ":t") -- Extract only the terminal name and reassign it
-  vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), new_name) -- Set the buffer name
-  vim.cmd(":setlocal laststatus=3") -- Let there be a single status/lualine in the neovim instance
+  -- local new_name = vim.fn.fnamemodify(term_name, ":t")                           -- Extract only the terminal name and reassign it
+  -- print('newname in start local: '.. new_name)
+  -- print('term_name in start local: '.. term_name)
+  vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), term_name) -- Set the buffer name
+  vim.cmd(":setlocal laststatus=3")                                    -- Let there be a single status/lualine in the neovim instance
 
   -- Renamming a terminal buffer creates a new hidden buffer, so duplicate terminals need to be deleted
   local new_buffers_list = vim.api.nvim_list_bufs()
@@ -378,10 +412,10 @@ function utils.start_local_shell(opts)
   local diff_buffers_list = utils.symmetric_difference(buffers_before, new_buffers_list)
   -- print('diff_buffers_list:')
   -- vim.print(diff_buffers_list)
-  utils.delete_duplicate_terminal_buffers_except(opts.main_terminal_name, diff_buffers_list)
+  utils.delete_duplicate_terminal_buffers_except(term_name, diff_buffers_list)
   utils.delete_scratch_buffers()
 
-  local new_buffer_idx = utils.get_buffer_number_from_name(opts.main_terminal_name)
+  local new_buffer_idx = utils.get_buffer_number_from_name(term_name)
   return new_buffer_idx
 end
 
@@ -408,7 +442,7 @@ function utils.reposition_term(buffer_idx)
   for _, buffer in ipairs(all_open_cmake_terminal_buffers) do
     table.insert(all_buffer_display_info, utils.get_buffer_display_info(buffer))
   end
-  print('all_buffer_display_info: ')
+  -- print('all_buffer_display_info: ')
   vim.print(all_buffer_display_info)
 end
 

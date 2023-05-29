@@ -15,15 +15,7 @@ local cmake = {}
 --- Setup cmake-tools
 function cmake.setup(values)
   const = vim.tbl_deep_extend("force", const, values)
-  cmake.set_terminal_prefix()
   config = Config:new(const)
-end
-
-function cmake.set_terminal_prefix()
-  -- Preset the main terminal name if  using terminal_opts
-  if const.cmake_use_terminals then
-    const.cmake_terminal_opts.main_terminal_name = "CMake: " .. const.cmake_terminal_opts.main_terminal_name
-  end
 end
 
 --- Generate build system for this project.
@@ -370,42 +362,43 @@ function cmake.run(opt, callback)
         cmake_use_terminals = const.cmake_use_terminals,
         cmake_terminal_opts = const.cmake_terminal_opts
       })
-    end
-    return cmake.build({ fargs = utils.deepcopy(opt.fargs) }, function()
-      vim.schedule(function()
-        result = config:get_launch_target()
-        -- print(utils.dump(result))
-        -- print("TARGET", target_path)
-        local target_path = result.data
-        local is_win32 = vim.fn.has("win32")
-        if (is_win32 == 1) then
-          -- Prints the output in the same cmake window as in wsl/linux
-          local new_s = vim.fn.fnamemodify(target_path, ":h")
-          -- print(getPath(target_path,sep))
-          return utils.execute(target_path, {
-            bufname = vim.fn.expand("%:p"),
-            cmake_launch_path = new_s,
-            cmake_console_position = const.cmake_console_position,
-            cmake_console_size = const.cmake_console_size,
-            cmake_launch_args = cmake:get_launch_args(),
-            cmake_use_terminals = const.cmake_use_terminals,
-            cmake_terminal_opts = const.cmake_terminal_opts
-          })
-        else
-          -- print("target_path: " .. target_path)
-          local new_s = getPath(target_path, "/")
-          return utils.execute('"' .. target_path .. '"', {
-            bufname = vim.fn.expand("%:t:r"),
-            cmake_launch_path = new_s,
-            cmake_console_position = const.cmake_console_position,
-            cmake_console_size = const.cmake_console_size,
-            cmake_launch_args = cmake:get_launch_args(),
-            cmake_use_terminals = const.cmake_use_terminals,
-            cmake_terminal_opts = const.cmake_terminal_opts
-          })
-        end
+    else
+      return cmake.build({ fargs = utils.deepcopy(opt.fargs) }, function()
+        vim.schedule(function()
+          result = config:get_launch_target()
+          -- print(utils.dump(result))
+          -- print("TARGET", target_path)
+          local target_path = result.data
+          local is_win32 = vim.fn.has("win32")
+          if (is_win32 == 1) then
+            -- Prints the output in the same cmake window as in wsl/linux
+            local new_s = vim.fn.fnamemodify(target_path, ":h")
+            -- print(getPath(target_path,sep))
+            return utils.execute(target_path, {
+              bufname = vim.fn.expand("%:p"),
+              cmake_launch_path = new_s,
+              cmake_console_position = const.cmake_console_position,
+              cmake_console_size = const.cmake_console_size,
+              cmake_launch_args = cmake:get_launch_args(),
+              cmake_use_terminals = const.cmake_use_terminals,
+              cmake_terminal_opts = const.cmake_terminal_opts
+            })
+          else
+            -- print("target_path: " .. target_path)
+            local new_s = getPath(target_path, "/")
+            return utils.execute('"' .. target_path .. '"', {
+              bufname = vim.fn.expand("%:t:r"),
+              cmake_launch_path = new_s,
+              cmake_console_position = const.cmake_console_position,
+              cmake_console_size = const.cmake_console_size,
+              cmake_launch_args = cmake:get_launch_args(),
+              cmake_use_terminals = const.cmake_use_terminals,
+              cmake_terminal_opts = const.cmake_terminal_opts
+            })
+          end
+        end)
       end)
-    end)
+    end
   end
 end
 

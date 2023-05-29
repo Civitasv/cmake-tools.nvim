@@ -36,7 +36,7 @@ local const = {
     -- Running Taaks
     launch_task_in_a_child_process = true,
     launch_executable_in_a_child_process = true,
-    launch_executable_from_build_directory = true
+    -- launch_executable_from_build_directory = true -- This option is now invalid. We launch from build directory by default. May add it back after clean up and edge cases
   }
 }
 
