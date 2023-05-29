@@ -6,6 +6,11 @@ local const = require("cmake-tools.const")
 
 local utils = {
   job = nil,
+
+  iswin32 = vim.fn.has("win32") == 1,
+  ismac = vim.fn.has("mac") == 1,
+  iswsl = vim.fn.has("wsl") == 1,
+  islinux = vim.fn.has("linux") == 1
 }
 
 local function notify(msg, log_level)
@@ -80,7 +85,7 @@ function utils.execute(executable, opts)
       opts.cmake_terminal_opts)
 
     if utils.check_if_term_is_running_child_procs(buffer_idx) then
-      notify('CMake task is running in terminal', vim.log.levels.ERROR)
+      notify("CMake task is running in terminal", vim.log.levels.ERROR)
       return
     end
 
@@ -182,7 +187,7 @@ function utils.run(cmd, env, args, opts)
       opts.cmake_terminal_opts)
 
     if utils.check_if_term_is_running_child_procs(buffer_idx) then
-      notify('CMake task is running in terminal', vim.log.levels.ERROR)
+      notify("CMake task is running in terminal", vim.log.levels.ERROR)
       return
     end
 
@@ -190,10 +195,7 @@ function utils.run(cmd, env, args, opts)
     utils.reposition_term(buffer_idx)
 
     -- Prepare Launch path form
-    local launch_path = opts.cmake_launch_path
-    if opts.cmake_terminal_opts.launch_task_in_a_child_process then
-      launch_path = "\\\"" .. opts.cmake_launch_path .. "\\\""
-    end
+    local launch_path = utils.prepare_launch_path(opts.cmake_launch_path, opts.cmake_terminal_opts.launch_task_in_a_child_process)
 
     -- Launch form main directory
     if opts.cmake_terminal_opts.launch_executable_from_build_directory then
@@ -255,7 +257,7 @@ end
 function utils.send_data_to_terminal(buffer_idx, cmd, wrap)
   -- print('buffer_idx: ' .. buffer_idx .. ', cmd: ' .. cmd)
   local chan = vim.api.nvim_buf_get_var(buffer_idx, "terminal_job_id")
-  if vim.fn.has('win32') == 1 then
+  if utils.iswin32 then
     -- print('win32')
     if wrap then
       cmd = "Start-Process -FilePath pwsh -ArgumentList '-Command " ..
@@ -263,10 +265,17 @@ function utils.send_data_to_terminal(buffer_idx, cmd, wrap)
     else
       cmd = cmd .. " \r"
     end
-  elseif vim.fn.has('macunix') == 1 then
+  elseif utils.ismac then
     -- TODO: Process wrapper for mac
-  elseif vim.fn.has('wsl') == 1 then
-    -- TODO: Process wrapper for unix
+  elseif utils.iswsl then
+    -- TODO: Process wrapper for wsl
+  elseif utils.islinux then
+    -- Process wrapper for Linux
+    if wrap then
+      cmd = cmd .. " \n"
+    else
+      cmd = cmd .. " \n"
+    end
   end
   vim.api.nvim_chan_send(chan, cmd)
 end
@@ -275,7 +284,7 @@ function utils.create_terminal_if_not_created(term_name, opts)
   local term_idx = nil
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
     -- local name = vim.api.nvim_buf_get_name(bufnr)
-    local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ':t')
+    local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
     if string.match(term_name, name) == term_name then
       term_idx = bufnr
       -- print('term_name: ' .. term_name .. ", term_idx: " .. term_idx)
@@ -305,12 +314,12 @@ end
 
 function utils.delete_duplicate_terminal_buffers_except(buffer_name, buffer_list)
   for _, buffer in ipairs(buffer_list) do
-    local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buffer), ':t')
+    local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buffer), ":t")
     -- print('name....................' .. name)
     if name == buffer_name then
       -- print('name: ' .. name .. ', bufnr: ' .. buffer)
     else
-      vim.cmd(':bw! ' .. buffer)
+      vim.cmd(":bw! " .. buffer)
     end
   end
 end
@@ -347,7 +356,7 @@ function utils.delete_scratch_buffers()
   local buffers = vim.api.nvim_list_bufs()
   for _, buffer in ipairs(buffers) do
     local name = vim.api.nvim_buf_get_name(buffer)
-    if string.match(name, '^scratch_') then
+    if string.match(name, "^scratch_") then
       vim.api.nvim_buf_delete(buffer, { force = true })
     end
   end
@@ -357,10 +366,10 @@ function utils.start_local_shell(opts)
   local buffers_before = vim.api.nvim_list_bufs()
 
   -- Now create the plit
-  vim.cmd(':' .. opts.split_direction .. ' ' .. opts.split_size .. 'sp | :term') -- Creater terminal in a split
-  local new_name = vim.fn.fnamemodify(opts.main_terminal_name, ":t")             -- Extract only the terminal name and reassign it
-  vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), new_name)            -- Set the buffer name
-  vim.cmd(':setlocal laststatus=3')                                              -- Let there be a single status/lualine in the neovim instance
+  vim.cmd(":" .. opts.split_direction .. " " .. opts.split_size .. "sp | :term") -- Creater terminal in a split
+  local new_name = vim.fn.fnamemodify(opts.main_terminal_name, ":t") -- Extract only the terminal name and reassign it
+  vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), new_name) -- Set the buffer name
+  vim.cmd(":setlocal laststatus=3") -- Let there be a single status/lualine in the neovim instance
 
   -- Renamming a terminal buffer creates a new hidden buffer, so duplicate terminals need to be deleted
   local new_buffers_list = vim.api.nvim_list_bufs()
@@ -374,6 +383,20 @@ function utils.start_local_shell(opts)
 
   local new_buffer_idx = utils.get_buffer_number_from_name(opts.main_terminal_name)
   return new_buffer_idx
+end
+
+function utils.prepare_launch_path(path, in_a_child_process)
+  if utils.iswin32 then
+    if in_a_child_process then
+      path = "\\\"" .. path .. "\\\""
+    end
+  elseif utils.islinux then
+    if in_a_child_process then
+      path = path
+    end
+  end
+
+  return path
 end
 
 function utils.reposition_term(buffer_idx)
