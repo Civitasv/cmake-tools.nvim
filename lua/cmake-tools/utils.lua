@@ -378,7 +378,47 @@ end
 
 function utils.reposition_term(buffer_idx)
   -- TODO: Reposition Windows
-  -- print('Reposition! ... window: ' .. buffer_idx)
+  print('Reposition! ... window: ' .. buffer_idx)
+  -- First get all buffers with prefix "CMake: ".. Since all our terminal buffers have prefix as "CMake: "
+  local all_open_cmake_terminal_buffers = utils.get_buffers_with_prefix('CMake: ')
+  local all_buffer_display_info = {}
+  for _, buffer in ipairs(all_open_cmake_terminal_buffers) do
+    table.insert(all_buffer_display_info, utils.get_buffer_display_info(buffer))
+  end
+  print('all_buffer_display_info: ')
+  vim.print(all_buffer_display_info)
+end
+
+function utils.get_buffers_with_prefix(prefix)
+  local buffers = vim.api.nvim_list_bufs()
+  local filtered_buffers = {}
+
+  for _, buffer in ipairs(buffers) do
+    local name = vim.api.nvim_buf_get_name(buffer)
+    local basename = vim.fn.fnamemodify(name, ":t")
+    if basename:sub(1, #prefix) == prefix then
+      table.insert(filtered_buffers, buffer)
+    end
+  end
+
+  return filtered_buffers
+end
+
+function utils.get_buffer_display_info(buffer_idx)
+  local buffer_display_info = { buffer_idx = buffer_idx, tabpages = {} }
+
+  for _, tabpage in ipairs(vim.api.nvim_list_tabpages()) do
+    local tabpage_id = vim.api.nvim_tabpage_get_number(tabpage)
+    buffer_display_info.tabpages[tabpage_id] = {}
+
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
+      if vim.api.nvim_win_get_buf(win) == buffer_idx then
+        table.insert(buffer_display_info.tabpages[tabpage_id], win)
+      end
+    end
+  end
+
+  return buffer_display_info
 end
 
 --- Check if exists active job.

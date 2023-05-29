@@ -26,7 +26,7 @@ local const = {
   cmake_terminal_opts = {
     split_direction = "horizontal", -- "horizontal", "vertical"
     split_size = 10,
-    main_terminal_name = "CMake Main Terminal",
+    main_terminal_name = "Main Terminal",
 
     -- Window handling
     display_single_terminal_arcoss_instance = true,

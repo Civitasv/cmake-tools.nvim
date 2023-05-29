@@ -15,7 +15,15 @@ local cmake = {}
 --- Setup cmake-tools
 function cmake.setup(values)
   const = vim.tbl_deep_extend("force", const, values)
+  cmake.set_terminal_prefix()
   config = Config:new(const)
+end
+
+function cmake.set_terminal_prefix()
+  -- Preset the main terminal name if  using terminal_opts
+  if const.cmake_use_terminals then
+    const.cmake_terminal_opts.main_terminal_name = "CMake: " .. const.cmake_terminal_opts.main_terminal_name
+  end
 end
 
 --- Generate build system for this project.
