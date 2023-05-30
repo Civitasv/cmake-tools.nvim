@@ -3,7 +3,6 @@ local Path = require("plenary.path")
 local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
 local terminal = require("cmake-tools.terminal")
-local osys = require("cmake-tools.osys")
 local log = require("cmake-tools.log")
 
 -- local const = require("cmake-tools.const")
@@ -62,6 +61,10 @@ function utils.execute(executable, opts)
   -- save all
   vim.cmd("wall")
 
+  -- First, close the console
+  utils.close_cmake_console()
+
+  -- Then, execute it
   if opts.cmake_unify_terminal_for_launch then
     terminal.execute(executable, opts)
   else
@@ -69,9 +72,7 @@ function utils.execute(executable, opts)
     local set_bufname = "file " .. opts.bufname
     local prefix = string.format("%s %d new", opts.cmake_console_position, opts.cmake_console_size)
 
-    utils.close_cmake_console();
-
-    -- check if buufer exists. If it exists, delete it!
+    -- check if bufer exists. If it exists, delete it!
     local all_buffs = vim.api.nvim_list_bufs()
     -- local temp = " " -- This is only for testing
     for _, buf_nr in ipairs(all_buffs) do

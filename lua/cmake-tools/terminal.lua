@@ -228,14 +228,14 @@ function terminal.execute(executable, opts)
 
   -- Get pure executable name
   executable = vim.fn.fnamemodify(executable, ":t")
-  print("Executable", executable)
+  --[[ print("Executable", executable) ]]
 
   -- Buffer name of executable needs to be set with a prefix so that the reposition_term() function can find it
   local executable_buffer_name = prefix .. vim.fn.fnamemodify(executable, ":t")
   local _, buffer_idx = terminal.create_if_not_exists(executable_buffer_name,
     opts.cmake_terminal_opts)
 
-  print("bufferidx: " .. buffer_idx)
+  --[[ print("bufferidx: " .. buffer_idx) ]]
 
   if terminal.check_if_running_child_procs(buffer_idx) then
     log.error("CMake task is running in terminal")
