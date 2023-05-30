@@ -74,6 +74,7 @@ function utils.execute(executable, opts)
   vim.cmd("wall")
 
   if opts.cmake_use_terminals then
+    local prefix = opts.cmake_terminal_opts.prefix_for_all_cmake_terminals
     -- print('testing from exectue()')
     -- vim.print(opts.cmake_terminal_opts)
     -- print('opts.cmake_launch_path: ')
@@ -86,12 +87,13 @@ function utils.execute(executable, opts)
       notify("You must build the executable first!... Use \":CMakeBuild\"", vim.log.levels.ERROR)
       return
     end
-    print('Executable' .. executable)
 
     -- Get pure executable name
     executable = vim.fn.fnamemodify(executable, ":t")
 
-    local _, buffer_idx = utils.create_terminal_if_not_created(executable,
+    -- Buffer name of executable needs to be set with a prefix so that the reposition_term() function can find it
+    local executable_buffer_name = prefix .. vim.fn.fnamemodify(executable, ":t")
+    local _, buffer_idx = utils.create_terminal_if_not_created(executable_buffer_name,
       opts.cmake_terminal_opts)
 
     print('bufferidx: ' .. buffer_idx)
@@ -102,7 +104,7 @@ function utils.execute(executable, opts)
     end
 
     -- Reposition the terminal buffer, before sending commands
-    utils.reposition_term(buffer_idx)
+    utils.reposition_term(buffer_idx, opts.cmake_terminal_opts)
 
     -- Prepare Launch path if sending to terminal
     local launch_path = opts.cmake_launch_path
@@ -199,10 +201,11 @@ function utils.run(cmd, env, args, opts)
   vim.cmd("wall")
 
   if opts.cmake_use_terminals then
-    local prefix = "[CMake] "
+    local prefix = opts.cmake_terminal_opts.prefix_for_all_cmake_terminals
     -- print('testing from run()')
     -- vim.print(opts.cmake_terminal_opts)
 
+    -- prefix is added to the terminal name because the reposition_term() function needs to find it
     local _, buffer_idx = utils.create_terminal_if_not_created(prefix .. opts.cmake_terminal_opts.main_terminal_name,
       opts.cmake_terminal_opts)
 
@@ -211,8 +214,9 @@ function utils.run(cmd, env, args, opts)
       return
     end
 
+    print('prefix from within run(): ' .. opts.cmake_terminal_opts.prefix_for_all_cmake_terminals)
     -- Reposition the terminal buffer, before sending commands
-    utils.reposition_term(buffer_idx)
+    utils.reposition_term(buffer_idx, opts.cmake_terminal_opts)
 
     -- Prepare Launch path form
     local launch_path = utils.prepare_launch_path(opts.cmake_launch_path,
@@ -433,16 +437,22 @@ function utils.prepare_launch_path(path, in_a_child_process)
   return path
 end
 
-function utils.reposition_term(buffer_idx)
+function utils.reposition_term(buffer_idx, opts)
   -- TODO: Reposition Windows
-  print('Reposition! ... window: ' .. buffer_idx)
-  -- First get all buffers with prefix "CMake: ".. Since all our terminal buffers have prefix as "CMake: "
-  local all_open_cmake_terminal_buffers = utils.get_buffers_with_prefix('CMake: ')
+  -- This takes care of all window handling with a single buffer idx and opts.cmake_terminal_opts which are passed in as opts
+
+  -- print('Reposition! ... window: ' .. buffer_idx .. opts)
+
+  -- First get all buffers across all tabs, with the custom prefix
+  print('prefix from within reposition_term(): ' .. opts.prefix_for_all_cmake_terminals)
+  local all_open_cmake_terminal_buffers = utils.get_buffers_with_prefix(opts.prefix_for_all_cmake_terminals)
+
+  -- Check how, where and weather the buffers are displayed in the neovim instance
   local all_buffer_display_info = {}
   for _, buffer in ipairs(all_open_cmake_terminal_buffers) do
     table.insert(all_buffer_display_info, utils.get_buffer_display_info(buffer))
   end
-  -- print('all_buffer_display_info: ')
+  print('all_buffer_display_info: ')
   vim.print(all_buffer_display_info)
 end
 

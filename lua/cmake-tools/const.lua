@@ -27,6 +27,7 @@ local const = {
     split_direction = "horizontal", -- "horizontal", "vertical"
     split_size = 10,
     main_terminal_name = "Main Terminal",
+    prefix_for_all_cmake_terminals = "[CMakeTools]: ", -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
 
     -- Window handling
     display_single_terminal_arcoss_instance = true,
