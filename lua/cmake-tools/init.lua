@@ -107,7 +107,8 @@ function cmake.generate(opt, callback)
 
   -- cmake kits, if cmake-kits.json doesn't exist, kit_option will
   -- be {env={}, args={}}, so it's okay.
-  local kit_option = kits.build_env_and_args(config.kit, const.cmake_terminal_opts)
+  local kit_option = kits.build_env_and_args(config.kit, const.cmake_unify_terminal_for_launch, const
+    .cmake_terminal_opts)
 
   if const.cmake_build_directory ~= "" then
     config:update_build_dir(const.cmake_build_directory)
