@@ -95,6 +95,15 @@ function kits.build_env_and_args(kit_name, use_terminal, opts)
       end
     end
   end
+
+  -- See : https://metricpanda.com/rival-fortress-update-27-compiling-with-clang-on-windows/
+  if kit.linker then
+    if opts.launch_task_in_a_child_process then
+      table.insert(args, "-DCMAKE_LINKER=" .. "\\\"" .. kit.linker .. "\\\"")
+    else
+      table.insert(args, "-DCMAKE_LINKER=" .. "\"" .. kit.linker .. "\"")
+    end
+  end
   if kit.generator then
     table.insert(args, "-G " .. kit.generator)
   end
