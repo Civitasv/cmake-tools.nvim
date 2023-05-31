@@ -176,7 +176,7 @@ function terminal.reposition(buffer_idx, opts)
     table.insert(all_buffer_display_info, terminal.get_buffer_display_info(buffer))
   end
   print("all_buffer_display_info: ")
-  print(all_buffer_display_info)
+  vim.print(all_buffer_display_info) -- Use vim.print() for printing tables
 end
 
 function terminal.get_buffer_display_info(buffer_idx)
@@ -299,14 +299,11 @@ function terminal.run(cmd, env, args, opts)
   end
 
   -- Send final cmd to terminal
-  -- TODO: Find a way to use opts.on_success()
-  -- opts.on_success()
   terminal.send_data_to_terminal(buffer_idx, cmd, { wrap = opts.cmake_terminal_opts.launch_task_in_a_child_process })
 
   --[[ while os.check_if_term_is_running_child_procs(buffer_idx) do ]]
   --[[   print("I'm waiting") ]]
   --[[ end ]]
-  opts.on_success()
 end
 
 function terminal.prepare_launch_path(path, in_a_child_process)
