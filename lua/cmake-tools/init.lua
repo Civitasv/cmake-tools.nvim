@@ -470,25 +470,28 @@ function cmake.select_build_type(callback)
     end
   end
 
-  vim.ui.select(types, { prompt = "Select build type" }, function(build_type)
-    if not build_type then
-      return
-    end
-    if config.build_type ~= build_type then
-      config.build_type = build_type
-      if type(callback) == "function" then
-        callback()
-      end
-      -- regenerate it
-      --[[ return cmake.generate({ bang = false, fargs = {} }, function() ]]
-      --[[   vim.schedule(function() ]]
-      --[[     if type(callback) == "function" then ]]
-      --[[       callback() ]]
-      --[[     end ]]
-      --[[   end) ]]
-      --[[ end) ]]
-    end
-  end)
+  vim.ui.select(types, { prompt = "Select build type" },
+    vim.schedule_wrap(
+      function(build_type)
+        if not build_type then
+          return
+        end
+        if config.build_type ~= build_type then
+          config.build_type = build_type
+          if type(callback) == "function" then
+            callback()
+          end
+          -- regenerate it
+          --[[ return cmake.generate({ bang = false, fargs = {} }, function() ]]
+          --[[   vim.schedule(function() ]]
+          --[[     if type(callback) == "function" then ]]
+          --[[       callback() ]]
+          --[[     end ]]
+          --[[   end) ]]
+          --[[ end) ]]
+        end
+      end)
+  )
 end
 
 function cmake.select_kit(callback)
@@ -510,17 +513,20 @@ function cmake.select_kit(callback)
       end
     end
 
-    vim.ui.select(cmake_kits, { prompt = "Select cmake kits" }, function(kit)
-      if not kit then
-        return
-      end
-      if config.kit ~= kit then
-        config.kit = kit
-      end
-      if type(callback) == "function" then
-        callback()
-      end
-    end)
+    vim.ui.select(cmake_kits, { prompt = "Select cmake kits" },
+      vim.schedule_wrap(
+        function(kit)
+          if not kit then
+            return
+          end
+          if config.kit ~= kit then
+            config.kit = kit
+          end
+          if type(callback) == "function" then
+            callback()
+          end
+        end)
+    )
   else
     log.error("Cannot find CMakeKits.[json|yaml] at Root!!")
   end
@@ -549,20 +555,22 @@ function cmake.select_configure_preset(callback)
         prompt = "Select cmake configure presets",
         format_item = format_preset_name
       },
-      function(choice)
-        if not choice then
-          return
-        end
-        if config.configure_preset ~= choice then
-          config.configure_preset = choice
-          config.build_type = presets.get_build_type(
-            presets.get_preset_by_name(choice, "configurePresets")
-          )
-        end
-        if type(callback) == "function" then
-          callback()
-        end
-      end)
+      vim.schedule_wrap(
+        function(choice)
+          if not choice then
+            return
+          end
+          if config.configure_preset ~= choice then
+            config.configure_preset = choice
+            config.build_type = presets.get_build_type(
+              presets.get_preset_by_name(choice, "configurePresets")
+            )
+          end
+          if type(callback) == "function" then
+            callback()
+          end
+        end)
+    )
   else
     log.error("Cannot find CMake[User]Presets.json at Root!!")
   end
@@ -587,17 +595,19 @@ function cmake.select_build_preset(callback)
       return p.displayName or p.name
     end
     vim.ui.select(build_preset_names, { prompt = "Select cmake build presets", format_item = format_preset_name },
-      function(choice)
-        if not choice then
-          return
-        end
-        if config.build_preset ~= choice then
-          config.build_preset = choice
-        end
-        if type(callback) == "function" then
-          callback()
-        end
-      end)
+      vim.schedule_wrap(
+        function(choice)
+          if not choice then
+            return
+          end
+          if config.build_preset ~= choice then
+            config.build_preset = choice
+          end
+          if type(callback) == "function" then
+            callback()
+          end
+        end)
+    )
   else
     log.error("Cannot find CMake[User]Presets.json at Root!!")
   end
@@ -628,15 +638,18 @@ function cmake.select_build_target(callback, not_regenerate)
     end
   end
   local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
-  vim.ui.select(display_targets, { prompt = "Select build target" }, function(_, idx)
-    if not idx then
-      return
-    end
-    config.build_target = targets[idx]
-    if type(callback) == "function" then
-      callback()
-    end
-  end)
+  vim.ui.select(display_targets, { prompt = "Select build target" },
+    vim.schedule_wrap(
+      function(_, idx)
+        if not idx then
+          return
+        end
+        config.build_target = targets[idx]
+        if type(callback) == "function" then
+          callback()
+        end
+      end)
+  )
 end
 
 function cmake.select_launch_target(callback, not_regenerate)
@@ -665,15 +678,18 @@ function cmake.select_launch_target(callback, not_regenerate)
   end
   local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
 
-  vim.ui.select(display_targets, { prompt = "Select launch target" }, function(_, idx)
-    if not idx then
-      return
-    end
-    config.launch_target = targets[idx]
-    if type(callback) == "function" then
-      callback()
-    end
-  end)
+  vim.ui.select(display_targets, { prompt = "Select launch target" },
+    vim.schedule_wrap(
+      function(_, idx)
+        if not idx then
+          return
+        end
+        config.launch_target = targets[idx]
+        if type(callback) == "function" then
+          callback()
+        end
+      end)
+  )
 end
 
 --[[ Getters ]]
