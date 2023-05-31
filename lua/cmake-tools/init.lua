@@ -9,6 +9,7 @@ local kits = require("cmake-tools.kits")
 local presets = require("cmake-tools.presets")
 local log = require("cmake-tools.log")
 local osys = require("cmake-tools.osys")
+local terminal = require("cmake-tools.terminal")
 
 local config = Config:new(const)
 
@@ -352,38 +353,55 @@ function cmake.run(opt, callback)
   else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT
     -- Build select launch target every time
     config.build_target = config.launch_target
-    return cmake.build({ fargs = utils.deepcopy(opt.fargs) }, function()
-      vim.schedule(function()
-        result = config:get_launch_target()
-        local target_path = result.data
-        local new_s = vim.fn.fnamemodify(target_path, ":h")
+    if const.cmake_unify_terminal_for_launch then
+      -- DONOT schedule (or) schedule_wrap this piece of code
+      -- BUG: Without this if-else logic, the forwarding to terminal.execute() from utils.execute(), in utils.lua does not work.
+      result = config:get_launch_target()
+      local target_path = result.data
+      local new_s = vim.fn.fnamemodify(target_path, ":h")
+      return terminal.execute(target_path, {
+        bufname = vim.fn.expand("%:p"),
+        cmake_launch_path = new_s,
+        cmake_console_position = const.cmake_console_position,
+        cmake_console_size = const.cmake_console_size,
+        cmake_launch_args = cmake:get_launch_args(),
+        cmake_use_terminals = const.cmake_unify_terminal_for_launch,
+        cmake_terminal_opts = const.cmake_terminal_opts
+      })
+    else
+      return cmake.build({ fargs = utils.deepcopy(opt.fargs) }, function()
+        vim.schedule(function()
+          result = config:get_launch_target()
+          local target_path = result.data
+          local new_s = vim.fn.fnamemodify(target_path, ":h")
 
-        if (osys.is_win32 == 1) then
-          return utils.execute(target_path, {
-            bufname = vim.fn.expand("%:p"),
-            cmake_launch_path = new_s,
-            cmake_console_position = const.cmake_console_position,
-            cmake_console_size = const.cmake_console_size,
-            cmake_launch_args = cmake:get_launch_args(),
-            cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
-            cmake_terminal_opts = const.cmake_terminal_opts
-          })
-        else
-          if not const.cmake_unify_terminal_for_launch then
-            target_path = '"' .. target_path .. '"'
+          if (osys.is_win32 == 1) then
+            return utils.execute(target_path, {
+              bufname = vim.fn.expand("%:p"),
+              cmake_launch_path = new_s,
+              cmake_console_position = const.cmake_console_position,
+              cmake_console_size = const.cmake_console_size,
+              cmake_launch_args = cmake:get_launch_args(),
+              cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
+              cmake_terminal_opts = const.cmake_terminal_opts
+            })
+          else
+            if not const.cmake_unify_terminal_for_launch then
+              target_path = '"' .. target_path .. '"'
+            end
+            return utils.execute(target_path, {
+              bufname = vim.fn.expand("%:t:r"),
+              cmake_launch_path = new_s,
+              cmake_console_position = const.cmake_console_position,
+              cmake_console_size = const.cmake_console_size,
+              cmake_launch_args = cmake:get_launch_args(),
+              cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
+              cmake_terminal_opts = const.cmake_terminal_opts
+            })
           end
-          return utils.execute(target_path, {
-            bufname = vim.fn.expand("%:t:r"),
-            cmake_launch_path = new_s,
-            cmake_console_position = const.cmake_console_position,
-            cmake_console_size = const.cmake_console_size,
-            cmake_launch_args = cmake:get_launch_args(),
-            cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
-            cmake_terminal_opts = const.cmake_terminal_opts
-          })
-        end
+        end)
       end)
-    end)
+    end
   end
 end
 
