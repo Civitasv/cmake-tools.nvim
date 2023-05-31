@@ -247,7 +247,7 @@ function terminal.execute(executable, opts)
 
   -- Prepare Launch path if sending to terminal
   local launch_path = terminal.prepare_launch_path(opts.cmake_launch_path,
-    opts.cmake_terminal_opts.launch_task_in_a_child_process)
+    opts.cmake_terminal_opts.launch_executable_in_a_child_process)
 
   -- Launch form executable's build directory by default
   -- if opts.cmake_terminal_opts.launch_executable_from_build_directory == true then
@@ -310,6 +310,8 @@ function terminal.prepare_launch_path(path, in_a_child_process)
   if osys.iswin32 then
     if in_a_child_process then
       path = "\\\"" .. path .. "\\\""
+    else
+      path = "\"" .. path .. "\"" -- The path is kept in double quotes ... Windows Duh!
     end
   elseif osys.islinux then
     if in_a_child_process then
