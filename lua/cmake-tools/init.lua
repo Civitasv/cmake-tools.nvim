@@ -491,7 +491,8 @@ function cmake.select_build_type(callback)
           --[[   end) ]]
           --[[ end) ]]
         end
-      end)
+      end
+    )
   )
 end
 
@@ -526,7 +527,8 @@ function cmake.select_kit(callback)
           if type(callback) == "function" then
             callback()
           end
-        end)
+        end
+      )
     )
   else
     log.error("Cannot find CMakeKits.[json|yaml] at Root!!")
@@ -570,7 +572,8 @@ function cmake.select_configure_preset(callback)
           if type(callback) == "function" then
             callback()
           end
-        end)
+        end
+      )
     )
   else
     log.error("Cannot find CMake[User]Presets.json at Root!!")
@@ -607,7 +610,8 @@ function cmake.select_build_preset(callback)
           if type(callback) == "function" then
             callback()
           end
-        end)
+        end
+      )
     )
   else
     log.error("Cannot find CMake[User]Presets.json at Root!!")
@@ -649,7 +653,8 @@ function cmake.select_build_target(callback, not_regenerate)
         if type(callback) == "function" then
           callback()
         end
-      end)
+      end
+    )
   )
 end
 
@@ -689,7 +694,8 @@ function cmake.select_launch_target(callback, not_regenerate)
         if type(callback) == "function" then
           callback()
         end
-      end)
+      end
+    )
   )
 end
 

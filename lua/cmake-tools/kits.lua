@@ -7,7 +7,7 @@ function kits.parse()
   local function findcfg()
     local files = vim.fn.readdir(".")
     local file = nil
-    for _, f in ipairs(files) do -- iterate over files in current directory
+    for _, f in ipairs(files) do                                -- iterate over files in current directory
       if (f == "cmake-kits.json" or f == "CMakeKits.json") then -- if a kits config file is found
         file = vim.fn.resolve("./" .. f)
         break
@@ -21,8 +21,8 @@ function kits.parse()
 
   local config = nil
 
-  local file = findcfg() -- check for config file
-  if file then -- if one is found ...
+  local file = findcfg()           -- check for config file
+  if file then                     -- if one is found ...
     if file:match(".*%.json") then -- .. and is a json file
       config = vim.fn.json_decode(vim.fn.readfile(file))
     end
@@ -84,8 +84,12 @@ function kits.build_env_and_args(kit_name, use_terminal, opts)
   -- if exists `compilers` option, then set variable for cmake
   if kit.compilers then
     for lang, compiler in pairs(kit.compilers) do
-      if use_terminal and opts.launch_task_in_a_child_process then
-        add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=" .. "\\\"" .. compiler .. "\\\"" }) -- This is for passing to child process
+      if use_terminal then
+        if opts.launch_task_in_a_child_process then
+          add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=" .. "\\\"" .. compiler .. "\\\"" }) -- This is for passing to child process
+        else
+          add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=\"" .. compiler .. "\"" })
+        end
       else
         add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=\"" .. compiler .. "\"" })
       end
