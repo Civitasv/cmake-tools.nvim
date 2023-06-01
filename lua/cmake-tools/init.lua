@@ -84,7 +84,7 @@ function cmake.generate(opt, callback)
 
   -- if exists cmake-kits.json, kit is used to set
   -- environmental variables and args.
-  local kits_config = kits.parse()
+  local kits_config = kits.parse(const.cmake_kits_path)
   if kits_config and not config.kit then
     return cmake.select_kit(function()
       cmake.generate(opt, callback)
@@ -704,7 +704,7 @@ function cmake.configure_compile_commands()
     if const.cmake_soft_link_compile_commands then
       cmake.compile_commands_from_soft_link()
     end
-  else
+  elseif const.cmake_compile_commands_from_lsp then
     cmake.compile_commands_from_preset()
   end
 end
