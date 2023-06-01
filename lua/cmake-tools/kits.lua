@@ -5,21 +5,17 @@ function kits.parse(global_kits_path)
   -- helper function to find the config file
   -- returns file path if found, nil otherwise
   local function findcfg()
-    if global_kits_path ~= nil then
-      -- first, check if global cmake kits path is nil
-      return global_kits_path
-    else
-      -- then, check if local cmake kits file is exists
-      local files = vim.fn.readdir(".")
-      local file = nil
-      for _, f in ipairs(files) do -- iterate over files in current directory
-        if (f == "cmake-kits.json" or f == "CMakeKits.json") then -- if a kits config file is found
-          file = vim.fn.resolve("./" .. f)
-          break
-        end
+    local files = vim.fn.readdir(".")
+    -- it will use local kits path first,
+    -- otherwise, it will use global kits path
+    local file = global_kits_path
+    for _, f in ipairs(files) do -- iterate over files in current directory
+      if (f == "cmake-kits.json" or f == "CMakeKits.json") then -- if a kits config file is found
+        file = vim.fn.resolve("./" .. f)
+        break
       end
-      return file
     end
+    return file
   end
 
   -- start parsing
