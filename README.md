@@ -120,9 +120,11 @@ The option `cmake_build_directory_prefix` will be activated only when `cmake_bui
 
 See detailed user scenario from issue [#21](https://github.com/Civitasv/cmake-tools.nvim/issues/21).
 
-## Using Multiple compilers
+## If you wanna use Multiple compilers
 
-When using multiple compilers, you can specify this in your `CMakeKits.json` or `cmake-kits.json` file in your root directory. (See the Lualine config below to select the different comiplers from the GUI)
+When you want to select between multiple compilers, you can specify this in your `CMakeKits.json` or `cmake-kits.json` file in your root directory. (See the Lualine config below to select the different comiplers from the GUI)
+
+For windows, it will be like:
 
 ```json
 [
@@ -155,236 +157,42 @@ When using multiple compilers, you can specify this in your `CMakeKits.json` or 
 ]
 ```
 
-## MSVC Support without kit scans
-
-Currently, we do not have an implementation of `vswhere` in lua for kit scanning. However, architectures and hosts and generators can be set as:
+For Linux, it will be like:
 
 ```json
-{
-  "name": "VS 17 2022 amd64",
-  "generator": "Visual Studio 17 2022",
-  "host_architecture": "x64",
-  "target_architecture": "x64",
-  "compilers": {
-    "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x64/cl.exe",
-    "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin//Hostx64/x64/cl.exe"
+[
+  {
+    "name": "Clang 15.0.7 x86_64-pc-linux-gnu",
+    "compilers": {
+      "C": "/usr/bin/clang",
+      "CXX": "/usr/bin/clang++"
     }
-},
-
+  },
+  {
+    "name": "Clang-cl 15.0.7 x86_64-pc-windows-msvc",
+    "compilers": {
+      "C": "/usr/bin/clang-cl",
+      "CXX": "/usr/bin/clang-cl"
+    }
+  },
+  {
+    "name": "GCC 12.1.0 x86_64-pc-linux-gnu",
+    "compilers": {
+      "C": "/usr/bin/gcc",
+      "CXX": "/usr/bin/g++"
+    }
+  },
+  {
+    "name": "GCC 12.2.0 x86_64-pc-linux-gnu",
+    "compilers": {
+      "C": "/usr/bin/gcc",
+      "CXX": "/usr/bin/g++"
+    }
+  }
+]
 ```
 
-For MSVC config in their standard location within `Program Files` and `Program Files (x86)`. This is a workaround for till auto kit scanning is implemented. (**Tweaks to the compiler location might be necessary** if installation locations are different from what is shown below.)
-
-All MSVC Config Examples:
-
-<details>
-<Summary>Click to expand MSVC Configs</Summary>
-
-```json
-{
-  "name": "VS 16 2019 amd64",
-  "generator": "Visual Studio 16 2019",
-  "host_architecture": "x64",
-  "target_architecture": "x64",
-  "compilers": {
-    "C": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/Hostx64/x64/cl.exe",
-    "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe"
-    }
-},
-{
-  "name": "VS 16 2019 amd64_x86",
-  "generator": "Visual Studio 16 2019",
-  "host_architecture": "x64",
-  "target_architecture": "win32",
-  "compilers": {
-    "C": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/Hostx64/x86/cl.exe",
-    "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x86/cl.exe"
-    }
-},
-{
-  "name": "VS 16 2019 x86",
-  "generator": "Visual Studio 16 2019",
-  "host_architecture": "x86",
-  "target_architecture": "win32",
-  "compilers": {
-    "C": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx86/x86/cl.exe",
-    "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx86/x86/cl.exe"
-    }
-},
-{
-  "name": "VS 16 2019 x86_amd64",
-  "generator": "Visual Studio 16 2019",
-  "host_architecture": "x86",
-  "target_architecture": "x64",
-  "compilers": {
-    "C": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx86/x64/cl.exe",
-    "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx86/x64/cl.exe"
-    }
-},
-{
-  "name": "VS 17 2022 amd64",
-  "generator": "Visual Studio 17 2022",
-  "host_architecture": "x64",
-  "target_architecture": "x64",
-  "compilers": {
-    "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x64/cl.exe",
-    "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin//Hostx64/x64/cl.exe"
-    }
-},
-{
-  "name": "VS 17 2022 amd64_arm64",
-  "generator": "Visual Studio 17 2022",
-  "host_architecture": "x64",
-  "target_architecture": "arm64",
-  "compilers": {
-    "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x86/cl.exe",
-    "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x86/cl.exe"
-    }
-},
-{
-  "name": "VS 17 2022 amd64_x86",
-  "generator": "Visual Studio 17 2022",
-  "host_architecture": "x64",
-  "target_architecture": "win32",
-  "compilers": {
-    "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/arm64/cl.exe",
-    "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/arm64/cl.exe"
-    }
-},
-{
-  "name": "VS 17 2022 x86",
-  "generator": "Visual Studio 17 2022",
-  "host_architecture": "x86",
-  "target_architecture": "win32",
-  "compilers": {
-    "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx86/x86/cl.exe",
-    "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx86/x86/cl.exe"
-    }
-},
-{
-  "name": "VS 17 2022 x86_amd64",
-  "generator": "Visual Studio 17 2022",
-  "host_architecture": "x86",
-  "target_architecture": "x64",
-  "compilers": {
-    "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx86/x64/cl.exe",
-    "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx86/x64/cl.exe"
-    }
-},
-{
-  "name": "VS 17 2022 x86_arm64",
-  "generator": "Visual Studio 17 2022",
-  "host_architecture": "x86",
-  "target_architecture": "arm64",
-  "compilers": {
-    "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx86/arm64/cl.exe",
-    "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx86/arm64/cl.exe"
-    }
-}
-
-```
-
-</details>
-
-## Windows : MinGw / GCC / Clang / Clang-cl support
-
-Exmaples of clang, gcc, clang-cl, and gcc support in windows. **You must specify the generator.** For example:
-
-```json
-{
-  "name": "Clang_14.0.6_x86_64-w64-windows-gnu",
-  "generator":"Ninja",
-  "compilers": {
-    "C": "C:/mingw64/bin/clang.exe",
-    "CXX": "C:/mingw64/bin/clang++.exe"
-  }
-},
-{
-  "name": "GCC_12.2.0_15.0.7_x86_64-windows-msvc",
-  "generator":"MinGW Makefiles",
-  "compilers": {
-    "C": "C:/mingw64/bin/gcc.exe",
-    "CXX": "C:/mingw64/bin/g++.exe"
-  }
-}
-
-```
-More MinGW/Ninja/GCC/Clang/Clang-cl Examples
-
-<details>
-<Summary>Click to expand More Examples</Summary>
-
-```json
-{
-  "name": "Clang_14.0.6_x86_64-w64-windows-gnu",
-  "generator":"Ninja",
-  "compilers": {
-    "C": "C:/mingw64/bin/clang.exe",
-    "CXX": "C:/mingw64/bin/clang++.exe"
- }
-},
-{
-  "name": "Clang-cl 14.0.6 x86_64-pc-windows-msvc",
-  "generator":"Ninja",
-  "compilers": {
-    "C": "C:/mingw64/bin/clang-cl.exe",
-    "CXX": "C:/mingw64/bin/clang-cl.exe"
-  }
-},
-{
-  "name": "Clang_15.0.7_x86_64-pc-windows-msvc",
-  "generator":"Ninja",
-  "compilers": {
-    "C": "C:/Program Files/LLVM/bin/clang.exe",
-    "CXX": "C:/Program Files/LLVM/bin/clang++.exe"
-  }
-},
-{
-  "name": "Clang_cl_15.0.7_x86_64-pc-windows-msvc",
-  "generator":"Ninja",
-  "compilers": {
-    "C": "C:/Program Files/LLVM/bin/clang-cl.exe",
-    "CXX": "C:/Program Files/LLVM/bin/clang-cl.exe"
-  }
-},
-{
-  "name": "GCC_12.2.0_15.0.7_x86_64-windows-msvc",
-  "generator":"MinGW Makefiles",
-  "compilers": {
-    "C": "C:/mingw64/bin/gcc.exe",
-    "CXX": "C:/mingw64/bin/g++.exe"
-  }
-},
-{
-  "name": "GCC_6.3.0_mingw32",
-  "generator":"Ninja",
-  "compilers": {
-    "C": "C:/MinGW/bin/mingw32-gcc.exe",
-    "CXX": "C:/MinGW/bin/mingw32-g++.exe"
-  }
-},
-{
-  "name": "GCC_8.3.0_x86_64-mingw32",
-  "generator":"Ninja",
-  "compilers": {
-    "C": "C:/Strawberry/c/bin/gcc.exe",
-    "CXX": "C:/Strawberry/c/bin/g++.exe"
-  }
-},
-{
-  "name": "GCC_9.2.0_x86_64-mingw32",
-  "generator":"Ninja",
-  "compilers": {
-    "C": "C:/MinGW/bin/gcc.exe",
-    "CXX": "C:/MinGW/bin/g++.exe"
-  }
-},
-
-```
-
-</details>
-
-## Automatically setting your compile_commands.json directory
+## If you wanna Automatically set your compile_commands.json location
 
 If you're using clangd or ccls configured through [lspconfig](https://github.com/neovim/nvim-lspconfig) you can
 set your compilation database directory to your active preset build directory by calling a hook in your on_new_config callback.
@@ -400,9 +208,9 @@ require('lspconfig').clangd.setup{
 }
 ```
 
-## How to make cmake-tools work exactly like it in exmaple video?
+## If you wanna make cmake-tools work exactly like it in our demo
 
-### lualine
+### A. lualine
 
 I've added cmake-tools status in lualine, including `Build(when clicked, will invoke CMakeBuild)`, `Current Selected Build Target(when clicked, will invoke CMakeSelectBuildTarget)`, `Debug(when clicked, will invoke CMakeDebug)`, `Run(when clicked, will invoke CMakeRun)`, `Current Selected Launch Target(when clicked, will invoke CMakeSelectLaunchTarget)`.
 
@@ -786,7 +594,7 @@ lualine.setup(config)
 
 </details>
 
-### Telescope Select UI
+### B. Telescope Select UI
 
 I use the [ui-select](https://github.com/nvim-telescope/telescope-ui-select.nvim) extension for telescope.
 
