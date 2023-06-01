@@ -481,7 +481,7 @@ function cmake.select_kit(callback)
     return utils.error(result.message)
   end
 
-  local cmake_kits = kits.get()
+  local cmake_kits = kits.get(const.cmake_kits_path)
   if cmake_kits then
     -- Put selected kit first
     for idx, kit in ipairs(cmake_kits) do

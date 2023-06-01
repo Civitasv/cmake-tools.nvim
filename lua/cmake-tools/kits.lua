@@ -36,9 +36,9 @@ function kits.parse(global_kits_path)
 end
 
 -- returns a list of descriptions of all kits
-function kits.get()
+function kits.get(global_kits_path)
   -- start parsing
-  local config = kits.parse()
+  local config = kits.parse(global_kits_path)
   local res = {}
   if config then -- if a config is found
     for _, item in ipairs(config) do
