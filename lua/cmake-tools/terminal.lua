@@ -13,7 +13,7 @@ function terminal.start_local_shell(term_name, opts)
   -- print('newname in start local: '.. new_name)
   -- print('term_name in start local: '.. term_name)
   vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), term_name) -- Set the buffer name
-  vim.cmd(":setlocal laststatus=3") -- Let there be a single status/lualine in the neovim instance
+  vim.cmd(":setlocal laststatus=3")                                    -- Let there be a single status/lualine in the neovim instance
 
   -- Renamming a terminal buffer creates a new hidden buffer, so duplicate terminals need to be deleted
   local new_buffers_list = vim.api.nvim_list_bufs()
@@ -134,27 +134,27 @@ end
 
 function terminal.create_if_not_exists(term_name, opts)
   local term_idx = nil
-  print("term_name much before........ " .. term_name)
+  -- print("term_name much before........ " .. term_name)
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
     local name = vim.api.nvim_buf_get_name(bufnr)
-    print("name before: " .. name)
+    -- print("name before: " .. name)
     name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
-    print("name after: " .. name)
+    -- print("name after: " .. name)
     if name == term_name then
       term_idx = bufnr
-      print("term_name: " .. term_name .. ", term_idx: " .. term_idx)
+      -- print("term_name: " .. term_name .. ", term_idx: " .. term_idx)
     else
-      print("name: " .. name .. "bufnr: " .. bufnr)
+      -- print("name: " .. name .. "bufnr: " .. bufnr)
     end
-    print(" ")
+    -- print(" ")
   end
-  print("term_name: " .. term_name)
-  print("term_idx: " .. tostring(term_idx))
+  -- print("term_name: " .. term_name)
+  -- print("term_idx: " .. tostring(term_idx))
 
   if term_idx ~= nil then
     return true, term_idx
   else
-    print("to start_term term_name: " .. term_name)
+    -- print("to start_term term_name: " .. term_name)
     term_idx = terminal.start_local_shell(term_name, opts)
     return false, term_idx
   end
@@ -164,37 +164,82 @@ function terminal.reposition(buffer_idx, opts)
   -- TODO: Reposition Windows
   -- This takes care of all window handling with a single buffer idx and opts.cmake_terminal_opts which are passed in as opts
 
-  -- print('Reposition! ... window: ' .. buffer_idx .. opts)
-
   -- First get all buffers across all tabs, with the custom prefix
   print("prefix from within reposition_term(): " .. opts.prefix_for_all_cmake_terminals)
+  print("bufname from within reposition_term(): " ..
+    " bufnr: " .. buffer_idx .. ", name: " .. vim.api.nvim_buf_get_name(buffer_idx))
+  print("modified bufname from within reposition_term(): " ..
+    " name: " .. vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buffer_idx), ":t"))
+
+
   local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_for_all_cmake_terminals)
+
+  -- Check all cmake terminals with buffers
+  print("all_open_cmake_terminal_buffers: ")
+  vim.print(all_open_cmake_terminal_buffers)
 
   -- Check how, where and weather the buffers are displayed in the neovim instance
   local all_buffer_display_info = {}
   for _, buffer in ipairs(all_open_cmake_terminal_buffers) do
-    table.insert(all_buffer_display_info, terminal.get_buffer_display_info(buffer))
+    table.insert(all_buffer_display_info, terminal.get_buffer_display_info(buffer_idx, {tab_flag = true}))
   end
+
+  local buffer_win_info = terminal.get_buffer_display_info(buffer_idx, {tab_flag = true})
   print("all_buffer_display_info: ")
   vim.print(all_buffer_display_info) -- Use vim.print() for printing tables
+
+  -- Check options
+  print('opts:')
+  vim.print(opts)
+
+  if opts.launch_executable_in_a_child_process or opts.launch_task_in_a_child_process then
+    log.error("Reposition term is not supported for running task/executable child processes")
+    return
+  end
+
+  -- Single window check followed by single indow instance across eac tab check followd by default case of multiple windows
+  if opts.display_single_terminal_arcoss_instance then
+    print('display_single_terminal_across_instance!')
+    if opts.keep_terminal_in_static_location then
+      print('need to get list of all windows except first')
+      print('buffer_win_info:')
+      vim.print(buffer_win_info)
+    else
+    end
+  elseif opts.single_terminal_per_tab then
+    print('single_terminal_per_tab!')
+  else
+    print('mulit terminals!')
+  end
+  print('nani!')
 end
 
-function terminal.get_buffer_display_info(buffer_idx)
+function terminal.get_buffer_display_info(buffer_idx, tab_flag)
   local buffer_display_info = { buffer_idx = buffer_idx, tabpages = {} }
+  local current_tabpage = vim.api.nvim_get_current_tabpage()
 
   for _, tabpage in ipairs(vim.api.nvim_list_tabpages()) do
     local tabpage_id = vim.api.nvim_tabpage_get_number(tabpage)
     buffer_display_info.tabpages[tabpage_id] = {}
 
-    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
-      if vim.api.nvim_win_get_buf(win) == buffer_idx then
-        table.insert(buffer_display_info.tabpages[tabpage_id], win)
+    if tab_flag and tabpage ~= current_tabpage then
+      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
+        if vim.api.nvim_win_get_buf(win) == buffer_idx then
+          table.insert(buffer_display_info.tabpages[tabpage_id], win)
+        end
+      end
+    elseif not tab_flag then
+      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
+        if vim.api.nvim_win_get_buf(win) == buffer_idx then
+          table.insert(buffer_display_info.tabpages[tabpage_id], win)
+        end
       end
     end
   end
 
   return buffer_display_info
 end
+
 
 function terminal.get_buffers_with_prefix(prefix)
   local buffers = vim.api.nvim_list_bufs()
@@ -213,12 +258,6 @@ end
 
 function terminal.execute(executable, opts)
   local prefix = opts.cmake_terminal_opts.prefix_for_all_cmake_terminals
-  -- print('testing from exectue()')
-  -- vim.print(opts.cmake_terminal_opts)
-  -- print('opts.cmake_launch_path: ')
-  -- vim.print(opts.cmake_launch_path)
-  -- print('executable ')
-  -- vim.print(executable)
 
   -- Check if executable target is built first, as sometimes it is cleaned and user tries to run
   if executable == nil then
@@ -228,14 +267,11 @@ function terminal.execute(executable, opts)
 
   -- Get pure executable name
   executable = vim.fn.fnamemodify(executable, ":t")
-  --[[ print("Executable", executable) ]]
 
   -- Buffer name of executable needs to be set with a prefix so that the reposition_term() function can find it
   local executable_buffer_name = prefix .. vim.fn.fnamemodify(executable, ":t")
   local _, buffer_idx = terminal.create_if_not_exists(executable_buffer_name,
     opts.cmake_terminal_opts)
-
-  --[[ print("bufferidx: " .. buffer_idx) ]]
 
   if terminal.check_if_running_child_procs(buffer_idx) then
     log.error("CMake task is running in terminal")
@@ -250,7 +286,7 @@ function terminal.execute(executable, opts)
     opts.cmake_terminal_opts.launch_executable_in_a_child_process)
 
   -- Launch form executable's build directory by default
-  -- if opts.cmake_terminal_opts.launch_executable_from_build_directory == true then
+  -- if opts.cmake_terminal_opts.launch_executable_from_build_directory == true then -- TODO: decide whether this option is needed
   if osys.iswin32 then
     -- Weird windows thing: executables that are not in path only work as ".\executable" and not "executable" on the cmdline (even if focus is in the same directory)
     executable = "cd " .. launch_path .. " && .\\" .. executable
@@ -280,7 +316,7 @@ function terminal.run(cmd, env, args, opts)
   --[[   return ]]
   --[[ end ]]
 
-  print("prefix from within run(): " .. opts.cmake_terminal_opts.prefix_for_all_cmake_terminals)
+  -- print("prefix from within run(): " .. opts.cmake_terminal_opts.prefix_for_all_cmake_terminals)
   -- Reposition the terminal buffer, before sending commands
   terminal.reposition(buffer_idx, opts.cmake_terminal_opts)
 
