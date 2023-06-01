@@ -1,24 +1,28 @@
 local kits = {}
 
 -- checks if there is a cmake-kits.json file and parses it to a Lua table
-function kits.parse()
+function kits.parse(global_kits_path)
   -- helper function to find the config file
   -- returns file path if found, nil otherwise
   local function findcfg()
-    local files = vim.fn.readdir(".")
-    local file = nil
-    for _, f in ipairs(files) do -- iterate over files in current directory
-      if (f == "cmake-kits.json" or f == "CMakeKits.json") then -- if a kits config file is found
-        file = vim.fn.resolve("./" .. f)
-        break
+    if global_kits_path ~= nil then
+      -- first, check if global cmake kits path is nil
+      return global_kits_path
+    else
+      -- then, check if local cmake kits file is exists
+      local files = vim.fn.readdir(".")
+      local file = nil
+      for _, f in ipairs(files) do -- iterate over files in current directory
+        if (f == "cmake-kits.json" or f == "CMakeKits.json") then -- if a kits config file is found
+          file = vim.fn.resolve("./" .. f)
+          break
+        end
       end
+      return file
     end
-
-    return file
   end
 
   -- start parsing
-
   local config = nil
 
   local file = findcfg() -- check for config file
