@@ -98,8 +98,8 @@ function terminal.check_if_running_child_procs(terminal_buffer_idx)
   local main_pid = vim.api.nvim_buf_get_var(terminal_buffer_idx, "terminal_job_pid")
   local child_procs = vim.api.nvim_get_proc_children(main_pid)
   if next(child_procs) then
-    print("child procs:")
-    print(child_procs)
+    -- print("child procs:")
+    -- print(child_procs)
     return true
   else
     return false
@@ -129,7 +129,21 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
       cmd = cmd .. " \n"
     end
   end
+  if opts and opts.load_buf_in_win ~= -1 then
+    -- The window is alive, so we set buffer in window
+    vim.api.nvim_win_set_buf(opts.load_buf_in_win, buffer_idx)
+  elseif opts and opts.load_buf_in_win >= -1 then
+    -- The window is not active, we need to create a nre buffer
+    vim.cmd(":" .. opts.split_direction .. " " .. opts.split_size .. "sp") -- Split
+    vim.api.nvim_win_set_buf(0, buffer_idx)
+  else
+    -- log.error("Invalid window Id!")
+    -- do nothing
+  end
   vim.api.nvim_chan_send(chan, cmd)
+  if opts.startinsert then
+    vim.cmd('startinsert')
+  end
 end
 
 function terminal.create_if_not_exists(term_name, opts)
@@ -161,78 +175,165 @@ function terminal.create_if_not_exists(term_name, opts)
 end
 
 function terminal.reposition(buffer_idx, opts)
-  -- TODO: Reposition Windows
-  -- This takes care of all window handling with a single buffer idx and opts.cmake_terminal_opts which are passed in as opts
-
-  -- First get all buffers across all tabs, with the custom prefix
-  print("prefix from within reposition_term(): " .. opts.prefix_for_all_cmake_terminals)
-  print("bufname from within reposition_term(): " ..
-    " bufnr: " .. buffer_idx .. ", name: " .. vim.api.nvim_buf_get_name(buffer_idx))
-  print("modified bufname from within reposition_term(): " ..
-    " name: " .. vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buffer_idx), ":t"))
-
-
   local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_for_all_cmake_terminals)
-
   -- Check all cmake terminals with buffers
-  print("all_open_cmake_terminal_buffers: ")
-  vim.print(all_open_cmake_terminal_buffers)
+  -- print("all_open_cmake_terminal_buffers: ")
+  -- vim.print(all_open_cmake_terminal_buffers)
 
   -- Check how, where and weather the buffers are displayed in the neovim instance
   local all_buffer_display_info = {}
   for _, buffer in ipairs(all_open_cmake_terminal_buffers) do
-    table.insert(all_buffer_display_info, terminal.get_buffer_display_info(buffer_idx, {tab_flag = true}))
+    table.insert(all_buffer_display_info, terminal.get_buffer_display_info(buffer, {
+      ignore_current_tab = false, -- Set this to true to get info of all tabs execept current tab
+      get_unindexed_list = false  -- Set this to true for viewing a visually appealing nice table
+    }))
   end
 
-  local buffer_win_info = terminal.get_buffer_display_info(buffer_idx, {tab_flag = true})
-  print("all_buffer_display_info: ")
-  vim.print(all_buffer_display_info) -- Use vim.print() for printing tables
-
-  -- Check options
-  print('opts:')
-  vim.print(opts)
+  -- DEBUG options
+  -- print("all_buffer_display_info: ")
+  -- vim.print(all_buffer_display_info) -- Use vim.print() for printing tables
+  -- print('opts:')
+  -- vim.print(opts)
 
   if opts.launch_executable_in_a_child_process or opts.launch_task_in_a_child_process then
     log.error("Reposition term is not supported for running task/executable child processes")
     return
   end
 
-  -- Single window check followed by single indow instance across eac tab check followd by default case of multiple windows
-  if opts.display_single_terminal_arcoss_instance then
-    print('display_single_terminal_across_instance!')
-    if opts.keep_terminal_in_static_location then
-      print('need to get list of all windows except first')
-      print('buffer_win_info:')
-      vim.print(buffer_win_info)
+  --[[
+  -- TODO: Implement single terminal buffer for all tasks,
+  -- i.e. run, build, clean, generate, etc... [except debug, as debug uses nvim.dap]
+
+  local STBE = opts.single_terminal_buffer_for_everything
+  ]]
+
+  local SingleWindowAcrossInstance = opts.display_single_terminal_window_arcoss_instance
+  local SingleWindowPerTab = opts.single_terminal_window_per_tab
+  local StaticWindowLocation = opts.keep_terminal_window_in_static_location
+
+  local final_win_id = -1 -- If -1, then a new window needs to be created, otherwise, we must return an existing winid
+  if SingleWindowAcrossInstance then
+    -- print('display_single_terminal_across_instance!')
+    if StaticWindowLocation then
+      -- print('keep_terminal_in_static_location')
+      terminal.close_window_from_tabs(
+      --[[ignore_current_tab=]] true,
+        opts)                                                                            -- Close all cmake windows in all other tabs
+      local buflist = terminal.check_if_cmake_buffers_are_displayed_in_current_tab(opts) -- Get list of all buffers that are displayed in current tab
+      -- vim.print(buflist)
+      if next(buflist) then
+        for i = 1, #buflist do -- Buffers exist in current tab, so close all except first buffer in buflist
+          if i > 1 then
+            vim.api.nvim_win_close(buflist[i], false)
+          end
+        end
+        -- print('bug here....................')
+        final_win_id = buflist[1]
+      end
     else
-    end
-  elseif opts.single_terminal_per_tab then
-    print('single_terminal_per_tab!')
-  else
-    print('mulit terminals!')
-  end
-  print('nani!')
-end
-
-function terminal.get_buffer_display_info(buffer_idx, tab_flag)
-  local buffer_display_info = { buffer_idx = buffer_idx, tabpages = {} }
-  local current_tabpage = vim.api.nvim_get_current_tabpage()
-
-  for _, tabpage in ipairs(vim.api.nvim_list_tabpages()) do
-    local tabpage_id = vim.api.nvim_tabpage_get_number(tabpage)
-    buffer_display_info.tabpages[tabpage_id] = {}
-
-    if tab_flag and tabpage ~= current_tabpage then
-      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
-        if vim.api.nvim_win_get_buf(win) == buffer_idx then
-          table.insert(buffer_display_info.tabpages[tabpage_id], win)
+      -- print('donot keep_terminal_in_static_location')
+      terminal.close_window_from_tabs(
+      --[[ignore_current_tab=]] true,
+        opts)                                                                            -- Close all cmake windows in all tabs
+      local buflist = terminal.check_if_cmake_buffers_are_displayed_in_current_tab(opts) -- Get list of all buffers that are displayed in current tab
+      if next(buflist) then
+        -- Buffers exist in current tab, so close all buffers in buflist
+        for i = 1, #buflist do
+          if i > 1 then
+            vim.api.nvim_win_close(buflist[i], false)
+          end
         end
       end
-    elseif not tab_flag then
-      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
-        if vim.api.nvim_win_get_buf(win) == buffer_idx then
-          table.insert(buffer_display_info.tabpages[tabpage_id], win)
+      final_win_id = -1
+    end
+  elseif SingleWindowPerTab then
+    -- print('single_terminal_per_tab!')
+    if StaticWindowLocation then
+      -- print('keep_terminal_in_static_location')
+      local buflist = terminal.check_cmake_buffers_are_displayed_in_current_tab(opts)
+      if next(buflist) then
+        for i = 1, #buflist do -- Buffers exist in current tab, so close all except first buffer in buflist
+          if i > 1 then
+            vim.api.nvim_win_close(buflist[i], false)
+          end
         end
+        final_win_id = buflist[1]
+      else
+        final_win_id = -1
+      end
+    else
+      -- print('donot keep_terminal_in_static_location')
+      local buflist = terminal.check_cmake_buffers_are_displayed_in_current_tab(opts)
+      if next(buflist) then
+        for i = 1, #buflist do -- Buffers exist in current tab, so close all except first buffer in buflist
+          vim.api.nvim_win_close(buflist[i], false)
+        end
+      end
+    end
+  else
+    -- print('mulit terminals!')
+    -- Launch multiple terminals
+    final_win_id = 0
+    vim.notify(
+      "Caution: Multiple termianls may clutter your workspace!",
+      vim.log.levels.WARN,
+      { title = "CMakeTools" }
+    )
+  end
+
+  -- print('repositioning complete')
+  return final_win_id
+end
+
+-- Matches all the tabs and wins with buffer_idx and retunrs list of winid's indexed with resprect to their tabpages
+-- Set opts.get_unindexed_list = true for getting an iterable list of values that you can use to close windows with. These are returned as a for the current buffer.
+-- Only set opts.get_unindexed_list to false for viewing buffer info... i.e. how they are laid out across tabs and windows
+-- Set opts.ignore_current_tab to true if you want a list of windows only from other tabs.
+function terminal.get_buffer_display_info(buffer_idx, opts)
+  local buffer_display_info = {}
+
+  if opts and opts.get_unindexed_list then
+    buffer_display_info = {}
+  else
+    buffer_display_info = { buffer_idx = buffer_idx, windows = {} }
+  end
+
+  for _, tabpage in ipairs(vim.api.nvim_list_tabpages()) do
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
+      if vim.api.nvim_win_get_buf(win) == buffer_idx then
+        --
+        -- This may seem a little hairy, but it has only 2 options
+        --
+        if opts and opts.get_unindexed_list then
+          if opts.ignore_current_tab then
+            if vim.api.nvim_get_current_tabpage() == tabpage then
+              -- Ignore current tabpage if set: do nothing
+            else
+              table.insert(buffer_display_info, win)
+            end
+          else
+            table.insert(buffer_display_info, win)
+          end
+        else
+          if opts.ignore_current_tab then
+            local tabpage_id = vim.api.nvim_tabpage_get_number(tabpage)
+            if (opts.ignore_current_tab and vim.api.nvim_get_current_tabpage() == tabpage) then
+              -- Ignore current tabpage if set: do nothing
+            else
+              table.insert(buffer_display_info.windows, { tabpage_id = tabpage_id, win = win })
+            end
+          else
+            local tabpage_id = vim.api.nvim_tabpage_get_number(tabpage)
+            if (opts.ignore_current_tab and vim.api.nvim_get_current_tabpage() == tabpage) then
+              -- Ignore current tabpage if set: do nothing
+            else
+              table.insert(buffer_display_info.windows, { tabpage_id = tabpage_id, win = win })
+            end
+          end
+        end
+        --
+        --
+        --
       end
     end
   end
@@ -240,6 +341,93 @@ function terminal.get_buffer_display_info(buffer_idx, tab_flag)
   return buffer_display_info
 end
 
+function terminal.close_window_from_tabs(ignore_current_tab, opts)
+  local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_for_all_cmake_terminals)
+  local unindexed_window_list = {}
+  for _, buffer in ipairs(all_open_cmake_terminal_buffers) do
+    local windows_open_for_buffer = terminal.get_buffer_display_info(buffer,
+      {
+        ignore_current_tab = ignore_current_tab,
+        get_unindexed_list = true
+      })
+    for _, win in ipairs(windows_open_for_buffer) do
+      table.insert(
+        unindexed_window_list,
+        win
+      )
+      -- print('windows_open_for_buffer: ')
+      -- vim.print(windows_open_for_buffer)
+    end
+  end
+  -- vim.print(unindexed_window_list)
+  for i = 1, #unindexed_window_list do
+    if i > 1 then
+      -- print('win new closed: ' .. i)
+      vim.api.nvim_win_close(unindexed_window_list[i], false)
+    end
+  end
+end
+
+function terminal.check_cmake_buffers_are_displayed_in_current_tab(opts)
+  local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_for_all_cmake_terminals)
+
+  local current_tabpage = vim.api.nvim_get_current_tabpage()
+  local current_windows = vim.api.nvim_tabpage_list_wins(current_tabpage)
+  local displayed_windows = {}
+
+  for _, win in ipairs(current_windows) do
+    local win_bufnr = vim.api.nvim_win_get_buf(win)
+    if vim.tbl_contains(all_open_cmake_terminal_buffers, win_bufnr) then
+      table.insert(displayed_windows, win)
+    end
+  end
+  -- print('cmake buffers in current tab')
+  -- vim.print(displayed_windows)
+
+  return displayed_windows
+end
+
+function terminal.check_if_cmake_buffers_are_displayed_in_current_tab(opts)
+  local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_for_all_cmake_terminals)
+  local unindexed_window_list = {}
+  for _, buffer in ipairs(all_open_cmake_terminal_buffers) do
+    local windows_open_for_buffer = terminal.get_buffer_display_info(buffer,
+      {
+        ignore_current_tab = false,
+        get_unindexed_list = true
+      })
+    for _, win in ipairs(windows_open_for_buffer) do
+      table.insert(
+        unindexed_window_list,
+        win
+      )
+      -- print('windows_open_for_buffer: ')
+      -- vim.print(windows_open_for_buffer)
+    end
+  end
+  -- print('unindexed window list:')
+  -- vim.print(unindexed_window_list)
+  -- Now, we return the list of buffers
+  return unindexed_window_list
+end
+
+function terminal.get_windows_in_other_tabs(buflist, opts)
+  local current_tabpage = vim.api.nvim_get_current_tabpage()
+  local windows = {}
+
+  for _, tabpage in ipairs(vim.api.nvim_list_tabpages()) do
+    if not opts.ignore_current_tab or tabpage ~= current_tabpage then
+      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
+        local bufnr = vim.api.nvim_win_get_buf(win)
+        if vim.tbl_contains(buflist, bufnr) then
+          table.insert(windows, win)
+        end
+      end
+    end
+  end
+
+  return windows
+end
 
 function terminal.get_buffers_with_prefix(prefix)
   local buffers = vim.api.nvim_list_bufs()
@@ -279,7 +467,8 @@ function terminal.execute(executable, opts)
   end
 
   -- Reposition the terminal buffer, before sending commands
-  terminal.reposition(buffer_idx, opts.cmake_terminal_opts)
+  local fwinid = terminal.reposition(buffer_idx, opts.cmake_terminal_opts)
+  -- print("fwinid: " .. fwinid)
 
   -- Prepare Launch path if sending to terminal
   local launch_path = terminal.prepare_launch_path(opts.cmake_launch_path,
@@ -297,7 +486,13 @@ function terminal.execute(executable, opts)
 
   -- Send final cmd to terminal
   terminal.send_data_to_terminal(buffer_idx, executable,
-    { wrap = opts.cmake_terminal_opts.launch_executable_in_a_child_process })
+    {
+      wrap = opts.cmake_terminal_opts.launch_executable_in_a_child_process,
+      load_buf_in_win = fwinid,
+      split_direction = opts.cmake_terminal_opts.split_direction,
+      split_size = opts.cmake_terminal_opts.split_size,
+      startinsert = true
+    })
 end
 
 function terminal.run(cmd, env, args, opts)
@@ -318,7 +513,8 @@ function terminal.run(cmd, env, args, opts)
 
   -- print("prefix from within run(): " .. opts.cmake_terminal_opts.prefix_for_all_cmake_terminals)
   -- Reposition the terminal buffer, before sending commands
-  terminal.reposition(buffer_idx, opts.cmake_terminal_opts)
+  local fwinid = terminal.reposition(buffer_idx, opts.cmake_terminal_opts)
+  -- print("fwinid: " .. fwinid)
 
   -- Prepare Launch path form
   local launch_path = terminal.prepare_launch_path(opts.cmake_launch_path,
@@ -335,7 +531,14 @@ function terminal.run(cmd, env, args, opts)
   end
 
   -- Send final cmd to terminal
-  terminal.send_data_to_terminal(buffer_idx, cmd, { wrap = opts.cmake_terminal_opts.launch_task_in_a_child_process })
+  terminal.send_data_to_terminal(buffer_idx, cmd,
+    {
+      wrap = opts.cmake_terminal_opts.launch_task_in_a_child_process,
+      load_buf_in_win = fwinid,
+      split_direction = opts.cmake_terminal_opts.split_direction,
+      split_size = opts.cmake_terminal_opts.split_size,
+      startinsert = false
+    })
 
   --[[ while os.check_if_term_is_running_child_procs(buffer_idx) do ]]
   --[[   print("I'm waiting") ]]
