@@ -84,6 +84,7 @@ function cmake.generate(opt, callback)
       cmake_launch_path = vim.loop.cwd(),
       cmake_console_size = const.cmake_console_size,
       cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
+      cmake_use_terminal_for_build = const.cmake_use_terminal_for_build,
       cmake_terminal_opts = const.cmake_terminal_opts
     })
   end
@@ -108,8 +109,10 @@ function cmake.generate(opt, callback)
 
   -- cmake kits, if cmake-kits.json doesn't exist, kit_option will
   -- be {env={}, args={}}, so it's okay.
-  local kit_option = kits.build_env_and_args(config.kit, const.cmake_unify_terminal_for_launch, const
-    .cmake_terminal_opts)
+  local kit_option = kits.build_env_and_args(
+    config.kit,
+    const.cmake_use_terminal_for_build,
+    const.cmake_terminal_opts)
 
   if const.cmake_build_directory ~= "" then
     config:update_build_dir(const.cmake_build_directory)
@@ -142,6 +145,7 @@ function cmake.generate(opt, callback)
     cmake_console_size = const.cmake_console_size,
     cmake_launch_path = vim.loop.cwd(),
     cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
+    cmake_use_terminal_for_build = const.cmake_use_terminal_for_build,
     cmake_terminal_opts = const.cmake_terminal_opts
   })
 end
@@ -170,6 +174,7 @@ function cmake.clean(callback)
     cmake_console_size = const.cmake_console_size,
     cmake_launch_path = vim.loop.cwd(),
     cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
+    cmake_use_terminal_for_build = const.cmake_use_terminal_for_build,
     cmake_terminal_opts = const.cmake_terminal_opts
   })
 end
@@ -228,6 +233,7 @@ function cmake.build(opt, callback)
     cmake_console_size = const.cmake_console_size,
     cmake_launch_path = vim.loop.cwd(),
     cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
+    cmake_use_terminal_for_build = const.cmake_use_terminal_for_build,
     cmake_terminal_opts = const.cmake_terminal_opts
   })
 end
@@ -307,6 +313,7 @@ function cmake.install(opt)
     cmake_console_size              = const.cmake_console_size,
     cmake_launch_path               = vim.loop.cwd(),
     cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
+    cmake_use_terminal_for_build    = const.cmake_use_terminal_for_build,
     cmake_terminal_opts             = const.cmake_terminal_opts
   })
 end

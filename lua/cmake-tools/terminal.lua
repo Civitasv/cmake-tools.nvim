@@ -132,6 +132,11 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
   if opts and opts.load_buf_in_win ~= -1 then
     -- The window is alive, so we set buffer in window
     vim.api.nvim_win_set_buf(opts.load_buf_in_win, buffer_idx)
+    if opts.split_direction == "horizontal" then
+      vim.api.nvim_win_set_height(opts.load_buf_in_win, opts.split_size)
+    else
+      vim.api.nvim_win_set_width(opts.load_buf_in_win, opts.split_size)
+    end
   elseif opts and opts.load_buf_in_win >= -1 then
     -- The window is not active, we need to create a nre buffer
     vim.cmd(":" .. opts.split_direction .. " " .. opts.split_size .. "sp") -- Split
@@ -467,8 +472,8 @@ function terminal.execute(executable, opts)
   end
 
   -- Reposition the terminal buffer, before sending commands
-  local fwinid = terminal.reposition(buffer_idx, opts.cmake_terminal_opts)
-  -- print("fwinid: " .. fwinid)
+  local final_winid = terminal.reposition(buffer_idx, opts.cmake_terminal_opts)
+  -- print("final_winid: " .. final_winid)
 
   -- Prepare Launch path if sending to terminal
   local launch_path = terminal.prepare_launch_path(opts.cmake_launch_path,
@@ -488,10 +493,10 @@ function terminal.execute(executable, opts)
   terminal.send_data_to_terminal(buffer_idx, executable,
     {
       wrap = opts.cmake_terminal_opts.launch_executable_in_a_child_process,
-      load_buf_in_win = fwinid,
+      load_buf_in_win = final_winid,
       split_direction = opts.cmake_terminal_opts.split_direction,
       split_size = opts.cmake_terminal_opts.split_size,
-      startinsert = true
+      startinsert = opts.cmake_terminal_opts.startinsert_in_launch_task
     })
 end
 
@@ -513,8 +518,8 @@ function terminal.run(cmd, env, args, opts)
 
   -- print("prefix from within run(): " .. opts.cmake_terminal_opts.prefix_for_all_cmake_terminals)
   -- Reposition the terminal buffer, before sending commands
-  local fwinid = terminal.reposition(buffer_idx, opts.cmake_terminal_opts)
-  -- print("fwinid: " .. fwinid)
+  local final_winid = terminal.reposition(buffer_idx, opts.cmake_terminal_opts)
+  -- print("final_winid: " .. final_winid)
 
   -- Prepare Launch path form
   local launch_path = terminal.prepare_launch_path(opts.cmake_launch_path,
@@ -534,10 +539,10 @@ function terminal.run(cmd, env, args, opts)
   terminal.send_data_to_terminal(buffer_idx, cmd,
     {
       wrap = opts.cmake_terminal_opts.launch_task_in_a_child_process,
-      load_buf_in_win = fwinid,
+      load_buf_in_win = final_winid,
       split_direction = opts.cmake_terminal_opts.split_direction,
       split_size = opts.cmake_terminal_opts.split_size,
-      startinsert = false
+      startinsert = opts.cmake_terminal_opts.startinsert_in_other_tasks
     })
 
   --[[ while os.check_if_term_is_running_child_procs(buffer_idx) do ]]

@@ -140,6 +140,11 @@ function utils.run(cmd, env, args, opts)
   vim.cmd("wall")
 
   if opts.cmake_unify_terminal_for_launch then
+    if opts.cmake_use_terminal_for_build then
+      -- First, close the console
+      utils.close_cmake_console()
+      terminal.run(cmd, env, args, opts)
+    end
     terminal.run(cmd, env, args, opts)
   else
     vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })

@@ -22,6 +22,7 @@ local const = {
     runInTerminal = true,
     console = "integratedTerminal",
   },
+  cmake_use_terminal_for_build = false,
   cmake_unify_terminal_for_launch = true,
   cmake_terminal_opts = {
     split_direction = "horizontal", -- "horizontal", "vertical"
@@ -30,13 +31,15 @@ local const = {
     prefix_for_all_cmake_terminals = "[CMakeTools]: ", -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
 
     -- Window handling
-    display_single_terminal_window_arcoss_instance = false, -- Single viewport, multiple windows
+    display_single_terminal_window_arcoss_instance = true, -- Single viewport, multiple windows
     single_terminal_window_per_tab = true,                  -- Single viewport per tab
     keep_terminal_window_in_static_location = true,         -- Static location of the viewport if avialable
 
     -- Running Taaks
     launch_task_in_a_child_process = false,
     launch_executable_in_a_child_process = false,
+    startinsert_in_launch_task = true,
+    startinsert_in_other_tasks = false,
     -- launch_executable_from_build_directory = true -- This option is now invalid. We launch from build directory by default. May add it back after clean up and edge cases
   }
 }
