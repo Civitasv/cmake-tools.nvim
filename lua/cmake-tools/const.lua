@@ -30,10 +30,9 @@ local const = {
     prefix_for_all_cmake_terminals = "[CMakeTools]: ", -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
 
     -- Window handling
-    single_terminal_buffer_for_everything = true,          -- All tasks in this
-    display_single_terminal_window_arcoss_instance = true, -- Single viewport, multiple windows
-    single_terminal_window_per_tab = true,                 -- Single viewport per tab
-    keep_terminal_window_in_static_location = true,        -- Static location of the viewport if avialable
+    display_single_terminal_window_arcoss_instance = false, -- Single viewport, multiple windows
+    single_terminal_window_per_tab = true,                  -- Single viewport per tab
+    keep_terminal_window_in_static_location = true,         -- Static location of the viewport if avialable
 
     -- Running Taaks
     launch_task_in_a_child_process = false,
