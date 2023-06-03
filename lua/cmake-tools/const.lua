@@ -36,11 +36,15 @@ local const = {
     keep_terminal_window_in_static_location = true,        -- Static location of the viewport if avialable
 
     -- Running Taaks
-    launch_task_in_a_child_process = false,
-    launch_executable_in_a_child_process = false,
-    startinsert_in_launch_task = false,
-    startinsert_in_other_tasks = false,
-    -- launch_executable_from_build_directory = true -- This option is now invalid. We launch from build directory by default. May add it back after clean up and edge cases
+    launch_task_in_a_child_process = false,       -- Set this to true to make sure that you do not execute multiple cmake tasks at-a-time and keep sending data to the terminal
+    launch_executable_in_a_child_process = false, -- Same as above, but you will rarely ever need this
+    startinsert_in_launch_task = false,           -- If you want to enter terminal with :startinsert upon using :CMakeRun
+    startinsert_in_other_tasks = false,           -- If you want to enter terminal with :startinsert upon launching all other cmake tasks in the terminal. Generally set as false
+
+    -- launch_executable_from_build_directory = true -- This option is currently invalid.
+    -- We launch from build directory by default.
+    -- We can give the users the option to launch from the project source directory if they need to use some resources from the projecy source dir instead of '-E copy_if_different' POST_BUILD command
+    -- But as of now, not sure
   }
 }
 
