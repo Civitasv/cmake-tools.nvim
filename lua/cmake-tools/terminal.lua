@@ -119,14 +119,20 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
     end
   elseif osys.ismac then
     -- TODO: Process wrapper for mac
-  elseif osys.iswsl then
-    -- TODO: Process wrapper for wsl
   elseif osys.islinux then
     -- Process wrapper for Linux
     if opts.wrap then
-      cmd = cmd .. " \r"
+      cmd = cmd .. " & \n"
     else
-      cmd = cmd .. " \r"
+      cmd = cmd .. " \n"
+    end
+  elseif osys.iswsl then
+    --NOTE: Techinically, wsl-2 and linux are detected as linux. We might see a diferrence in wsl-1 vs wsl-2
+    -- Process wrapper for Linux
+    if opts.wrap then
+      cmd = cmd .. " & \n"
+    else
+      cmd = cmd .. " \n"
     end
   end
   if opts and opts.load_buf_in_win ~= -1 then
