@@ -152,7 +152,9 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
     -- do nothing
   end
   vim.api.nvim_chan_send(chan, cmd)
-  if opts.startinsert then
+  if (not opts.focus_on_launch_terminal or not opts.focus_on_main_terminal) then
+    vim.cmd('wincmd p') -- Goes back to previous window: Equivalent to [[ CTRL-W w ]]
+  elseif opts.startinsert then
     vim.cmd('startinsert')
   end
 end
@@ -496,7 +498,8 @@ function terminal.execute(executable, opts)
       load_buf_in_win = final_winid,
       split_direction = opts.cmake_terminal_opts.split_direction,
       split_size = opts.cmake_terminal_opts.split_size,
-      startinsert = opts.cmake_terminal_opts.startinsert_in_launch_task
+      startinsert = opts.cmake_terminal_opts.startinsert_in_launch_task,
+      focus_on_launch_terminal = opts.cmake_terminal_opts.focus_on_launch_terminal
     })
 end
 
@@ -542,7 +545,8 @@ function terminal.run(cmd, env, args, opts)
       load_buf_in_win = final_winid,
       split_direction = opts.cmake_terminal_opts.split_direction,
       split_size = opts.cmake_terminal_opts.split_size,
-      startinsert = opts.cmake_terminal_opts.startinsert_in_other_tasks
+      startinsert = opts.cmake_terminal_opts.startinsert_in_other_tasks,
+      focus_on_main_terminal = opts.cmake_terminal_opts.focus_on_main_terminal
     })
 
   --[[ while os.check_if_term_is_running_child_procs(buffer_idx) do ]]

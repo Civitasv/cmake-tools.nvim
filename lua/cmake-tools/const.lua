@@ -41,6 +41,8 @@ local const = {
     launch_executable_in_a_child_process = false, -- Same as above, but you will rarely ever need this
     startinsert_in_launch_task = false,           -- If you want to enter terminal with :startinsert upon using :CMakeRun
     startinsert_in_other_tasks = false,           -- If you want to enter terminal with :startinsert upon launching all other cmake tasks in the terminal. Generally set as false
+    focus_on_main_terminal = false, -- Focus on cmake terminal when cmake task is launched. Only use if cmake_use_terminal_for_build is true.
+    focus_on_launch_terminal = false, -- Focus on cmake launch terminal when executable target in launched. Only used if cmake_unify_terminal_for_launch is true.
 
     -- launch_executable_from_build_directory = true -- This option is currently invalid.
     -- We launch from build directory by default.
