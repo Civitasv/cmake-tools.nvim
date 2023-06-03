@@ -458,12 +458,6 @@ end
 function terminal.execute(executable, opts)
   local prefix = opts.cmake_terminal_opts.prefix_for_all_cmake_terminals
 
-  -- Check if executable target is built first, as sometimes it is cleaned and user tries to run
-  -- if executable == nil then
-  --   log.error("You must build the executable first!... Use \":CMakeBuild\"")
-  --   return
-  -- end
-
   -- Get pure executable name
   executable = vim.fn.fnamemodify(executable, ":t")
 

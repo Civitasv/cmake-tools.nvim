@@ -66,6 +66,11 @@ function utils.execute(executable, opts)
 
   -- Then, execute it
   if opts.cmake_unify_terminal_for_launch then
+    -- Check if executable target is built first, as sometimes it is cleaned and user tries to run
+    if executable == nil then
+      log.error("You must build the executable first!... Use \":CMakeBuild\"")
+      return
+    end
     terminal.execute(executable, opts)
     -- opts.on_success()
   else
