@@ -124,9 +124,9 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
   elseif osys.islinux then
     -- Process wrapper for Linux
     if opts.wrap then
-      cmd = cmd .. " \n"
+      cmd = cmd .. " \r"
     else
-      cmd = cmd .. " \n"
+      cmd = cmd .. " \r"
     end
   end
   if opts and opts.load_buf_in_win ~= -1 then

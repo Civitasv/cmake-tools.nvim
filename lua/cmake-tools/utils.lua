@@ -67,6 +67,7 @@ function utils.execute(executable, opts)
   -- Then, execute it
   if opts.cmake_unify_terminal_for_launch then
     terminal.execute(executable, opts)
+    -- opts.on_success()
   else
     -- print("EXECUTABLE", executable)
     local set_bufname = "file " .. opts.bufname
@@ -108,7 +109,7 @@ function utils.softlink(src, target)
   local dir_src = Path:new(src)
   local dir_target = Path:new(target)
   if dir_src:exists() and not dir_target:exists() then
-    local cmd = "!cmake -E create_symlink " .. src .. " " .. target;
+    local cmd = "!cmake -E create_symlink " .. src .. " " .. target
     vim.cmd(cmd)
   end
 end
@@ -139,13 +140,16 @@ function utils.run(cmd, env, args, opts)
   -- save all
   vim.cmd("wall")
 
-  if opts.cmake_unify_terminal_for_launch then
-    if opts.cmake_use_terminal_for_build then
+  if opts.cmake_use_terminal_for_build then
+    if opts.cmake_unify_terminal_for_launch then
       -- First, close the console
       utils.close_cmake_console()
       terminal.run(cmd, env, args, opts)
+      vim.schedule_wrap(opts.on_success())
+    else
+      terminal.run(cmd, env, args, opts)
+      vim.schedule_wrap(opts.on_success())
     end
-    terminal.run(cmd, env, args, opts)
   else
     vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
     opts.cmake_show_console = opts.cmake_show_console == "always"

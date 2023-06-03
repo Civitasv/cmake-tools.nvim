@@ -15,6 +15,7 @@ local config = Config:new(const)
 
 local cmake = {}
 
+
 --- Setup cmake-tools
 function cmake.setup(values)
   const = vim.tbl_deep_extend("force", const, values)
@@ -360,55 +361,47 @@ function cmake.run(opt, callback)
   else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT
     -- Build select launch target every time
     config.build_target = config.launch_target
-    if const.cmake_unify_terminal_for_launch then
-      -- DONOT schedule (or) schedule_wrap this piece of code
-      -- BUG: Without this if-else logic, the forwarding to terminal.execute() from utils.execute(), in utils.lua does not work.
-      result = config:get_launch_target()
-      local target_path = result.data
-      local new_s = vim.fn.fnamemodify(target_path, ":h")
-      return terminal.execute(target_path, {
-        bufname = vim.fn.expand("%:p"),
-        cmake_launch_path = new_s,
-        cmake_console_position = const.cmake_console_position,
-        cmake_console_size = const.cmake_console_size,
-        cmake_launch_args = cmake:get_launch_args(),
-        cmake_use_terminals = const.cmake_unify_terminal_for_launch,
-        cmake_terminal_opts = const.cmake_terminal_opts
-      })
-    else
-      return cmake.build({ fargs = utils.deepcopy(opt.fargs) }, function()
-        vim.schedule(function()
+    return cmake.build({ fargs = utils.deepcopy(opt.fargs) },
+      -- function()
+      -- vim.schedule_wrap(
+      function()
+        if (osys.is_win32 == 1) then
           result = config:get_launch_target()
           local target_path = result.data
           local new_s = vim.fn.fnamemodify(target_path, ":h")
-
-          if (osys.is_win32 == 1) then
-            return utils.execute(target_path, {
-              bufname = vim.fn.expand("%:p"),
-              cmake_launch_path = new_s,
-              cmake_console_position = const.cmake_console_position,
-              cmake_console_size = const.cmake_console_size,
-              cmake_launch_args = cmake:get_launch_args(),
-              cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
-              cmake_terminal_opts = const.cmake_terminal_opts
-            })
-          else
-            if not const.cmake_unify_terminal_for_launch then
-              target_path = '"' .. target_path .. '"'
-            end
-            return utils.execute(target_path, {
-              bufname = vim.fn.expand("%:t:r"),
-              cmake_launch_path = new_s,
-              cmake_console_position = const.cmake_console_position,
-              cmake_console_size = const.cmake_console_size,
-              cmake_launch_args = cmake:get_launch_args(),
-              cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
-              cmake_terminal_opts = const.cmake_terminal_opts
-            })
+          return utils.execute(target_path, {
+            bufname = vim.fn.expand("%:p"),
+            cmake_launch_path = new_s,
+            cmake_console_position = const.cmake_console_position,
+            cmake_console_size = const.cmake_console_size,
+            cmake_launch_args = cmake:get_launch_args(),
+            cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
+            cmake_use_terminal_for_build = const.cmake_use_terminal_for_build,
+            cmake_terminal_opts = const.cmake_terminal_opts
+          })
+        else
+          result = config:get_launch_target()
+          local target_path = result.data
+          local new_s = vim.fn.fnamemodify(target_path, ":h")
+          if not const.cmake_unify_terminal_for_launch then
+            target_path = '"' .. target_path .. '"'
           end
-        end)
-      end)
-    end
+          return utils.execute(target_path, {
+            bufname = vim.fn.expand("%:t:r"),
+            cmake_launch_path = new_s,
+            cmake_console_position = const.cmake_console_position,
+            cmake_console_size = const.cmake_console_size,
+            cmake_launch_args = cmake:get_launch_args(),
+            cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
+            cmake_use_terminal_for_build = const.cmake_use_terminal_for_build,
+            cmake_terminal_opts = const.cmake_terminal_opts
+          })
+        end
+      end
+    -- )
+    -- end
+    )
+    -- Return end
   end
 end
 
