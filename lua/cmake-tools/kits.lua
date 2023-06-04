@@ -106,7 +106,7 @@ function kits.build_env_and_args(kit_name, use_terminal_for_build, opts)
     end
   end
   if kit.generator then
-    table.insert(args, "-G " .. kit.generator)
+    table.insert(args, "-G" .."\"" .. kit.generator .. "\"")
   end
   if kit.host_architecture then
     table.insert(args, "-T host=" .. kit.host_architecture)
