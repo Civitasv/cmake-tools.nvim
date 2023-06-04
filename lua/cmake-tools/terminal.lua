@@ -152,7 +152,7 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
     -- do nothing
   end
   vim.api.nvim_chan_send(chan, cmd)
-  if (not opts.focus_on_launch_terminal or not opts.focus_on_main_terminal) then
+  if (opts.focus_on_launch_terminal or opts.focus_on_main_terminal) then
     vim.cmd('wincmd p') -- Goes back to previous window: Equivalent to [[ CTRL-W w ]]
   elseif opts.startinsert then
     vim.cmd('startinsert')
