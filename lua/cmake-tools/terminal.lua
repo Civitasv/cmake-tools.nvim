@@ -1,10 +1,46 @@
 local osys = require("cmake-tools.osys")
 local log = require("cmake-tools.log")
 
-local terminal = {}
+local terminal = {
+  id = nil -- id for the unified terminal
+}
+
+function terminal.has_active_job()
+  if terminal.id then
+    return terminal.check_if_running_child_procs(terminal.id)
+  else
+    return false
+  end
+end
+
+function terminal.show(terminal_opts)
+  if not terminal.id then
+    log.info("There is no terminal instance")
+    return
+  end
+
+  local win_id = terminal.reposition(terminal_opts)
+
+  if win_id ~= -1 then
+    -- The window is alive, so we set buffer in window
+    vim.api.nvim_win_set_buf(win_id, terminal.id)
+    if terminal_opts.split_direction == "horizontal" then
+      vim.api.nvim_win_set_height(win_id, terminal_opts.split_size)
+    else
+      vim.api.nvim_win_set_width(win_id, terminal_opts.split_size)
+    end
+  elseif win_id >= -1 then
+    -- The window is not active, we need to create a new buffer
+    vim.cmd(":" .. terminal_opts.split_direction .. " " .. terminal_opts.split_size .. "sp") -- Split
+    vim.api.nvim_win_set_buf(0, terminal.id)
+  else
+    -- log.error("Invalid window Id!")
+    -- do nothing
+  end
+end
 
 -- Make a new terminal named term_name
-function terminal.start_local_shell(term_name, opts)
+function terminal.new_instance(term_name, opts)
   local buffers_before = vim.api.nvim_list_bufs()
 
   -- Now create the plit
@@ -13,7 +49,7 @@ function terminal.start_local_shell(term_name, opts)
   -- print('newname in start local: '.. new_name)
   -- print('term_name in start local: '.. term_name)
   vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), term_name) -- Set the buffer name
-  vim.cmd(":setlocal laststatus=3")                                    -- Let there be a single status/lualine in the neovim instance
+  vim.cmd(":setlocal laststatus=3") -- Let there be a single status/lualine in the neovim instance
 
   -- Renamming a terminal buffer creates a new hidden buffer, so duplicate terminals need to be deleted
   local new_buffers_list = vim.api.nvim_list_bufs()
@@ -135,16 +171,16 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
       cmd = cmd .. " \n"
     end
   end
-  if opts and opts.load_buf_in_win ~= -1 then
+  if opts and opts.win_id ~= -1 then
     -- The window is alive, so we set buffer in window
-    vim.api.nvim_win_set_buf(opts.load_buf_in_win, buffer_idx)
+    vim.api.nvim_win_set_buf(opts.win_id, buffer_idx)
     if opts.split_direction == "horizontal" then
-      vim.api.nvim_win_set_height(opts.load_buf_in_win, opts.split_size)
+      vim.api.nvim_win_set_height(opts.win_id, opts.split_size)
     else
-      vim.api.nvim_win_set_width(opts.load_buf_in_win, opts.split_size)
+      vim.api.nvim_win_set_width(opts.win_id, opts.split_size)
     end
-  elseif opts and opts.load_buf_in_win >= -1 then
-    -- The window is not active, we need to create a nre buffer
+  elseif opts and opts.win_id >= -1 then
+    -- The window is not active, we need to create a new buffer
     vim.cmd(":" .. opts.split_direction .. " " .. opts.split_size .. "sp") -- Split
     vim.api.nvim_win_set_buf(0, buffer_idx)
   else
@@ -153,9 +189,9 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
   end
   vim.api.nvim_chan_send(chan, cmd)
   if (not opts.focus_on_launch_terminal or not opts.focus_on_main_terminal) then
-    vim.cmd('wincmd p') -- Goes back to previous window: Equivalent to [[ CTRL-W w ]]
-  elseif opts.startinsert then
-    vim.cmd('startinsert')
+    vim.cmd("wincmd p") -- Goes back to previous window: Equivalent to [[ CTRL-W w ]]
+  elseif opts.start_insert then
+    vim.cmd("startinsert")
   end
 end
 
@@ -182,13 +218,13 @@ function terminal.create_if_not_exists(term_name, opts)
     return true, term_idx
   else
     -- print("to start_term term_name: " .. term_name)
-    term_idx = terminal.start_local_shell(term_name, opts)
+    term_idx = terminal.new_instance(term_name, opts)
     return false, term_idx
   end
 end
 
-function terminal.reposition(buffer_idx, opts)
-  local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_for_all_cmake_terminals)
+function terminal.reposition(opts)
+  local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_name)
   -- Check all cmake terminals with buffers
   -- print("all_open_cmake_terminal_buffers: ")
   -- vim.print(all_open_cmake_terminal_buffers)
@@ -198,7 +234,7 @@ function terminal.reposition(buffer_idx, opts)
   for _, buffer in ipairs(all_open_cmake_terminal_buffers) do
     table.insert(all_buffer_display_info, terminal.get_buffer_display_info(buffer, {
       ignore_current_tab = false, -- Set this to true to get info of all tabs execept current tab
-      get_unindexed_list = false  -- Set this to true for viewing a visually appealing nice table
+      get_unindexed_list = false -- Set this to true for viewing a visually appealing nice table
     }))
   end
 
@@ -220,18 +256,16 @@ function terminal.reposition(buffer_idx, opts)
   local STBE = opts.single_terminal_buffer_for_everything
   ]]
 
-  local SingleWindowAcrossInstance = opts.display_single_terminal_window_arcoss_instance
-  local SingleWindowPerTab = opts.single_terminal_window_per_tab
-  local StaticWindowLocation = opts.keep_terminal_window_in_static_location
+  local single_terminal_per_instance = opts.single_terminal_per_instance
+  local single_terminal_per_tab = opts.single_terminal_per_tab
+  local static_window_location = opts.keep_terminal_static_location
 
   local final_win_id = -1 -- If -1, then a new window needs to be created, otherwise, we must return an existing winid
-  if SingleWindowAcrossInstance then
+  if single_terminal_per_instance then
     -- print('display_single_terminal_across_instance!')
-    if StaticWindowLocation then
+    if static_window_location then
       -- print('keep_terminal_in_static_location')
-      terminal.close_window_from_tabs(
-      --[[ignore_current_tab=]] true,
-        opts)                                                                            -- Close all cmake windows in all other tabs
+      terminal.close_window_from_tabs(true, opts) -- Close all cmake windows in all other tabs
       local buflist = terminal.check_if_cmake_buffers_are_displayed_in_current_tab(opts) -- Get list of all buffers that are displayed in current tab
       -- vim.print(buflist)
       if next(buflist) then
@@ -245,9 +279,7 @@ function terminal.reposition(buffer_idx, opts)
       end
     else
       -- print('donot keep_terminal_in_static_location')
-      terminal.close_window_from_tabs(
-      --[[ignore_current_tab=]] true,
-        opts)                                                                            -- Close all cmake windows in all tabs
+      terminal.close_window_from_tabs(true, opts) -- Close all cmake windows in all tabs
       local buflist = terminal.check_if_cmake_buffers_are_displayed_in_current_tab(opts) -- Get list of all buffers that are displayed in current tab
       if next(buflist) then
         -- Buffers exist in current tab, so close all buffers in buflist
@@ -259,9 +291,9 @@ function terminal.reposition(buffer_idx, opts)
       end
       final_win_id = -1
     end
-  elseif SingleWindowPerTab then
+  elseif single_terminal_per_tab then
     -- print('single_terminal_per_tab!')
-    if StaticWindowLocation then
+    if static_window_location then
       -- print('keep_terminal_in_static_location')
       local buflist = terminal.check_cmake_buffers_are_displayed_in_current_tab(opts)
       if next(buflist) then
@@ -355,7 +387,7 @@ function terminal.get_buffer_display_info(buffer_idx, opts)
 end
 
 function terminal.close_window_from_tabs(ignore_current_tab, opts)
-  local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_for_all_cmake_terminals)
+  local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_name)
   local unindexed_window_list = {}
   for _, buffer in ipairs(all_open_cmake_terminal_buffers) do
     local windows_open_for_buffer = terminal.get_buffer_display_info(buffer,
@@ -382,7 +414,7 @@ function terminal.close_window_from_tabs(ignore_current_tab, opts)
 end
 
 function terminal.check_cmake_buffers_are_displayed_in_current_tab(opts)
-  local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_for_all_cmake_terminals)
+  local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_name)
 
   local current_tabpage = vim.api.nvim_get_current_tabpage()
   local current_windows = vim.api.nvim_tabpage_list_wins(current_tabpage)
@@ -401,7 +433,7 @@ function terminal.check_cmake_buffers_are_displayed_in_current_tab(opts)
 end
 
 function terminal.check_if_cmake_buffers_are_displayed_in_current_tab(opts)
-  local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_for_all_cmake_terminals)
+  local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_name)
   local unindexed_window_list = {}
   for _, buffer in ipairs(all_open_cmake_terminal_buffers) do
     local windows_open_for_buffer = terminal.get_buffer_display_info(buffer,
@@ -458,23 +490,23 @@ function terminal.get_buffers_with_prefix(prefix)
 end
 
 function terminal.execute(executable, opts)
-  local prefix = opts.cmake_terminal_opts.prefix_for_all_cmake_terminals
+  local prefix = opts.cmake_terminal_opts.prefix_name
 
-  -- Get pure executable name
+  -- Get pure executable name, cause previously, it is an absolute path
   executable = vim.fn.fnamemodify(executable, ":t")
 
-  -- Buffer name of executable needs to be set with a prefix so that the reposition_term() function can find it
-  local executable_buffer_name = prefix .. vim.fn.fnamemodify(executable, ":t")
-  local _, buffer_idx = terminal.create_if_not_exists(executable_buffer_name,
-    opts.cmake_terminal_opts)
+  -- Buffer name of executable needs to be set with a prefix
+  -- so that the reposition_term() function can find it
+  local executable_buffer_name = prefix .. executable
 
-  if terminal.check_if_running_child_procs(buffer_idx) then
-    log.error("CMake task is running in terminal")
-    return
-  end
+  local _, buffer_idx = terminal.create_if_not_exists(
+    executable_buffer_name,
+    opts.cmake_terminal_opts
+  )
+  terminal.id = buffer_idx
 
   -- Reposition the terminal buffer, before sending commands
-  local final_winid = terminal.reposition(buffer_idx, opts.cmake_terminal_opts)
+  local final_win_id = terminal.reposition(opts.cmake_terminal_opts)
   -- print("final_winid: " .. final_winid)
 
   -- Prepare Launch path if sending to terminal
@@ -482,7 +514,6 @@ function terminal.execute(executable, opts)
     opts.cmake_terminal_opts.launch_executable_in_a_child_process)
 
   -- Launch form executable's build directory by default
-  -- if opts.cmake_terminal_opts.launch_executable_from_build_directory == true then -- TODO: decide whether this option is needed
   if osys.iswin32 then
     -- Weird windows thing: executables that are not in path only work as ".\executable" and not "executable" on the cmdline (even if focus is in the same directory)
     executable = "cd " .. launch_path .. " && .\\" .. executable
@@ -495,33 +526,29 @@ function terminal.execute(executable, opts)
   terminal.send_data_to_terminal(buffer_idx, executable,
     {
       wrap = opts.cmake_terminal_opts.launch_executable_in_a_child_process,
-      load_buf_in_win = final_winid,
+      win_id = final_win_id,
       split_direction = opts.cmake_terminal_opts.split_direction,
       split_size = opts.cmake_terminal_opts.split_size,
-      startinsert = opts.cmake_terminal_opts.startinsert_in_launch_task,
+      start_insert = opts.cmake_terminal_opts.start_insert_in_launch_task,
       focus_on_launch_terminal = opts.cmake_terminal_opts.focus_on_launch_terminal
     })
 end
 
 function terminal.run(cmd, env, args, opts)
-  local prefix = opts.cmake_terminal_opts.prefix_for_all_cmake_terminals -- [CMakeTools]
+  local prefix = opts.cmake_terminal_opts.prefix_name -- [CMakeTools]
   -- print('testing from run()')
   -- vim.print(opts.cmake_terminal_opts)
 
   -- prefix is added to the terminal name because the reposition_term() function needs to find it
   local _, buffer_idx = terminal.create_if_not_exists(
-    prefix .. opts.cmake_terminal_opts.main_terminal_name, -- [CMakeTools]Main Terminal
+    prefix .. opts.cmake_terminal_opts.name, -- [CMakeTools]Main Terminal
     opts.cmake_terminal_opts
   )
+  terminal.id = buffer_idx
 
-  --[[ if os.check_if_term_is_running_child_procs(buffer_idx) then ]]
-  --[[   notify("CMake task is running in terminal", vim.log.levels.ERROR) ]]
-  --[[   return ]]
-  --[[ end ]]
-
-  -- print("prefix from within run(): " .. opts.cmake_terminal_opts.prefix_for_all_cmake_terminals)
+  -- print("prefix from within run(): " .. opts.cmake_terminal_opts.prefix_name)
   -- Reposition the terminal buffer, before sending commands
-  local final_winid = terminal.reposition(buffer_idx, opts.cmake_terminal_opts)
+  local final_win_id = terminal.reposition(opts.cmake_terminal_opts)
   -- print("final_winid: " .. final_winid)
 
   -- Prepare Launch path form
@@ -529,29 +556,30 @@ function terminal.run(cmd, env, args, opts)
     opts.cmake_terminal_opts.launch_task_in_a_child_process)
 
   -- Launch form executable's build directory by default
-  -- if opts.cmake_terminal_opts.launch_executable_from_build_directory then
-  cmd = "cd " .. launch_path .. " && " .. cmd
-  -- end
+  local full_cmd = "cd " .. launch_path .. " && "
+
+  -- env
+  if next(env) then
+    full_cmd = full_cmd .. cmd .. " -E " .. " env " .. table.concat(env, " ") .. " " .. cmd
+  else
+    full_cmd = full_cmd .. cmd
+  end
 
   -- Add args to the cmd
   for _, arg in ipairs(args) do
-    cmd = cmd .. " " .. arg
+    full_cmd = full_cmd .. " " .. arg
   end
 
   -- Send final cmd to terminal
-  terminal.send_data_to_terminal(buffer_idx, cmd,
+  terminal.send_data_to_terminal(buffer_idx, full_cmd,
     {
       wrap = opts.cmake_terminal_opts.launch_task_in_a_child_process,
-      load_buf_in_win = final_winid,
+      win_id = final_win_id,
       split_direction = opts.cmake_terminal_opts.split_direction,
       split_size = opts.cmake_terminal_opts.split_size,
-      startinsert = opts.cmake_terminal_opts.startinsert_in_other_tasks,
+      start_insert = opts.cmake_terminal_opts.start_insert_in_other_tasks,
       focus_on_main_terminal = opts.cmake_terminal_opts.focus_on_main_terminal
     })
-
-  --[[ while os.check_if_term_is_running_child_procs(buffer_idx) do ]]
-  --[[   print("I'm waiting") ]]
-  --[[ end ]]
 end
 
 function terminal.prepare_launch_path(path, in_a_child_process)

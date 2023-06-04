@@ -10,4 +10,8 @@ function log.error(msg)
   log.notify(msg, vim.log.levels.ERROR)
 end
 
+function log.info(msg)
+  log.notify(msg, vim.log.levels.INFO)
+end
+
 return log

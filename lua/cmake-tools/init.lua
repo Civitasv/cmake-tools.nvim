@@ -9,7 +9,6 @@ local kits = require("cmake-tools.kits")
 local presets = require("cmake-tools.presets")
 local log = require("cmake-tools.log")
 local osys = require("cmake-tools.osys")
-local terminal = require("cmake-tools.terminal")
 
 local config = Config:new(const)
 
@@ -25,7 +24,7 @@ end
 --- Generate build system for this project.
 -- Think it as `cmake .`
 function cmake.generate(opt, callback)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -80,12 +79,9 @@ function cmake.generate(opt, callback)
         end
         cmake.configure_compile_commands()
       end,
-      cmake_console_position = const.cmake_console_position,
-      cmake_show_console = const.cmake_show_console,
       cmake_launch_path = vim.loop.cwd(),
-      cmake_console_size = const.cmake_console_size,
-      cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
-      cmake_use_terminal_for_build = const.cmake_use_terminal_for_build,
+      cmake_always_use_terminal = const.cmake_always_use_terminal,
+      cmake_quickfix_opts = const.cmake_quickfix_opts,
       cmake_terminal_opts = const.cmake_terminal_opts
     })
   end
@@ -112,7 +108,7 @@ function cmake.generate(opt, callback)
   -- be {env={}, args={}}, so it's okay.
   local kit_option = kits.build_env_and_args(
     config.kit,
-    const.cmake_use_terminal_for_build,
+    const.cmake_always_use_terminal,
     const.cmake_terminal_opts)
 
   if const.cmake_build_directory ~= "" then
@@ -141,19 +137,16 @@ function cmake.generate(opt, callback)
       end
       cmake.configure_compile_commands()
     end,
-    cmake_console_position = const.cmake_console_position,
-    cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size,
     cmake_launch_path = vim.loop.cwd(),
-    cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
-    cmake_use_terminal_for_build = const.cmake_use_terminal_for_build,
+    cmake_always_use_terminal = const.cmake_always_use_terminal,
+    cmake_quickfix_opts = const.cmake_quickfix_opts,
     cmake_terminal_opts = const.cmake_terminal_opts
   })
 end
 
 --- Clean targets
 function cmake.clean(callback)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -170,12 +163,9 @@ function cmake.clean(callback)
         callback()
       end
     end,
-    cmake_console_position = const.cmake_console_position,
-    cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size,
     cmake_launch_path = vim.loop.cwd(),
-    cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
-    cmake_use_terminal_for_build = const.cmake_use_terminal_for_build,
+    cmake_always_use_terminal = const.cmake_always_use_terminal,
+    cmake_quickfix_opts = const.cmake_quickfix_opts,
     cmake_terminal_opts = const.cmake_terminal_opts
   })
 end
@@ -183,7 +173,7 @@ end
 --- Build this project using the make toolchain of target platform
 --- think it as `cmake --build .`
 function cmake.build(opt, callback)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -229,12 +219,9 @@ function cmake.build(opt, callback)
         callback()
       end
     end,
-    cmake_console_position = const.cmake_console_position,
-    cmake_show_console = const.cmake_show_console,
-    cmake_console_size = const.cmake_console_size,
     cmake_launch_path = vim.loop.cwd(),
-    cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
-    cmake_use_terminal_for_build = const.cmake_use_terminal_for_build,
+    cmake_always_use_terminal = const.cmake_always_use_terminal,
+    cmake_quickfix_opts = const.cmake_quickfix_opts,
     cmake_terminal_opts = const.cmake_terminal_opts
   })
 end
@@ -242,7 +229,7 @@ end
 --- Clean Rebuild: Clean the project and then Rebuild the target
 --- [See dependancy discussion here]
 function cmake.clean_rebuild(opt, callback)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -294,7 +281,7 @@ end
 
 --- CMake install targets
 function cmake.install(opt)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -309,34 +296,26 @@ function cmake.install(opt)
   vim.list_extend(args, fargs)
 
   return utils.run(const.cmake_command, {}, args, {
-    cmake_console_position          = const.cmake_console_position,
-    cmake_show_console              = const.cmake_show_console,
-    cmake_console_size              = const.cmake_console_size,
-    cmake_launch_path               = vim.loop.cwd(),
-    cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
-    cmake_use_terminal_for_build    = const.cmake_use_terminal_for_build,
-    cmake_terminal_opts             = const.cmake_terminal_opts
+    cmake_launch_path         = vim.loop.cwd(),
+    cmake_always_use_terminal = const.cmake_always_use_terminal,
+    cmake_quickfix_opts       = const.cmake_quickfix_opts,
+    cmake_terminal_opts       = const.cmake_terminal_opts
   })
 end
 
 --- CMake close cmake console
 function cmake.close()
-  utils.close_cmake_console()
+  utils.close_cmake_window()
 end
 
 --- CMake open cmake console
 function cmake.open()
-  utils.show_cmake_console(const.cmake_console_position, const.cmake_console_size)
-end
-
-local getPath = function(str, sep)
-  sep = sep or "/"
-  return str:match("(.*" .. sep .. ")")
+  utils.show_cmake_window(const.cmake_always_use_terminal, const.cmake_quickfix_opts, const.cmake_terminal_opts)
 end
 
 -- Run executable targets
 function cmake.run(opt, callback)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -362,52 +341,26 @@ function cmake.run(opt, callback)
     -- Build select launch target every time
     config.build_target = config.launch_target
     return cmake.build({ fargs = utils.deepcopy(opt.fargs) },
-      -- function()
-      -- vim.schedule_wrap(
       function()
-        if (osys.is_win32 == 1) then
-          result = config:get_launch_target()
-          local target_path = result.data
-          local new_s = vim.fn.fnamemodify(target_path, ":h")
-          return utils.execute(target_path, {
-            bufname = vim.fn.expand("%:p"),
-            cmake_launch_path = new_s,
-            cmake_console_position = const.cmake_console_position,
-            cmake_console_size = const.cmake_console_size,
-            cmake_launch_args = cmake:get_launch_args(),
-            cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
-            cmake_use_terminal_for_build = const.cmake_use_terminal_for_build,
-            cmake_terminal_opts = const.cmake_terminal_opts
-          })
-        else
-          result = config:get_launch_target()
-          local target_path = result.data
-          local new_s = vim.fn.fnamemodify(target_path, ":h")
-          if not const.cmake_unify_terminal_for_launch then
-            target_path = '"' .. target_path .. '"'
-          end
-          return utils.execute(target_path, {
-            bufname = vim.fn.expand("%:t:r"),
-            cmake_launch_path = new_s,
-            cmake_console_position = const.cmake_console_position,
-            cmake_console_size = const.cmake_console_size,
-            cmake_launch_args = cmake:get_launch_args(),
-            cmake_unify_terminal_for_launch = const.cmake_unify_terminal_for_launch,
-            cmake_use_terminal_for_build = const.cmake_use_terminal_for_build,
-            cmake_terminal_opts = const.cmake_terminal_opts
-          })
-        end
+        result = config:get_launch_target()
+        local target_path = result.data
+        local launch_path = vim.fn.fnamemodify(target_path, ":h")
+
+        return utils.execute(target_path, {
+          cmake_launch_path = launch_path,
+          cmake_launch_args = cmake:get_launch_args(),
+          cmake_always_use_terminal = const.cmake_always_use_terminal,
+          cmake_quickfix_opts = const.cmake_quickfix_opts,
+          cmake_terminal_opts = const.cmake_terminal_opts
+        })
       end
-    -- )
-    -- end
     )
-    -- Return end
   end
 end
 
 -- Set args for launch target
 function cmake.launch_args(opt)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -419,7 +372,7 @@ end
 if has_nvim_dap then
   -- Debug execuable targets
   function cmake.debug(opt, callback)
-    if not utils.has_active_job() then
+    if not utils.has_active_job(const.cmake_always_use_terminal) then
       return
     end
 
@@ -459,7 +412,7 @@ if has_nvim_dap then
           local dap_config = {
             name = config.launch_target,
             program = target_path,
-            cwd = getPath(result.data, "/"),
+            cwd = utils.get_path(result.data, "/"),
             args = cmake:get_launch_args(),
           }
           -- close cmake console
@@ -472,9 +425,10 @@ if has_nvim_dap then
 end
 
 function cmake.select_build_type(callback)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
+
   local result = utils.get_cmake_configuration()
   if result.code ~= Types.SUCCESS then
     return log.error(result.message)
@@ -515,9 +469,10 @@ function cmake.select_build_type(callback)
 end
 
 function cmake.select_kit(callback)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
+
   local result = utils.get_cmake_configuration()
   if result.code ~= Types.SUCCESS then
     return log.error(result.message)
@@ -554,9 +509,10 @@ function cmake.select_kit(callback)
 end
 
 function cmake.select_configure_preset(callback)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
+
   local result = utils.get_cmake_configuration()
   if result.code ~= Types.SUCCESS then
     return log.error(result.message)
@@ -599,9 +555,10 @@ function cmake.select_configure_preset(callback)
 end
 
 function cmake.select_build_preset(callback)
-  if not utils.has_active_job() then
+  if not utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
+
   local result = utils.get_cmake_configuration()
   if result.code ~= Types.SUCCESS then
     return log.error(result.message)
@@ -843,9 +800,9 @@ end
 
 -- For win32, we have a command to escape insert mode after proccess extis
 -- because, we want to scroll the buffer output after completion of execution
-if (osys.is_win32 == 1) then
+if osys.is_win32 then
   vim.api.nvim_create_autocmd("TermClose", {
-    group    = "cmaketools",
+    group    = "cmake_tools",
     callback = function()
       vim.cmd.stopinsert()
       vim.api.nvim_feedkeys("<C-\\><C-n><CR>", "n", false)

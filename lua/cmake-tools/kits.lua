@@ -22,8 +22,8 @@ function kits.parse(global_kits_path)
   -- start parsing
   local config = nil
 
-  local file = findcfg()           -- check for config file
-  if file then                     -- if one is found ...
+  local file = findcfg() -- check for config file
+  if file then -- if one is found ...
     if file:match(".*%.json") then -- .. and is a json file
       config = vim.fn.json_decode(vim.fn.readfile(file))
     end
@@ -106,7 +106,7 @@ function kits.build_env_and_args(kit_name, use_terminal_for_build, opts)
     end
   end
   if kit.generator then
-    table.insert(args, "-G" .."\"" .. kit.generator .. "\"")
+    table.insert(args, "-G" .. "\"" .. kit.generator .. "\"")
   end
   if kit.host_architecture then
     table.insert(args, "-T host=" .. kit.host_architecture)
