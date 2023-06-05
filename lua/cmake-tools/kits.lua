@@ -60,7 +60,7 @@ function kits.get_by_name(kit_name)
 end
 
 -- given a kit, build an argument list for CMake
-function kits.build_env_and_args(kit_name, use_terminal_for_build, opts)
+function kits.build_env_and_args(kit_name, always_use_terminal, opts)
   local kit = kits.get_by_name(kit_name)
   local args = {}
   local env = {}
@@ -85,7 +85,7 @@ function kits.build_env_and_args(kit_name, use_terminal_for_build, opts)
   -- if exists `compilers` option, then set variable for cmake
   if kit.compilers then
     for lang, compiler in pairs(kit.compilers) do
-      if use_terminal_for_build then
+      if always_use_terminal then
         if opts.launch_task_in_a_child_process then
           add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=" .. "\\\"" .. compiler .. "\\\"" }) -- This is for passing to child process
         else
@@ -101,7 +101,7 @@ function kits.build_env_and_args(kit_name, use_terminal_for_build, opts)
   if kit.linker then
     if opts.launch_task_in_a_child_process then
       table.insert(args, "-DCMAKE_LINKER=" .. "\\\"" .. kit.linker .. "\\\"")
-    elseif use_terminal_for_build then
+    elseif always_use_terminal then
       table.insert(args, "-DCMAKE_LINKER=" .. "\"" .. kit.linker .. "\"")
     else -- Quick Fix Lists
       table.insert(args, "-DCMAKE_LINKER=" .. kit.linker)
@@ -109,11 +109,11 @@ function kits.build_env_and_args(kit_name, use_terminal_for_build, opts)
   end
   if kit.generator then
     if opts.launch_task_in_a_child_process then
-      table.insert(args, "-G" .."\\\"" .. kit.generator .. "\\\"")
-    elseif use_terminal_for_build then
-      table.insert(args, "-G" .."\"" .. kit.generator .. "\"")
+      table.insert(args, "-G" .. "\\\"" .. kit.generator .. "\\\"")
+    elseif always_use_terminal then
+      table.insert(args, "-G" .. "\"" .. kit.generator .. "\"")
     else -- Quick Fix Lists
-      table.insert(args, "-G" ..kit.generator)
+      table.insert(args, "-G" .. kit.generator)
     end
   end
   if kit.host_architecture then
