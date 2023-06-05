@@ -120,8 +120,8 @@ end
 
 --- Check if exists active job.
 -- @return true if not exists else false
-function utils.has_active_job(always_use_terminal)
-  if always_use_terminal then
+function utils.has_active_job(always_use_terminal, opts)
+  if always_use_terminal and opts.launch_task_in_a_child_process then
     return terminal.has_active_job()
   else
     return terminal.has_active_job() or quickfix.has_active_job()
