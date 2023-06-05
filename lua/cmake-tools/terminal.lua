@@ -134,10 +134,8 @@ end
 function terminal.check_if_running_child_procs(terminal_buffer_idx)
   local main_pid = vim.api.nvim_buf_get_var(terminal_buffer_idx, "terminal_job_pid")
   local child_procs = vim.api.nvim_get_proc_children(main_pid)
-  --[[ print("CHILD", vim.inspect(child_procs)) ]]
+
   if next(child_procs) then
-    -- print("child procs:")
-    -- print(child_procs)
     return true
   else
     return false
@@ -145,10 +143,7 @@ function terminal.check_if_running_child_procs(terminal_buffer_idx)
 end
 
 function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
-  -- print('buffer_idx: ' .. buffer_idx .. ', cmd: ' .. cmd)
-  local chan = vim.api.nvim_buf_get_var(buffer_idx, "terminal_job_id")
   if osys.iswin32 then
-    -- print('win32')
     if opts.wrap then
       cmd = "Start-Process -FilePath pwsh -ArgumentList '-Command " ..
           cmd .. " ' -PassThru -NoNewWindow | Wait-Process \r"
@@ -156,14 +151,9 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
       cmd = cmd .. " \r"
     end
   elseif osys.ismac then
-    -- TODO: Process wrapper for mac
+    cmd = cmd .. " \n"
   elseif osys.islinux then
-    -- Process wrapper for Linux
-    if opts.wrap then
-      cmd = cmd .. " & \n"
-    else
-      cmd = cmd .. " \n"
-    end
+    cmd = cmd .. " \n"
   elseif osys.iswsl then
     --NOTE: Techinically, wsl-2 and linux are detected as linux. We might see a diferrence in wsl-1 vs wsl-2
     -- Process wrapper for Linux
@@ -196,6 +186,7 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
     vim.cmd("startinsert")
   end
 
+  local chan = vim.api.nvim_buf_get_var(buffer_idx, "terminal_job_id")
   vim.api.nvim_chan_send(chan, cmd)
 end
 
@@ -269,7 +260,7 @@ function terminal.reposition(opts)
     -- print('display_single_terminal_across_instance!')
     if static_window_location then
       -- print('keep_terminal_in_static_location')
-      terminal.close_window_from_tabs(true, opts) -- Close all cmake windows in all other tabs
+      terminal.close_window_from_tabs_with_prefix(true, opts) -- Close all cmake windows in all other tabs
       local buflist = terminal.check_if_cmake_buffers_are_displayed_in_current_tab(opts) -- Get list of all buffers that are displayed in current tab
       -- vim.print(buflist)
       if next(buflist) then
@@ -283,7 +274,7 @@ function terminal.reposition(opts)
       end
     else
       -- print('donot keep_terminal_in_static_location')
-      terminal.close_window_from_tabs(true, opts) -- Close all cmake windows in all tabs
+      terminal.close_window_from_tabs_with_prefix(true, opts) -- Close all cmake windows in all tabs
       local buflist = terminal.check_if_cmake_buffers_are_displayed_in_current_tab(opts) -- Get list of all buffers that are displayed in current tab
       if next(buflist) then
         -- Buffers exist in current tab, so close all buffers in buflist
@@ -390,10 +381,13 @@ function terminal.get_buffer_display_info(buffer_idx, opts)
   return buffer_display_info
 end
 
-function terminal.close_window_from_tabs(ignore_current_tab, opts)
-  local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_name)
+-- Close all window in all tabs by prefix.
+-- @param ignore_current_tab: if ignore current tab
+-- @param opts: { prefix_name }
+function terminal.close_window_from_tabs_with_prefix(ignore_current_tab, opts)
+  local buffers = terminal.get_buffers_with_prefix(opts.prefix_name)
   local unindexed_window_list = {}
-  for _, buffer in ipairs(all_open_cmake_terminal_buffers) do
+  for _, buffer in ipairs(buffers) do
     local windows_open_for_buffer = terminal.get_buffer_display_info(buffer,
       {
         ignore_current_tab = ignore_current_tab,
@@ -404,14 +398,10 @@ function terminal.close_window_from_tabs(ignore_current_tab, opts)
         unindexed_window_list,
         win
       )
-      -- print('windows_open_for_buffer: ')
-      -- vim.print(windows_open_for_buffer)
     end
   end
-  -- vim.print(unindexed_window_list)
   for i = 1, #unindexed_window_list do
     if i > 1 then
-      -- print('win new closed: ' .. i)
       vim.api.nvim_win_close(unindexed_window_list[i], false)
     end
   end
@@ -600,7 +590,7 @@ function terminal.run(cmd, env, args, opts)
       return false
     end
     return true
-  end, 500)
+  end, 10)
 
   vim.wait(10000000, function()
     if terminal.has_active_job() then
@@ -608,7 +598,7 @@ function terminal.run(cmd, env, args, opts)
       return false
     end
     return true
-  end, 500)
+  end, 10)
 
   if opts.on_success then
     opts.on_success()

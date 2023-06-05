@@ -20,7 +20,7 @@ local const = {
     runInTerminal = true,
     console = "integratedTerminal",
   },
-  cmake_always_use_terminal = false, -- if true, use terminal for generate, build, clean, install, run, else only use terminal for run, use quickfix for others
+  cmake_always_use_terminal = true, -- if true, use terminal for generate, build, clean, install, run, else only use terminal for run, use quickfix for others
   cmake_quickfix_opts = {
     show = "always", -- "always", "only_on_error"
     position = "belowright", -- "bottom", "top"
