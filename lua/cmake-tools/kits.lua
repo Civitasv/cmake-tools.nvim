@@ -101,12 +101,20 @@ function kits.build_env_and_args(kit_name, use_terminal_for_build, opts)
   if kit.linker then
     if opts.launch_task_in_a_child_process then
       table.insert(args, "-DCMAKE_LINKER=" .. "\\\"" .. kit.linker .. "\\\"")
-    else
+    elseif use_terminal_for_build then
       table.insert(args, "-DCMAKE_LINKER=" .. "\"" .. kit.linker .. "\"")
+    else -- Quick Fix Lists
+      table.insert(args, "-DCMAKE_LINKER=" .. kit.linker)
     end
   end
   if kit.generator then
-    table.insert(args, "-G" .."\"" .. kit.generator .. "\"")
+    if opts.launch_task_in_a_child_process then
+      table.insert(args, "-G" .."\\\"" .. kit.generator .. "\\\"")
+    elseif use_terminal_for_build then
+      table.insert(args, "-G" .."\"" .. kit.generator .. "\"")
+    else -- Quick Fix Lists
+      table.insert(args, "-G" ..kit.generator)
+    end
   end
   if kit.host_architecture then
     table.insert(args, "-T host=" .. kit.host_architecture)
