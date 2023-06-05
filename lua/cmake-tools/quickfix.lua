@@ -56,14 +56,14 @@ end
 
 function quickfix.has_active_job()
   if not quickfix.job or quickfix.job.is_shutdown then
-    return true
+    return false
   end
   log.error(
     "A CMake task is already running: "
     .. quickfix.job.command
     .. " Stop it before trying to run a new CMake task."
   )
-  return false
+  return true
 end
 
 return quickfix

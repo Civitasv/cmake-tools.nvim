@@ -73,10 +73,15 @@ function utils.execute(executable, opts)
   terminal.execute(executable, opts)
 end
 
-function utils.softlink(src, target)
-  local dir_src = Path:new(src)
-  local dir_target = Path:new(target)
-  if dir_src:exists() and not dir_target:exists() then
+function utils.softlink(src, target, opts)
+  if opts.cmake_always_use_terminal and not utils.file_exists(target) then
+    local cmd = "cmake -E create_symlink " .. src .. " " .. target
+    terminal.run(cmd, {}, {}, opts)
+    return
+  end
+
+  if utils.file_exists(src) and not utils.file_exists(target) then
+    -- if we don't always use terminal
     local cmd = "silent exec " .. "\"!cmake -E create_symlink " .. src .. " " .. target .. "\""
     vim.cmd(cmd)
   end
@@ -109,24 +114,21 @@ function utils.run(cmd, env, args, opts)
   vim.cmd("wall")
 
   if opts.cmake_always_use_terminal then
-    -- First, close the console
-    utils.close_cmake_window()
-    terminal.run(cmd, env, args, opts)
-    vim.schedule_wrap(opts.on_success())
+    return terminal.run(cmd, env, args, opts)
   else
     return quickfix.run(cmd, env, args, opts)
   end
 end
 
 --- Check if exists active job.
--- @return true if not exists else false
+-- @return true if exists else false
 function utils.has_active_job(always_use_terminal, opts)
   if always_use_terminal and opts.launch_task_in_a_child_process then
     return terminal.has_active_job()
   elseif always_use_terminal and not opts.launch_task_in_a_child_process then
     -- Exclusively using terminal for directly laoding commands
-    vim.notify("Feature is experimental! set \"cmake_always_use_terminal = false\" to avoid this mode. Currently, cannot chain commands in terminal unless the project is already configured!", vim.log.levels.WARN, { title = "CMake" })
-    return true
+    --[[ vim.notify("Feature is experimental! set \"cmake_always_use_terminal = false\" to avoid this mode. Currently, cannot chain commands in terminal unless the project is already configured!", vim.log.levels.WARN, { title = "CMake" }) ]]
+    return false
   else
     return terminal.has_active_job() or quickfix.has_active_job()
   end
@@ -140,12 +142,11 @@ function utils.rmdir(dir)
 end
 
 function utils.file_exists(path)
-  local file = io.open(path, "r")
-  if file then
-    file:close()
-    return true
+  local file = Path:new(path)
+  if not file:exists() then
+    return false
   end
-  return false
+  return true
 end
 
 return utils

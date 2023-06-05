@@ -1,5 +1,6 @@
 local osys = require("cmake-tools.osys")
 local log = require("cmake-tools.log")
+local job = require("plenary.job")
 
 local terminal = {
   id = nil -- id for the unified terminal
@@ -133,6 +134,7 @@ end
 function terminal.check_if_running_child_procs(terminal_buffer_idx)
   local main_pid = vim.api.nvim_buf_get_var(terminal_buffer_idx, "terminal_job_pid")
   local child_procs = vim.api.nvim_get_proc_children(main_pid)
+  --[[ print("CHILD", vim.inspect(child_procs)) ]]
   if next(child_procs) then
     -- print("child procs:")
     -- print(child_procs)
@@ -187,12 +189,14 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
     -- log.error("Invalid window Id!")
     -- do nothing
   end
-  vim.api.nvim_chan_send(chan, cmd)
+
   if (opts.focus_on_launch_terminal or opts.focus_on_main_terminal) then
-    vim.cmd('wincmd p') -- Goes back to previous window: Equivalent to [[ CTRL-W w ]]
+    vim.cmd("wincmd p") -- Goes back to previous window: Equivalent to [[ CTRL-W w ]]
   elseif opts.startinsert then
-    vim.cmd('startinsert')
+    vim.cmd("startinsert")
   end
+
+  vim.api.nvim_chan_send(chan, cmd)
 end
 
 function terminal.create_if_not_exists(term_name, opts)
@@ -246,7 +250,7 @@ function terminal.reposition(opts)
 
   if opts.launch_executable_in_a_child_process or opts.launch_task_in_a_child_process then
     log.error("Reposition term is not supported for running task/executable child processes")
-    return
+    return 0
   end
 
   --[[
@@ -493,7 +497,9 @@ function terminal.execute(executable, opts)
   local prefix = opts.cmake_terminal_opts.prefix_name
 
   -- Get pure executable name, cause previously, it is an absolute path
+  --[[ print("EXECUTABLE", executable) ]]
   executable = vim.fn.fnamemodify(executable, ":t")
+  --[[ print("EXECUTABLE AFTER", executable) ]]
 
   -- experimental feature
   if executable == nil then
@@ -585,8 +591,28 @@ function terminal.run(cmd, env, args, opts)
       split_direction = opts.cmake_terminal_opts.split_direction,
       split_size = opts.cmake_terminal_opts.split_size,
       start_insert = opts.cmake_terminal_opts.start_insert_in_other_tasks,
-      focus_on_main_terminal = opts.cmake_terminal_opts.focus_on_main_terminal
+      focus_on_main_terminal = opts.cmake_terminal_opts.focus_on_main_terminal,
     })
+
+  vim.wait(10000000, function()
+    if not terminal.has_active_job() then
+      -- it should have an active job
+      return false
+    end
+    return true
+  end, 500)
+
+  vim.wait(10000000, function()
+    if terminal.has_active_job() then
+      -- it should not have an active job
+      return false
+    end
+    return true
+  end, 500)
+
+  if opts.on_success then
+    opts.on_success()
+  end
 end
 
 function terminal.prepare_launch_path(path, in_a_child_process)
