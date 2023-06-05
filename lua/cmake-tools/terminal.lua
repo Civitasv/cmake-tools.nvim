@@ -495,6 +495,13 @@ function terminal.execute(executable, opts)
   -- Get pure executable name, cause previously, it is an absolute path
   executable = vim.fn.fnamemodify(executable, ":t")
 
+  -- experimental feature
+  if executable == nil then
+    vim.notify("Feature is experimental! set \"cmake_always_use_terminal = false\" to avoid this mode. Kindly :CMakeBuild the exectable first and then Run it",
+      vim.log.levels.WARN, { title = "CMakeTools" })
+    return
+  end
+
   -- Buffer name of executable needs to be set with a prefix
   -- so that the reposition_term() function can find it
   local executable_buffer_name = prefix .. executable
