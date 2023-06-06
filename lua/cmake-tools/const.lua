@@ -38,8 +38,6 @@ local const = {
     keep_terminal_static_location = true, -- Static location of the viewport if avialable
 
     -- Running Tasks
-    launch_task_in_a_child_process = false, -- Set this to true to make sure that you do not execute multiple cmake tasks at-a-time and keep sending data to the terminal
-    launch_executable_in_a_child_process = false, -- Same as above, but you will rarely ever need this
     start_insert_in_launch_task = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
     start_insert_in_other_tasks = false, -- If you want to enter terminal with :startinsert upon launching all other cmake tasks in the terminal. Generally set as false
     focus_on_main_terminal = false, -- Focus on cmake terminal when cmake task is launched. Only used if cmake_always_use_terminal is true.
