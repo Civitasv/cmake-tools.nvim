@@ -1,6 +1,5 @@
 local osys = require("cmake-tools.osys")
 local log = require("cmake-tools.log")
-local job = require("plenary.job")
 
 local terminal = {
   id = nil -- id for the unified terminal
@@ -131,7 +130,7 @@ end
 
 function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
   if osys.iswin32 then
-      cmd = cmd .. " \r"
+    cmd = cmd .. " \r"
   elseif osys.ismac then
     cmd = cmd .. " \n"
   elseif osys.islinux then

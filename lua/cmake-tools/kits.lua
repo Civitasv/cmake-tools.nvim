@@ -60,7 +60,7 @@ function kits.get_by_name(kit_name)
 end
 
 -- given a kit, build an argument list for CMake
-function kits.build_env_and_args(kit_name, always_use_terminal, opts)
+function kits.build_env_and_args(kit_name, always_use_terminal)
   local kit = kits.get_by_name(kit_name)
   local args = {}
   local env = {}

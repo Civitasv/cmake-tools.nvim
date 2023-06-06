@@ -25,8 +25,7 @@ end
 -- Think it as `cmake .`
 function cmake.generate(opt, callback)
   if utils.has_active_job(
-    const.cmake_always_use_terminal,
-    const.cmake_terminal_opts
+    const.cmake_always_use_terminal
   ) then
     return
   end
@@ -115,8 +114,7 @@ function cmake.generate(opt, callback)
   -- be {env={}, args={}}, so it's okay.
   local kit_option = kits.build_env_and_args(
     config.kit,
-    const.cmake_always_use_terminal,
-    const.cmake_terminal_opts)
+    const.cmake_always_use_terminal)
 
   if const.cmake_build_directory ~= "" then
     config:update_build_dir(const.cmake_build_directory)
@@ -154,8 +152,7 @@ end
 --- Clean targets
 function cmake.clean(callback)
   if utils.has_active_job(
-    const.cmake_always_use_terminal,
-    const.cmake_terminal_opts
+    const.cmake_always_use_terminal
   ) then
     return
   end
@@ -184,8 +181,7 @@ end
 --- think it as `cmake --build .`
 function cmake.build(opt, callback)
   if utils.has_active_job(
-    const.cmake_always_use_terminal,
-    const.cmake_terminal_opts
+    const.cmake_always_use_terminal
   ) then
     return
   end
@@ -272,8 +268,7 @@ end
 --- CMake install targets
 function cmake.install(opt)
   if utils.has_active_job(
-    const.cmake_always_use_terminal,
-    const.cmake_terminal_opts
+    const.cmake_always_use_terminal
   ) then
     return
   end
@@ -309,8 +304,7 @@ end
 -- Run executable targets
 function cmake.run(opt, callback)
   if utils.has_active_job(
-    const.cmake_always_use_terminal,
-    const.cmake_terminal_opts
+    const.cmake_always_use_terminal
   ) then
     return
   end
@@ -357,8 +351,7 @@ end
 -- Set args for launch target
 function cmake.launch_args(opt)
   if utils.has_active_job(
-    const.cmake_always_use_terminal,
-    const.cmake_terminal_opts
+    const.cmake_always_use_terminal
   ) then
     return
   end
@@ -372,8 +365,7 @@ if has_nvim_dap then
   -- Debug execuable targets
   function cmake.debug(opt, callback)
     if utils.has_active_job(
-      const.cmake_always_use_terminal,
-      const.cmake_terminal_opts
+      const.cmake_always_use_terminal
     ) then
       return
     end
@@ -428,8 +420,7 @@ end
 
 function cmake.select_build_type(callback)
   if utils.has_active_job(
-    const.cmake_always_use_terminal,
-    const.cmake_terminal_opts
+    const.cmake_always_use_terminal
   ) then
     return
   end
@@ -467,8 +458,7 @@ end
 
 function cmake.select_kit(callback)
   if utils.has_active_job(
-    const.cmake_always_use_terminal,
-    const.cmake_terminal_opts
+    const.cmake_always_use_terminal
   ) then
     return
   end
@@ -510,8 +500,7 @@ end
 
 function cmake.select_configure_preset(callback)
   if utils.has_active_job(
-    const.cmake_always_use_terminal,
-    const.cmake_terminal_opts
+    const.cmake_always_use_terminal
   ) then
     return
   end

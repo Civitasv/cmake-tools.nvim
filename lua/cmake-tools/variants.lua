@@ -14,7 +14,10 @@ function variants.parse()
     local files = vim.fn.readdir(".")
     local file = nil
     for _, f in ipairs(files) do -- iterate over files in current directory
-      if f == "cmake-variants.yaml" or f == "cmake-variants.json" then -- if a variants config file is found
+      if f == "cmake-variants.yaml" or
+          f == "cmake-variants.json" or
+          f == "CMakeVariants.yaml" or
+          f == "CMakeVariants.json" then -- if a variants config file is found
         file = vim.fn.resolve("./" .. f)
         break
       end
