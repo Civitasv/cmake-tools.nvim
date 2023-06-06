@@ -20,7 +20,7 @@ local const = {
     runInTerminal = true,
     console = "integratedTerminal",
   },
-  cmake_always_use_terminal = true, -- if true, use terminal for generate, build, clean, install, run, else only use terminal for run, use quickfix for others
+  cmake_always_use_terminal = false, -- if true, use terminal for generate, build, clean, install, run, else only use terminal for run, use quickfix for others
   cmake_quickfix_opts = {
     show = "always", -- "always", "only_on_error"
     position = "belowright", -- "bottom", "top"
@@ -37,7 +37,7 @@ local const = {
     single_terminal_per_tab = true, -- Single viewport per tab
     keep_terminal_static_location = true, -- Static location of the viewport if avialable
 
-    -- Running Taaks
+    -- Running Tasks
     launch_task_in_a_child_process = false, -- Set this to true to make sure that you do not execute multiple cmake tasks at-a-time and keep sending data to the terminal
     launch_executable_in_a_child_process = false, -- Same as above, but you will rarely ever need this
     start_insert_in_launch_task = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
