@@ -278,11 +278,7 @@ function terminal.reposition(opts)
     -- print('mulit terminals!')
     -- Launch multiple terminals
     final_win_id = 0
-    vim.notify(
-      "Caution: Multiple termianls may clutter your workspace!",
-      vim.log.levels.WARN,
-      { title = "CMakeTools" }
-    )
+    log.warn("Caution: Multiple termianls may clutter your workspace!")
   end
 
   -- print('repositioning complete')
@@ -457,8 +453,7 @@ function terminal.execute(executable, opts)
 
   -- experimental feature
   if executable == nil then
-    vim.notify("Feature is experimental! set \"cmake_always_use_terminal = false\" to avoid this mode. Kindly :CMakeBuild the exectable first and then Run it",
-      vim.log.levels.WARN, { title = "CMakeTools" })
+    log.warn("Feature is experimental! set \"cmake_always_use_terminal = false\" to avoid this mode. You should use :CMakeBuild to build the target first and then Run it again")
     return
   end
 

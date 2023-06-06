@@ -547,9 +547,8 @@ function cmake.select_configure_preset(callback)
 end
 
 function cmake.select_build_preset(callback)
-  if not utils.has_avtive_job(
-    const.cmake_always_use_terminal,
-    const.cmake_terminal_opts
+  if utils.has_active_job(
+    const.cmake_always_use_terminal
   ) then
     return
   end

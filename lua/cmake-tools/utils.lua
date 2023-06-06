@@ -3,6 +3,7 @@ local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
 local terminal = require("cmake-tools.terminal")
 local quickfix = require("cmake-tools.quickfix")
+local log = require("cmake-tools.log")
 
 -- local const = require("cmake-tools.const")
 
@@ -124,8 +125,7 @@ end
 -- @return true if exists else false
 function utils.has_active_job(always_use_terminal)
   if always_use_terminal then
-    vim.notify("This is an experimental feature! set \"cmake_always_use_terminal=false\" if this is causing trouble",
-      vim.log.levels.WARN, { title = "CMakeTools" })
+    log.warn("This is an experimental feature! set \"cmake_always_use_terminal=false\" if this is causing trouble")
     return terminal.has_active_job()
   else
     return terminal.has_active_job() or quickfix.has_active_job()
