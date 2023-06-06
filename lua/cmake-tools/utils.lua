@@ -1,24 +1,14 @@
-local Job = require("plenary.job")
 local Path = require("plenary.path")
 local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
-local const = require("cmake-tools.const")
+local terminal = require("cmake-tools.terminal")
+local quickfix = require("cmake-tools.quickfix")
 
-local utils = {
-  job = nil,
-}
+-- local const = require("cmake-tools.const")
 
-local function notify(msg, log_level)
-  vim.notify(msg, log_level, { title = "CMake" })
-end
+local utils = {}
 
-local function append_to_cmake_console(error, data)
-  local line = error and error or data
-  vim.fn.setqflist({}, "a", { lines = { line } })
-  -- scroll the quickfix buffer to bottom
-  vim.api.nvim_command("cbottom")
-end
-
+-- Get string representation for object o
 function utils.dump(o)
   if type(o) == "table" then
     local s = "{ "
@@ -46,72 +36,53 @@ function utils.get_cmake_configuration()
   return Result:new(Types.SUCCESS, cmakelists, "cmake-tools has found CMakeLists.txt.")
 end
 
-function utils.show_cmake_console(cmake_console_position, cmake_console_size)
-  vim.api.nvim_command(cmake_console_position .. " copen " .. cmake_console_size)
-  vim.api.nvim_command("wincmd p")
+function utils.show_cmake_window(always_use_terminal, quickfix_opts, terminal_opts)
+  if always_use_terminal then
+    terminal.show(terminal_opts)
+  else
+    quickfix.show(quickfix_opts)
+  end
 end
 
-function utils.close_cmake_console()
-  vim.api.nvim_command("cclose")
+function utils.close_cmake_window(always_use_terminal)
+  if always_use_terminal then
+    terminal.close()
+  else
+    quickfix.close()
+  end
 end
 
---- Error Message Alert
--- @param msg the error message
-function utils.error(msg)
-  notify(msg, vim.log.levels.ERROR)
+function utils.get_path(str, sep)
+  sep = sep or "/"
+  return str:match("(.*" .. sep .. ")")
 end
 
 --- Execute CMake launch target in terminal.
 -- @param executable executable file
 -- @param opts execute options
 function utils.execute(executable, opts)
-  -- save all
+  -- Please save all
   vim.cmd("wall")
-  -- print("EXECUTABLE", executable)
-  local set_bufname = "file " .. opts.bufname
-  local prefix = string.format("%s %d new", opts.cmake_console_position, opts.cmake_console_size)
 
-  utils.close_cmake_console();
-
-  -- TODO: Create a common output stream for all cmake related tasks and split running cmake tasks into terminals
-  -- This requires support form either 'pleanary.nvim-plenary-job', or 'jobstart()' api
-
-  -- check if buufer exists. If it exists, delete it!
-  local all_buffs = vim.api.nvim_list_bufs()
-  -- local temp = " " -- This is only for testing
-  for _, buf_nr in ipairs(all_buffs) do
-    local name = vim.api.nvim_buf_get_name(buf_nr)
-    local test = string.match(name, set_bufname) == set_bufname
-    -- print(test)
-    -- temp = temp .. name ..": " .. tostring(test) .. ", "
-    if test then
-      -- the buffer is already avaliable
-      vim.api.nvim_buf_delete(buf_nr, { force = true })
-      vim.cmd(set_bufname)
-      break
-    end
+  -- First, if we use quickfix to generate, build, etc, we should close it
+  if not opts.cmake_always_use_terminal then
+    quickfix.close()
   end
 
-  -- print(temp)
-  local cmd = prefix .. " | term " .. "cd " .. opts.cmake_launch_path .. " && " .. executable
-  if (opts.cmake_launch_args ~= nil) then
-    for _, arg in ipairs(opts.cmake_launch_args) do
-      cmd = cmd .. ' "' .. arg .. '"'
-    end
-  end
-
-  vim.cmd(cmd)
-  vim.opt_local.relativenumber = false
-  vim.opt_local.number = false
-  vim.bo.buflisted = false -- We set this to true, so that we can detect in in vim.api.nvim_list_bufs(), a few lines above.
-  vim.cmd("startinsert")
+  -- Then, execute it
+  terminal.execute(executable, opts)
 end
 
-function utils.softlink(src, target)
-  local dir_src = Path:new(src)
-  local dir_target = Path:new(target)
-  if dir_src:exists() and not dir_target:exists() then
-    local cmd = "!cmake -E create_symlink " .. src .. " " .. target;
+function utils.softlink(src, target, opts)
+  if opts.cmake_always_use_terminal and not utils.file_exists(target) then
+    local cmd = "cmake -E create_symlink " .. src .. " " .. target
+    terminal.run(cmd, {}, {}, opts)
+    return
+  end
+
+  if utils.file_exists(src) and not utils.file_exists(target) then
+    -- if we don't always use terminal
+    local cmd = "silent exec " .. "\"!cmake -E create_symlink " .. src .. " " .. target .. "\""
     vim.cmd(cmd)
   end
 end
@@ -141,47 +112,24 @@ end
 function utils.run(cmd, env, args, opts)
   -- save all
   vim.cmd("wall")
-  vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
-  opts.cmake_show_console = opts.cmake_show_console == "always"
-  if opts.cmake_show_console then
-    utils.show_cmake_console(opts.cmake_console_position, opts.cmake_console_size)
+
+  if opts.cmake_always_use_terminal then
+    return terminal.run(cmd, env, args, opts)
+  else
+    return quickfix.run(cmd, env, args, opts)
   end
-
-  utils.job = Job:new({
-    command = cmd,
-    args = next(env) and { "-E", "env", table.concat(env, " "), "cmake", unpack(args) } or args,
-    cwd = vim.loop.cwd(),
-    on_stdout = vim.schedule_wrap(append_to_cmake_console),
-    on_stderr = vim.schedule_wrap(append_to_cmake_console),
-    on_exit = vim.schedule_wrap(function(_, code, signal)
-      append_to_cmake_console("Exited with code " .. (signal == 0 and code or 128 + signal))
-      if code == 0 and signal == 0 then
-        if opts.on_success then
-          opts.on_success()
-        end
-      elseif opts.cmake_show_console == "only_on_error" then
-        utils.show_cmake_console(opts.cmake_console_position, opts.cmake_console_size)
-        vim.api.nvim_command("cbottom")
-      end
-    end),
-  })
-
-  utils.job:start()
-  return utils.job
 end
 
 --- Check if exists active job.
--- @return true if not exists else false
-function utils.has_active_job()
-  if not utils.job or utils.job.is_shutdown then
-    return true
+-- @return true if exists else false
+function utils.has_active_job(always_use_terminal)
+  if always_use_terminal then
+    vim.notify("This is an experimental feature! set \"cmake_always_use_terminal=false\" if this is causing trouble",
+      vim.log.levels.WARN, { title = "CMakeTools" })
+    return terminal.has_active_job()
+  else
+    return terminal.has_active_job() or quickfix.has_active_job()
   end
-  utils.error(
-    "A CMake task is already running: "
-    .. utils.job.command
-    .. " Stop it before trying to run a new CMake task."
-  )
-  return false
 end
 
 function utils.rmdir(dir)
@@ -192,12 +140,11 @@ function utils.rmdir(dir)
 end
 
 function utils.file_exists(path)
-  local file = io.open(path, "r")
-  if file then
-    file:close()
-    return true
+  local file = Path:new(path)
+  if not file:exists() then
+    return false
   end
-  return false
+  return true
 end
 
 return utils

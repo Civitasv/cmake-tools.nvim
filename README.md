@@ -1,651 +1,85 @@
-# CMake Tools for Neovim
+# CMake Tools
 
-![Demo](images/demo.gif)
+<p align="center"><img src="./docs/images/demo.gif"/></p>
+
+<h2 align="center">🔥CMake Tools for Neovim which is written in pure lua.🔥</h2>
 
 > CREDIT:
 >
 > It is a fork from the brilliant [neovim-cmake](https://github.com/Shatur/neovim-cmake). Since I change too much of it, So I make a new repo to develop it.
 
-🔥CMake Tools for Neovim written in pure lua that requires Neovim 0.7+.🔥
+The goal of this plugin is to offer a comprehensive, convenient, and powerfull workflow for CMake-based projects in Neovim, comparable to the functionality provided by [vscode-cmake-tools](https://github.com/microsoft/vscode-cmake-tools) for Visual Studio Code.
 
-The goal of this plugin is to provide a full-featured, convenient, and powerfull workflow for CMake-based projects in Neovim, which just like [vscode-cmake-tools](https://github.com/microsoft/vscode-cmake-tools) for Visual Studio Code.
+## :sparkles: Installation
 
-It uses [CMake file api](https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html) to generate CMake file structure.
-
-It uses terminal to execute targets.
-
-(optional) It uses [nvim-dap](https://github.com/mfussenegger/nvim-dap) to debug.
-
-## Notable Features
-
-### CMake Presets
-
-CMake Presets is a "standard" way in cmake to share settings with other people.
-
-Read more about CMake presets from [CMake docs](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html#macro-expansion).
-
-Attention: If `CMake[User]Presets.json` is provided, then `CMakeKits.json` or `CMakeVariants.[json|yaml]` won't have any effect.
-
-### CMake Kits
-
-CMake Kits define rules about how to build code. Typically, a kit can include:
-
-- A set of compilers.
-- A toolchain file.
-
-Example:
-
-```json
-{
-  "name": "My Compiler Kit",
-
-  <!-- For windows if CMakeKits are used as there are default msvc compilers. Ignore if CMakeUserPrests are used. -->
-  "generator":"Ninja",
-
-  "compilers": {
-    "C": "/usr/bin/gcc",
-    "CXX": "/usr/bin/g++",
-    "Fortran": "/usr/bin/gfortran"
-  }
-}
-```
-
-Read more about cmake kits from [vscode-cmake-tools docs](https://github.com/microsoft/vscode-cmake-tools/blob/main/docs/kits.md).
-
-**And currently some features are not implemented, see details at [TODO](#todo) section. PR is welcome!**
-
-### CMake Variants
-
-Thanks @toolcreator for supporting CMake Variants which raised by VsCode's CMake Tools.
-
-CMake Variants is a concept of vscode-cmake-tools. It's used to group together and combine a common set of build options.
-
-Read more about cmake variants from [vscode-cmake-tools docs](https://github.com/microsoft/vscode-cmake-tools/blob/main/docs/variants.md).
-
-## Installation
-
-- Require Neovim (>=0.7)
-- Require [plenary](https://github.com/nvim-lua/plenary.nvim)
+- Require Neovim (>=0.7).
+- Require [plenary](https://github.com/nvim-lua/plenary.nvim).
 - Install it like any other Neovim plugin.
+  - [lazy.nvim](https://github.com/folke/lazy.nvim): `return { 'Civitasv/cmake-tools.nvim }`
   - [packer.nvim](https://github.com/wbthomason/packer.nvim): `use 'Civitasv/cmake-tools.nvim'`
   - [vim-plug](https://github.com/junegunn/vim-plug): `Plug 'Civitasv/cmake-tools.nvim'`
 
-## Usage
-
-| Command                    | Description                                                                                                                                                                                                                                                                                                            |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CMakeGenerate\[!\]         | Generate native makefiles and workspaces that can be used next. Additional arguments will be passed to CMake. eg. Use `CMakeGenerate -G MinGW\ Makefiles` to specify another generator.                                                                                                                                |
-| CMakeBuild                 | Build target, if not generate makefiles yet, it will automatically invoke `CMake`, if not select build target, it will automatically invoke `CMakeSelectBuildTarget` . Additional arguments will be passed to CMake.                                                                                                   |
-| CMakeRun                   | Run launch target, if not generate makefiles yet, it will automatically invoke `CMakeGenerate`, if not select launch target, it will automatically invoke `CMakeSelectLaunchTarget`, if not built, it will automatically invoke `CMakeBuild`. Additional arguments will be passed to `CMakeGenerate` and `CMakeBuild`. |
-| CMakeDebug                 | Use nvim-dap to debug launch target, works like CMakeRun                                                                                                                                                                                                                                                               |
-| CMakeLaunchArgs            | Set the command line arguments to pass to the selected launch target when running. Each target has it's own set of arguments which are preserved when switching targets. Arguments are split by whitespace, which can be prevented by using `\` to escape the whitespace                                               |
-| CMakeSelectBuildType       | Select build type, include "Debug", "Release", "RelWithDebInfo", "MinSizeRel" for default. cmake-tools.nvim also support cmake variants, when "cmake-variants.yaml" or "cmake-variants.json" is provided, it will read configuration from it                                                                           |
-| CMakeSelectBuildTarget     | Select build target, include executable and library targets                                                                                                                                                                                                                                                            |
-| CMakeSelectLaunchTarget    | Select launch target, only include executable targets                                                                                                                                                                                                                                                                  |
-| CMakeSelectKit             | Select kit defined from CMakeKits.json                                                                                                                                                                                                                                                                                 |
-| CMakeSelectConfigurePreset | Select configure preset, if CMake[User]Presets.json is provided                                                                                                                                                                                                                                                        |
-| CMakeSelectBuildPreset     | Select build preset, if CMake[User]Presets.json is provided                                                                                                                                                                                                                                                            |                                          |
-| CMakeOpen                  | Open CMake console                                                                                                                                                                                                                                                                                                     |
-| CMakeClose                 | Close CMake console                                                                                                                                                                                                                                                                                                    |
-| CMakeInstall               | Install CMake targets. Additional arguments will be passed to CMake.                                                                                                                                                                                                                                                   |
-| CMakeClean                 | Cleans All targets, intermediates and deps                                                                                                                                                                                                                                                                             |
-| CMakeCleanReBuild          | Cleans All targets, intermediates and deps  and build target & target deps                                                                                                                                                                                                                                             |
-| CMakeStop                  | Stop CMake process                                                                                                                                                                                                                                                                                                     |
-
-## Setup
-
-### Example
+## :balloon: Configuration
 
 ```lua
 require("cmake-tools").setup {
-  cmake_command = "cmake",
-  cmake_build_directory = "",
-  cmake_build_directory_prefix = "cmake_build_", -- when cmake_build_directory is "", this option will be activated
-  cmake_generate_options = { "-D", "CMAKE_EXPORT_COMPILE_COMMANDS=1" },
-  cmake_regenerate_on_save = true, -- Saves CMakeLists.txt file only if mofified.
-  cmake_soft_link_compile_commands = true, -- if softlink compile commands json file
-  cmake_compile_commands_from_lsp = false, -- automatically set compile commands location using lsp
-  cmake_build_options = {},
-  cmake_console_size = 10, -- cmake output window height
-  cmake_console_position = "belowright", -- "belowright", "aboveleft", ...
-  cmake_show_console = "always", -- "always", "only_on_error"
-  cmake_kits_path = nil, -- global cmake kits path
-  cmake_dap_configuration = { name = "cpp", type = "codelldb", request = "launch" }, -- dap configuration, optional
+  cmake_command = "cmake", -- this is used to specify cmake command path
+  cmake_regenerate_on_save = true, -- auto generate when save CMakeLists.txt
+  cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" }, -- this will be passed when invoke `CMakeGenerate`
+  cmake_build_options = {}, -- this will be passed when invoke `CMakeBuild`
+  cmake_build_directory = "", -- this is used to specify generate directory for cmake
+  cmake_build_directory_prefix = "cmake_build_", -- when cmake_build_directory is set to "", this option will be activated
+  cmake_soft_link_compile_commands = true, -- this will automatically make a soft link from compile commands file to project root dir
+  cmake_compile_commands_from_lsp = false, -- this will automatically set compile commands file location using lsp, to use it, please set `cmake_soft_link_compile_commands` to false
+  cmake_kits_path = nil, -- this is used to specify global cmake kits path, see CMakeKits for detailed usage
   cmake_variants_message = {
-    short = { show = true },
-    long = { show = true, max_length = 40 }
+    short = { show = true }, -- whether to show short message
+    long = { show = true, max_length = 40 } -- whether to show long message
+  },
+  cmake_dap_configuration = { -- debug settings for cmake
+    name = "cpp",
+    type = "codelldb",
+    request = "launch",
+    stopOnEntry = false,
+    runInTerminal = true,
+    console = "integratedTerminal",
+  },
+  cmake_always_use_terminal = false, -- if true, use terminal for generate, build, clean, install, run, etc, except for debug, else only use terminal for run, use quickfix for others
+  cmake_quickfix_opts = { -- quickfix settings for cmake, quickfix will be used when `cmake_always_use_terminal` is false
+    show = "always", -- "always", "only_on_error"
+    position = "belowright", -- "bottom", "top"
+    size = 10,
+  },
+  cmake_terminal_opts = { -- terminal settings for cmake, terminal will be used for run when `cmake_always_use_terminal` is false or true, will be used for all tasks except for debug when `cmake_always_use_terminal` is true
+    name = "Main Terminal",
+    prefix_name = "[CMakeTools]: ", -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
+    split_direction = "horizontal", -- "horizontal", "vertical"
+    split_size = 11,
+
+    -- Window handling
+    single_terminal_per_instance = true, -- Single viewport, multiple windows
+    single_terminal_per_tab = true, -- Single viewport per tab
+    keep_terminal_static_location = true, -- Static location of the viewport if avialable
+
+    -- Running Tasks
+    start_insert_in_launch_task = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
+    start_insert_in_other_tasks = false, -- If you want to enter terminal with :startinsert upon launching all other cmake tasks in the terminal. Generally set as false
+    focus_on_main_terminal = false, -- Focus on cmake terminal when cmake task is launched. Only used if cmake_always_use_terminal is true.
+    focus_on_launch_terminal = false, -- Focus on cmake launch terminal when executable target in launched.
   }
 }
 ```
 
-The option `cmake_build_directory_prefix` will be activated only when `cmake_build_directory` is set to "".
+Generally, the default is enough.
 
-See detailed user scenario from issue [#21](https://github.com/Civitasv/cmake-tools.nvim/issues/21).
+## :magic_wand: Docs
 
-## If you wanna use Multiple compilers
-
-When you want to select between multiple compilers, you can specify this in your `CMakeKits.json` or `cmake-kits.json` file in your root directory. (See the Lualine config below to select the different comiplers from the GUI)
-
-For windows, it will be like:
-
-```json
-[
-  {
-    "name": "Clang_14.0.6_x86_64-w64-windows-gnu",
-    "generator":"Ninja",
-    "compilers": {
-      "C": "path/to/C/Compiler",
-      "CXX": "path/to/CXX/Compiler"
-    }
-  },
-  {
-    "name": "Clang_15.0.7_x86_64-pc-windows-msvc",
-    "generator":"Ninja",
-    "compilers": {
-      "C": "path/to/C/Compiler",
-      "CXX": "path/to/CXX/Compiler"
-    }
-  },
-  {
-    "name": "VS 17 2022 amd64",
-    "generator": "Visual Studio 17 2022",
-    "host_architecture": "x64",
-    "target_architecture": "x64",
-    "compilers": {
-      "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x64/cl.exe",
-      "CXX": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin//Hostx64/x64/cl.exe"
-    }
-  },
-]
-```
-
-For Linux, it will be like:
-
-```json
-[
-  {
-    "name": "Clang 15.0.7 x86_64-pc-linux-gnu",
-    "compilers": {
-      "C": "/usr/bin/clang",
-      "CXX": "/usr/bin/clang++"
-    }
-  },
-  {
-    "name": "Clang-cl 15.0.7 x86_64-pc-windows-msvc",
-    "compilers": {
-      "C": "/usr/bin/clang-cl",
-      "CXX": "/usr/bin/clang-cl"
-    }
-  },
-  {
-    "name": "GCC 12.1.0 x86_64-pc-linux-gnu",
-    "compilers": {
-      "C": "/usr/bin/gcc",
-      "CXX": "/usr/bin/g++"
-    }
-  },
-  {
-    "name": "GCC 12.2.0 x86_64-pc-linux-gnu",
-    "compilers": {
-      "C": "/usr/bin/gcc",
-      "CXX": "/usr/bin/g++"
-    }
-  }
-]
-```
-
-## If you wanna Automatically set your compile_commands.json location
-
-If you're using clangd or ccls configured through [lspconfig](https://github.com/neovim/nvim-lspconfig) you can
-set your compilation database directory to your active preset build directory by calling a hook in your on_new_config callback.
-
-```lua
-require('lspconfig').clangd.setup{
-    on_new_config = function(new_config, new_cwd)
-        local status, cmake = pcall(require, "cmake-tools")
-        if status then
-            cmake.clangd_on_new_config(new_config)
-        end
-    end,
-}
-```
-
-## If you wanna make cmake-tools work exactly like it in our demo
-
-### A. lualine
-
-I've added cmake-tools status in lualine, including `Build(when clicked, will invoke CMakeBuild)`, `Current Selected Build Target(when clicked, will invoke CMakeSelectBuildTarget)`, `Debug(when clicked, will invoke CMakeDebug)`, `Run(when clicked, will invoke CMakeRun)`, `Current Selected Launch Target(when clicked, will invoke CMakeSelectLaunchTarget)`.
-
-When CMake[User]Presets.json is presented, also including `configure preset`, `build preset`.
-
-Else, also including `variant(build type)`, `kit`.
-
-<details>
-  <summary>Full Configuration is as follows: (<i>click to expand</i>)</summary>
-  <!-- have to be followed by an empty line! -->
-
-```lua
-local status_ok, lualine = pcall(require, "lualine")
-if not status_ok then
-  return
-end
-
-local cmake = require("cmake-tools")
-local icons = require("user.icons")
-
--- Credited to [evil_lualine](https://github.com/nvim-lualine/lualine.nvim/blob/master/examples/evil_lualine.lua)
-local conditions = {
-  buffer_not_empty = function()
-    return vim.fn.empty(vim.fn.expand("%:t")) ~= 1
-  end,
-  hide_in_width = function()
-    return vim.fn.winwidth(0) > 80
-  end,
-  check_git_workspace = function()
-    local filepath = vim.fn.expand("%:p:h")
-    local gitdir = vim.fn.finddir(".git", filepath .. ";")
-    return gitdir and #gitdir > 0 and #gitdir < #filepath
-  end,
-}
-
-local colors = {
-  bg       = "#202328",
-  fg       = "#bbc2cf",
-  yellow   = "#ECBE7B",
-  cyan     = "#008080",
-  darkblue = "#081633",
-  green    = "#98be65",
-  orange   = "#FF8800",
-  violet   = "#a9a1e1",
-  magenta  = "#c678dd",
-  blue     = "#51afef",
-  red      = "#ec5f67",
-}
-
-local config = {
-  options = {
-    icons_enabled = true,
-    component_separators = "",
-    section_separators = "",
-    disabled_filetypes = { "alpha", "dashboard", "Outline" },
-    always_divide_middle = true,
-    theme = {
-      -- We are going to use lualine_c an lualine_x as left and
-      -- right section. Both are highlighted by c theme .  So we
-      -- are just setting default looks o statusline
-      normal = { c = { fg = colors.fg, bg = colors.bg } },
-      inactive = { c = { fg = colors.fg, bg = colors.bg } },
-    },
-  },
-  sections = {
-    lualine_a = {},
-    lualine_b = {},
-    lualine_y = {},
-    lualine_z = {},
-    -- c for left
-    lualine_c = {},
-    -- x for right
-    lualine_x = {},
-  },
-  inactive_sections = {
-    lualine_a = {},
-    lualine_b = {},
-    lualine_y = {},
-    lualine_z = {},
-    lualine_c = { "filename" },
-    lualine_x = { "location" },
-  },
-  tabline = {},
-  extensions = {},
-}
-
--- Inserts a component in lualine_c at left section
-local function ins_left(component)
-  table.insert(config.sections.lualine_c, component)
-end
-
--- Inserts a component in lualine_x ot right section
-local function ins_right(component)
-  table.insert(config.sections.lualine_x, component)
-end
-
-ins_left {
-  function()
-    return icons.ui.Line
-  end,
-  color = { fg = colors.blue }, -- Sets highlighting of component
-  padding = { left = 0, right = 1 }, -- We don't need space before this
-}
-
-ins_left {
-  -- mode component
-  function()
-    return icons.ui.Evil
-  end,
-  color = function()
-    -- auto change color according to neovims mode
-    local mode_color = {
-      n = colors.red,
-      i = colors.green,
-      v = colors.blue,
-      [""] = colors.blue,
-      V = colors.blue,
-      c = colors.magenta,
-      no = colors.red,
-      s = colors.orange,
-      S = colors.orange,
-      [""] = colors.orange,
-      ic = colors.yellow,
-      R = colors.violet,
-      Rv = colors.violet,
-      cv = colors.red,
-      ce = colors.red,
-      r = colors.cyan,
-      rm = colors.cyan,
-      ["r?"] = colors.cyan,
-      ["!"] = colors.red,
-      t = colors.red,
-    }
-    return { fg = mode_color[vim.fn.mode()] }
-  end,
-  padding = { right = 1 },
-}
-
-ins_left {
-  -- filesize component
-  "filesize",
-  cond = conditions.buffer_not_empty,
-}
-
-ins_left {
-  "filename",
-  cond = conditions.buffer_not_empty,
-  color = { fg = colors.magenta, gui = "bold" },
-}
-
-ins_left { "location" }
-
-ins_left {
-  "diagnostics",
-  sources = { "nvim_diagnostic" },
-  symbols = { error = icons.diagnostics.Error, warn = icons.diagnostics.Warning, info = icons.diagnostics.Information },
-  diagnostics_color = {
-    color_error = { fg = colors.red },
-    color_warn = { fg = colors.yellow },
-    color_info = { fg = colors.cyan },
-  },
-}
-
-ins_left {
-  function()
-    local c_preset = cmake.get_configure_preset()
-    return "CMake: [" .. (c_preset and c_preset or "X") .. "]"
-  end,
-  icon = icons.ui.Search,
-  cond = function()
-    return cmake.is_cmake_project() and cmake.has_cmake_preset()
-  end,
-  on_click = function(n, mouse)
-    if (n == 1) then
-      if (mouse == "l") then
-        vim.cmd("CMakeSelectConfigurePreset")
-      end
-    end
-  end
-}
-
-ins_left {
-  function()
-    local type = cmake.get_build_type()
-    return "CMake: [" .. (type and type or "") .. "]"
-  end,
-  icon = icons.ui.Search,
-  cond = function()
-    return cmake.is_cmake_project() and not cmake.has_cmake_preset()
-  end,
-  on_click = function(n, mouse)
-    if (n == 1) then
-      if (mouse == "l") then
-        vim.cmd("CMakeSelectBuildType")
-      end
-    end
-  end
-}
-
-ins_left {
-  function()
-    local kit = cmake.get_kit()
-    return "[" .. (kit and kit or "X") .. "]"
-  end,
-  icon = icons.ui.Pencil,
-  cond = function()
-    return cmake.is_cmake_project() and not cmake.has_cmake_preset()
-  end,
-  on_click = function(n, mouse)
-    if (n == 1) then
-      if (mouse == "l") then
-        vim.cmd("CMakeSelectKit")
-      end
-    end
-  end
-}
-
-ins_left {
-  function()
-    return "Build"
-  end,
-  icon = icons.ui.Gear,
-  cond = cmake.is_cmake_project,
-  on_click = function(n, mouse)
-    if (n == 1) then
-      if (mouse == "l") then
-        vim.cmd("CMakeBuild")
-      end
-    end
-  end
-}
-
-ins_left {
-  function()
-    local b_preset = cmake.get_build_preset()
-    return "[" .. (b_preset and b_preset or "X") .. "]"
-  end,
-  icon = icons.ui.Search,
-  cond = function()
-    return cmake.is_cmake_project() and cmake.has_cmake_preset()
-  end,
-  on_click = function(n, mouse)
-    if (n == 1) then
-      if (mouse == "l") then
-        vim.cmd("CMakeSelectBuildPreset")
-      end
-    end
-  end
-}
-
-ins_left {
-  function()
-    local b_target = cmake.get_build_target()
-    return "[" .. (b_target and b_target or "X") .. "]"
-  end,
-  cond = cmake.is_cmake_project,
-  on_click = function(n, mouse)
-    if (n == 1) then
-      if (mouse == "l") then
-        vim.cmd("CMakeSelectBuildTarget")
-      end
-    end
-  end
-}
-
-ins_left {
-  function()
-    return icons.ui.Debug
-  end,
-  cond = cmake.is_cmake_project,
-  on_click = function(n, mouse)
-    if (n == 1) then
-      if (mouse == "l") then
-        vim.cmd("CMakeDebug")
-      end
-    end
-  end
-}
-
-ins_left {
-  function()
-    return icons.ui.Run
-  end,
-  cond = cmake.is_cmake_project,
-  on_click = function(n, mouse)
-    if (n == 1) then
-      if (mouse == "l") then
-        vim.cmd("CMakeRun")
-      end
-    end
-  end
-}
-
-ins_left {
-  function()
-    local l_target = cmake.get_launch_target()
-    return "[" .. (l_target and l_target or "X") .. "]"
-  end,
-  cond = cmake.is_cmake_project,
-  on_click = function(n, mouse)
-    if (n == 1) then
-      if (mouse == "l") then
-        vim.cmd("CMakeSelectLaunchTarget")
-      end
-    end
-  end
-}
-
--- Insert mid section. You can make any number of sections in neovim :)
--- for lualine it's any number greater then 2
-ins_left {
-  function()
-    return "%="
-  end,
-}
-
--- Add components to right sections
-ins_right {
-  "o:encoding", -- option component same as &encoding in viml
-  fmt = string.upper, -- I'm not sure why it's upper case either ;)
-  cond = conditions.hide_in_width,
-  color = { fg = colors.green, gui = "bold" },
-}
-
-ins_right {
-  "fileformat",
-  fmt = string.upper,
-  icons_enabled = false,
-  color = { fg = colors.green, gui = "bold" },
-}
-
-ins_right {
-  function()
-    return vim.api.nvim_buf_get_option(0, "shiftwidth")
-  end,
-  icons_enabled = false,
-  color = { fg = colors.green, gui = "bold" },
-}
-
-ins_right {
-  "branch",
-  icon = icons.git.Branch,
-  color = { fg = colors.violet, gui = "bold" },
-}
-
-ins_right {
-  "diff",
-  -- Is it me or the symbol for modified us really weird
-  symbols = { added = icons.git.Add, modified = icons.git.Mod, removed = icons.git.Remove },
-  diff_color = {
-    added = { fg = colors.green },
-    modified = { fg = colors.orange },
-    removed = { fg = colors.red },
-  },
-  cond = conditions.hide_in_width,
-}
-
-ins_right {
-  function()
-    local current_line = vim.fn.line(".")
-    local total_lines = vim.fn.line("$")
-    local chars = { "__", "▁▁", "▂▂", "▃▃", "▄▄", "▅▅", "▆▆", "▇▇", "██" }
-    local line_ratio = current_line / total_lines
-    local index = math.ceil(line_ratio * #chars)
-    return chars[index]
-  end,
-  color = { fg = colors.orange, gui = "bold" }
-}
-
-ins_right {
-  function()
-    return "▊"
-  end,
-  color = { fg = colors.blue },
-  padding = { left = 1 },
-}
-
--- Now don't forget to initialize lualine
-lualine.setup(config)
-```
-
-</details>
-
-### B. Telescope Select UI
-
-I use the [ui-select](https://github.com/nvim-telescope/telescope-ui-select.nvim) extension for telescope.
-
-<details>
-
-<summary>Configuration is as follows: (<i>click to expand</i>)</summary>
-
-```lua
-extensions = {
-  ["ui-select"] = {
-    require("telescope.themes").get_dropdown {
-      -- even more opts
-      width = 0.8,
-      previewer = false,
-      prompt_title = false,
-      borderchars = {
-        { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
-        prompt = { "─", "│", " ", "│", "┌", "┐", "│", "│" },
-        results = { "─", "│", "─", "│", "├", "┤", "┘", "└" },
-        preview = { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
-      },
-    }
-  },
-}
-telescope.load_extension("ui-select")
-```
-
-</details>
-
-## TODO
-
-### CMake Presets
-
-1. Support test preset.
-2. Support package preset.
-3. Support workflow preset.
-4. Support condition.
-5. Some macros not supported yet, see https://github.com/Civitasv/cmake-tools.nvim/blob/20fe7cad58703b579ec894ae150ead9ffd12cbc2/lua/cmake-tools/presets.lua#L142-L158.
-
-### CMake Kit
-
-0. Support Kits scan. <!-- 1. Support Visual Studio. -->
-1. Support option `preferredGenerator`.
-2. Support option `cmakeSettings`.
-3. Support option `environmentSetupScript`.
-
-### Others
-
-1. Add help.txt
+1. [basic usage](./docs/basic_usage.md)
+2. [all commands](./docs/all_commands.md)
+3. [cmake presets](./docs/cmake_presets.md)
+4. [cmake kits](./docs/cmake_kits.md)
+5. [cmake variants](./docs/cmake_variants.md)
+6. [how to](./docs/howto.md)
 
 ## LICENCE
 

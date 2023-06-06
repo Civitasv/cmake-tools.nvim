@@ -6,6 +6,7 @@ function kits.parse(global_kits_path)
   -- returns file path if found, nil otherwise
   local function findcfg()
     local files = vim.fn.readdir(".")
+
     -- it will use local kits path first,
     -- otherwise, it will use global kits path
     local file = global_kits_path
@@ -59,7 +60,7 @@ function kits.get_by_name(kit_name)
 end
 
 -- given a kit, build an argument list for CMake
-function kits.build_env_and_args(kit_name)
+function kits.build_env_and_args(kit_name, always_use_terminal)
   local kit = kits.get_by_name(kit_name)
   local args = {}
   local env = {}
@@ -84,11 +85,28 @@ function kits.build_env_and_args(kit_name)
   -- if exists `compilers` option, then set variable for cmake
   if kit.compilers then
     for lang, compiler in pairs(kit.compilers) do
-      add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=" .. compiler })
+      if always_use_terminal then
+        add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=\"" .. compiler .. "\"" })
+      else
+        add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=" .. compiler })
+      end
+    end
+  end
+
+  -- See : https://metricpanda.com/rival-fortress-update-27-compiling-with-clang-on-windows/
+  if kit.linker then
+    if always_use_terminal then
+      table.insert(args, "-DCMAKE_LINKER=" .. "\"" .. kit.linker .. "\"")
+    else -- Quick Fix Lists
+      table.insert(args, "-DCMAKE_LINKER=" .. kit.linker)
     end
   end
   if kit.generator then
-    table.insert(args, "-G " .. kit.generator)
+    if always_use_terminal then
+      table.insert(args, "-G" .. "\"" .. kit.generator .. "\"")
+    else -- Quick Fix Lists
+      table.insert(args, "-G" .. kit.generator)
+    end
   end
   if kit.host_architecture then
     table.insert(args, "-T host=" .. kit.host_architecture)

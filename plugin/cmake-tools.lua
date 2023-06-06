@@ -33,20 +33,11 @@ vim.api.nvim_create_user_command(
   cmake_tools.build, -- command
   { -- opts
     nargs = "*",
+    bang = true,
     desc = "CMake build",
   }
 )
 
---- CMake clean rebuild
-vim.api.nvim_create_user_command(
-  "CMakeCleanReBuild", -- name
-  cmake_tools.clean_rebuild, -- command
-  { -- opts
-    nargs = "*",
-    bang = true,
-    desc = "CMake Clean Re-build",
-  }
-)
 --- CMake install
 vim.api.nvim_create_user_command(
   "CMakeInstall", -- name
