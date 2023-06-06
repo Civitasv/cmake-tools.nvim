@@ -261,7 +261,7 @@ function terminal.reposition(opts)
     if static_window_location then
       -- print('keep_terminal_in_static_location')
       terminal.close_window_from_tabs_with_prefix(true, opts) -- Close all cmake windows in all other tabs
-      local buflist = terminal.check_if_cmake_buffers_are_displayed_in_current_tab(opts) -- Get list of all buffers that are displayed in current tab
+      local buflist = terminal.check_if_cmake_buffers_are_displayed_across_all_tabs(opts) -- Get list of all buffers that are displayed in current tab
       -- vim.print(buflist)
       if next(buflist) then
         for i = 1, #buflist do -- Buffers exist in current tab, so close all except first buffer in buflist
@@ -275,7 +275,7 @@ function terminal.reposition(opts)
     else
       -- print('donot keep_terminal_in_static_location')
       terminal.close_window_from_tabs_with_prefix(true, opts) -- Close all cmake windows in all tabs
-      local buflist = terminal.check_if_cmake_buffers_are_displayed_in_current_tab(opts) -- Get list of all buffers that are displayed in current tab
+      local buflist = terminal.check_if_cmake_buffers_are_displayed_across_all_tabs(opts) -- Get list of all buffers that are displayed in current tab
       if next(buflist) then
         -- Buffers exist in current tab, so close all buffers in buflist
         for i = 1, #buflist do
@@ -426,7 +426,7 @@ function terminal.check_cmake_buffers_are_displayed_in_current_tab(opts)
   return displayed_windows
 end
 
-function terminal.check_if_cmake_buffers_are_displayed_in_current_tab(opts)
+function terminal.check_if_cmake_buffers_are_displayed_across_all_tabs(opts)
   local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_name)
   local unindexed_window_list = {}
   for _, buffer in ipairs(all_open_cmake_terminal_buffers) do
