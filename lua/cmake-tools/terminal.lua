@@ -139,6 +139,7 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
     --NOTE: Techinically, wsl-2 and linux are detected as linux. We might see a diferrence in wsl-1 vs wsl-2
     cmd = cmd .. " \n"
   end
+
   if opts and opts.win_id ~= -1 then
     -- The window is alive, so we set buffer in window
     vim.api.nvim_win_set_buf(opts.win_id, buffer_idx)
@@ -156,11 +157,14 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
     -- do nothing
   end
 
-  if (opts.focus_on_launch_terminal or opts.focus_on_main_terminal) then
+  if opts and (opts.focus_on_launch_terminal or opts.focus_on_main_terminal) then
     vim.cmd("wincmd p") -- Goes back to previous window: Equivalent to [[ CTRL-W w ]]
-  elseif opts.startinsert then
+  elseif opts and opts.startinsert then
     vim.cmd("startinsert")
   end
+
+  -- Focus on the last line in the buffer to keep the scrolling output
+  vim.api.nvim_buf_call(buffer_idx, function() vim.cmd('normal! G') end)
 
   local chan = vim.api.nvim_buf_get_var(buffer_idx, "terminal_job_id")
   vim.api.nvim_chan_send(chan, cmd)
