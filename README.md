@@ -1,10 +1,8 @@
 # CMake Tools
 
-<img style="border-radius: 10px; border: 2px solid #ddd" src="./docs/images/demo.gif"/>
+<p align="center"><img src="./docs/images/demo.gif"/></p>
 
-<div style="display: flex; justify-content: center; alight-iterms: center; font-size: 18px; font-weight: bold;">
-    <p>🔥CMake Tools for Neovim which is written in pure lua.🔥</p>
-</div>
+<h2 align="center">🔥CMake Tools for Neovim which is written in pure lua.🔥</h2>
 
 > CREDIT:
 >
