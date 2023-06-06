@@ -86,11 +86,7 @@ function kits.build_env_and_args(kit_name, always_use_terminal, opts)
   if kit.compilers then
     for lang, compiler in pairs(kit.compilers) do
       if always_use_terminal then
-        if opts.launch_task_in_a_child_process then
-          add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=" .. "\\\"" .. compiler .. "\\\"" }) -- This is for passing to child process
-        else
-          add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=\"" .. compiler .. "\"" })
-        end
+        add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=\"" .. compiler .. "\"" })
       else
         add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=" .. compiler })
       end
@@ -99,18 +95,14 @@ function kits.build_env_and_args(kit_name, always_use_terminal, opts)
 
   -- See : https://metricpanda.com/rival-fortress-update-27-compiling-with-clang-on-windows/
   if kit.linker then
-    if opts.launch_task_in_a_child_process then
-      table.insert(args, "-DCMAKE_LINKER=" .. "\\\"" .. kit.linker .. "\\\"")
-    elseif always_use_terminal then
+    if always_use_terminal then
       table.insert(args, "-DCMAKE_LINKER=" .. "\"" .. kit.linker .. "\"")
     else -- Quick Fix Lists
       table.insert(args, "-DCMAKE_LINKER=" .. kit.linker)
     end
   end
   if kit.generator then
-    if opts.launch_task_in_a_child_process then
-      table.insert(args, "-G" .. "\\\"" .. kit.generator .. "\\\"")
-    elseif always_use_terminal then
+    if always_use_terminal then
       table.insert(args, "-G" .. "\"" .. kit.generator .. "\"")
     else -- Quick Fix Lists
       table.insert(args, "-G" .. kit.generator)

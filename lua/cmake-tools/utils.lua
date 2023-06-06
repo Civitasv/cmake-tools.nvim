@@ -122,13 +122,11 @@ end
 
 --- Check if exists active job.
 -- @return true if exists else false
-function utils.has_active_job(always_use_terminal, opts)
-  if always_use_terminal and opts.launch_task_in_a_child_process then
+function utils.has_active_job(always_use_terminal)
+  if always_use_terminal then
+    vim.notify("This is an experimental feature! set \"cmake_always_use_terminal=false\" if this is causing trouble",
+      vim.log.levels.WARN, { title = "CMakeTools" })
     return terminal.has_active_job()
-  elseif always_use_terminal and not opts.launch_task_in_a_child_process then
-    -- Exclusively using terminal for directly laoding commands
-    --[[ vim.notify("Feature is experimental! set \"cmake_always_use_terminal = false\" to avoid this mode. Currently, cannot chain commands in terminal unless the project is already configured!", vim.log.levels.WARN, { title = "CMake" }) ]]
-    return false
   else
     return terminal.has_active_job() or quickfix.has_active_job()
   end

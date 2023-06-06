@@ -8,9 +8,7 @@ local terminal = {
 
 function terminal.has_active_job()
   if terminal.id then
-    return terminal.check_if_running_child_procs(terminal.id)
-  else
-    return false
+    return false -- This condition is always false we cannot detect if a command is running in the terminal
   end
 end
 
@@ -131,37 +129,16 @@ function terminal.get_buffer_number_from_name(buffer_name)
   return nil -- Buffer with the given name not found
 end
 
-function terminal.check_if_running_child_procs(terminal_buffer_idx)
-  local main_pid = vim.api.nvim_buf_get_var(terminal_buffer_idx, "terminal_job_pid")
-  local child_procs = vim.api.nvim_get_proc_children(main_pid)
-
-  if next(child_procs) then
-    return true
-  else
-    return false
-  end
-end
-
 function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
   if osys.iswin32 then
-    if opts.wrap then
-      cmd = "Start-Process -FilePath pwsh -ArgumentList '-Command " ..
-          cmd .. " ' -PassThru -NoNewWindow | Wait-Process \r"
-    else
       cmd = cmd .. " \r"
-    end
   elseif osys.ismac then
     cmd = cmd .. " \n"
   elseif osys.islinux then
     cmd = cmd .. " \n"
   elseif osys.iswsl then
     --NOTE: Techinically, wsl-2 and linux are detected as linux. We might see a diferrence in wsl-1 vs wsl-2
-    -- Process wrapper for Linux
-    if opts.wrap then
-      cmd = cmd .. " & \n"
-    else
-      cmd = cmd .. " \n"
-    end
+    cmd = cmd .. " \n"
   end
   if opts and opts.win_id ~= -1 then
     -- The window is alive, so we set buffer in window
@@ -238,18 +215,6 @@ function terminal.reposition(opts)
   -- vim.print(all_buffer_display_info) -- Use vim.print() for printing tables
   -- print('opts:')
   -- vim.print(opts)
-
-  if opts.launch_executable_in_a_child_process or opts.launch_task_in_a_child_process then
-    log.error("Reposition term is not supported for running task/executable child processes")
-    return 0
-  end
-
-  --[[
-  -- TODO: Implement single terminal buffer for all tasks,
-  -- i.e. run, build, clean, generate, etc... [except debug, as debug uses nvim.dap]
-
-  local STBE = opts.single_terminal_buffer_for_everything
-  ]]
 
   local single_terminal_per_instance = opts.single_terminal_per_instance
   local single_terminal_per_tab = opts.single_terminal_per_tab
@@ -513,8 +478,7 @@ function terminal.execute(executable, opts)
   -- print("final_winid: " .. final_winid)
 
   -- Prepare Launch path if sending to terminal
-  local launch_path = terminal.prepare_launch_path(opts.cmake_launch_path,
-    opts.cmake_terminal_opts.launch_executable_in_a_child_process)
+  local launch_path = terminal.prepare_launch_path(opts.cmake_launch_path)
 
   -- Launch form executable's build directory by default
   if osys.iswin32 then
@@ -528,7 +492,6 @@ function terminal.execute(executable, opts)
   -- Send final cmd to terminal
   terminal.send_data_to_terminal(buffer_idx, executable,
     {
-      wrap = opts.cmake_terminal_opts.launch_executable_in_a_child_process,
       win_id = final_win_id,
       split_direction = opts.cmake_terminal_opts.split_direction,
       split_size = opts.cmake_terminal_opts.split_size,
@@ -555,8 +518,7 @@ function terminal.run(cmd, env, args, opts)
   -- print("final_winid: " .. final_winid)
 
   -- Prepare Launch path form
-  local launch_path = terminal.prepare_launch_path(opts.cmake_launch_path,
-    opts.cmake_terminal_opts.launch_task_in_a_child_process)
+  local launch_path = terminal.prepare_launch_path(opts.cmake_launch_path)
 
   -- Launch form executable's build directory by default
   local full_cmd = "cd " .. launch_path .. " && "
@@ -576,7 +538,6 @@ function terminal.run(cmd, env, args, opts)
   -- Send final cmd to terminal
   terminal.send_data_to_terminal(buffer_idx, full_cmd,
     {
-      wrap = opts.cmake_terminal_opts.launch_task_in_a_child_process,
       win_id = final_win_id,
       split_direction = opts.cmake_terminal_opts.split_direction,
       split_size = opts.cmake_terminal_opts.split_size,
@@ -605,17 +566,11 @@ function terminal.run(cmd, env, args, opts)
   end
 end
 
-function terminal.prepare_launch_path(path, in_a_child_process)
+function terminal.prepare_launch_path(path)
   if osys.iswin32 then
-    if in_a_child_process then
-      path = "\\\"" .. path .. "\\\""
-    else
-      path = "\"" .. path .. "\"" -- The path is kept in double quotes ... Windows Duh!
-    end
+    path = "\"" .. path .. "\"" -- The path is kept in double quotes ... Windows Duh!
   elseif osys.islinux then
-    if in_a_child_process then
-      path = path
-    end
+    path = path
   end
 
   return path
