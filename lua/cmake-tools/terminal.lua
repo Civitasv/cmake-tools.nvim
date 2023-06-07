@@ -456,7 +456,7 @@ function terminal.execute(executable, opts)
   --[[ print("EXECUTABLE AFTER", executable) ]]
 
   -- experimental feature
-  if executable == nil then
+  if executable == nil or executable == "null" then
     log.warn("Feature is experimental! set \"cmake_always_use_terminal = false\" to avoid this mode. You should use :CMakeBuild to build the target first and then Run it again")
     return
   end
