@@ -117,8 +117,7 @@ end
 function terminal.get_buffer_number_from_name(buffer_name)
   local buffers = vim.api.nvim_list_bufs()
   for _, bufnr in ipairs(buffers) do
-    local name = vim.api.nvim_buf_get_name(bufnr)
-    name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
+    local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
     -- print('get_buffer_number_from_name: ' .. name .. ", required name: " .. buffer_name)
     if name == buffer_name then
       -- print(' HIT! get_buffer_number_from_name: ' .. name .. ", required name: " .. buffer_name)
@@ -164,7 +163,7 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
   end
 
   -- Focus on the last line in the buffer to keep the scrolling output
-  vim.api.nvim_buf_call(buffer_idx, function() vim.cmd('normal! G') end)
+  vim.api.nvim_buf_call(buffer_idx, function() vim.cmd("normal! G") end)
 
   local chan = vim.api.nvim_buf_get_var(buffer_idx, "terminal_job_id")
   vim.api.nvim_chan_send(chan, cmd)
