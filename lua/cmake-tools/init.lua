@@ -510,6 +510,8 @@ function cmake.select_build_type(callback)
           config.build_type = build_type
           if type(callback) == "function" then
             callback()
+          else
+            cmake.generate({ bang = false, fargs = {} }, nil)
           end
         end
       end
@@ -548,6 +550,8 @@ function cmake.select_kit(callback)
           end
           if type(callback) == "function" then
             callback()
+          else
+            cmake.generate({ bang = false, fargs = {} }, nil)
           end
         end
       )
@@ -594,6 +598,8 @@ function cmake.select_configure_preset(callback)
           end
           if type(callback) == "function" then
             callback()
+          else
+            cmake.generate({ bang = false, fargs = {} }, nil)
           end
         end
       )
@@ -848,10 +854,7 @@ if const.cmake_regenerate_on_save == true then
       -- execute the :CMakeGenerate, otherwise return. This is to avoid unnecessary regenerattion
       local buf_modified = vim.api.nvim_buf_get_option(buf, "modified")
       if buf_modified then
-        cmake.generate({ bang = false, fargs = {} },
-          function()
-            -- no function here
-          end)
+        cmake.generate({ bang = false, fargs = {} }, nil)
       end
     end,
   })
