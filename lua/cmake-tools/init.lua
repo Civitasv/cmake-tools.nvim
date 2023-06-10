@@ -90,6 +90,7 @@ function cmake.generate(opt, callback)
           cmake_always_use_terminal = const.cmake_always_use_terminal,
           cmake_terminal_opts = const.cmake_terminal_opts
         })
+        cmake.configure_compile_commands(const.cmake_always_use_terminal, const.cmake_terminal_opts)
         full_cmd = ""
       end
     else
@@ -166,6 +167,7 @@ function cmake.generate(opt, callback)
         cmake_always_use_terminal = const.cmake_always_use_terminal,
         cmake_terminal_opts = const.cmake_terminal_opts
       })
+      cmake.configure_compile_commands(const.cmake_always_use_terminal, const.cmake_terminal_opts)
       full_cmd = ""
     end
   else
