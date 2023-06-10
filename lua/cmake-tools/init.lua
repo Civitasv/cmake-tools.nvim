@@ -397,7 +397,7 @@ function cmake.run(opt)
         if full_cmd ~= "" then
           full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_execute(target_path, cmake:get_launch_args(), launch_path)
         else
-          full_cmd = terminal.prepare_cmd_for_execute(target_path, cmake:get_launch_args())
+          full_cmd = terminal.prepare_cmd_for_execute(target_path, cmake:get_launch_args(), launch_path)
         end
         utils.execute(target_path, full_cmd, {
           cmake_always_use_terminal = const.cmake_always_use_terminal,
