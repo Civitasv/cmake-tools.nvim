@@ -24,9 +24,7 @@ end
 --- Generate build system for this project.
 -- Think it as `cmake .`
 function cmake.generate(opt, callback)
-  if utils.has_active_job(
-    const.cmake_always_use_terminal
-  ) then
+  if utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -151,9 +149,7 @@ end
 
 --- Clean targets
 function cmake.clean(callback)
-  if utils.has_active_job(
-    const.cmake_always_use_terminal
-  ) then
+  if utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -180,9 +176,7 @@ end
 --- Build this project using the make toolchain of target platform
 --- think it as `cmake --build .`
 function cmake.build(opt, callback)
-  if utils.has_active_job(
-    const.cmake_always_use_terminal
-  ) then
+  if utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -267,9 +261,7 @@ end
 
 --- CMake install targets
 function cmake.install(opt)
-  if utils.has_active_job(
-    const.cmake_always_use_terminal
-  ) then
+  if utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -303,9 +295,7 @@ end
 
 -- Run executable targets
 function cmake.run(opt, callback)
-  if utils.has_active_job(
-    const.cmake_always_use_terminal
-  ) then
+  if utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -350,9 +340,7 @@ end
 
 -- Set args for launch target
 function cmake.launch_args(opt)
-  if utils.has_active_job(
-    const.cmake_always_use_terminal
-  ) then
+  if utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -364,9 +352,7 @@ end
 if has_nvim_dap then
   -- Debug execuable targets
   function cmake.debug(opt, callback)
-    if utils.has_active_job(
-      const.cmake_always_use_terminal
-    ) then
+    if utils.has_active_job(const.cmake_always_use_terminal) then
       return
     end
 
@@ -419,9 +405,7 @@ if has_nvim_dap then
 end
 
 function cmake.select_build_type(callback)
-  if utils.has_active_job(
-    const.cmake_always_use_terminal
-  ) then
+  if utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -457,9 +441,7 @@ function cmake.select_build_type(callback)
 end
 
 function cmake.select_kit(callback)
-  if utils.has_active_job(
-    const.cmake_always_use_terminal
-  ) then
+  if utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -499,9 +481,7 @@ function cmake.select_kit(callback)
 end
 
 function cmake.select_configure_preset(callback)
-  if utils.has_active_job(
-    const.cmake_always_use_terminal
-  ) then
+  if utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
@@ -547,9 +527,7 @@ function cmake.select_configure_preset(callback)
 end
 
 function cmake.select_build_preset(callback)
-  if utils.has_active_job(
-    const.cmake_always_use_terminal
-  ) then
+  if utils.has_active_job(const.cmake_always_use_terminal) then
     return
   end
 
