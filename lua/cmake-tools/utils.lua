@@ -62,9 +62,6 @@ end
 -- @param executable executable file
 -- @param opts execute options
 function utils.execute(executable, opts)
-  -- Please save all
-  vim.cmd("wall")
-
   -- First, if we use quickfix to generate, build, etc, we should close it
   if not opts.cmake_always_use_terminal then
     quickfix.close()
