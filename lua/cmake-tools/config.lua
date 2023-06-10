@@ -110,7 +110,6 @@ function Config:check_launch_target()
   end
 
   -- 2. not select launch target yet
-  -- print("SELECTED", self.launch_target)
   if not self.launch_target then
     return Result:new(Types.NOT_SELECT_LAUNCH_TARGET, nil, "You need to select launch target first")
   end
@@ -120,13 +119,11 @@ function Config:check_launch_target()
     return codemodel_targets
   end
   codemodel_targets = codemodel_targets.data
-  -- print("ALL TARGETS", utils.dump(codemodel_targets)) -- uncomment utils in preamble (import section) to enable this. disabling for Lua check in CI/CD pipleine
 
   for _, target in ipairs(codemodel_targets) do
     if self.launch_target == target["name"] then
       local target_info = self:get_code_model_target_info(target)
       local type = target_info["type"]:lower():gsub("_", " ")
-      -- print("TYPE", type)
       if type ~= "executable" then
         -- 3. selected target cannot execute
         return Result:new(Types.NOT_EXECUTABLE, nil, "You need to select a executable target")
@@ -151,7 +148,6 @@ function Config:get_launch_target()
   end
   local target_info = check_result.data
 
-  -- print(utils.dump(target_info))
   local target_path = target_info["artifacts"][1]["path"]
   target_path = Path:new(target_path)
   if not target_path:is_absolute() then
@@ -164,7 +160,7 @@ function Config:get_launch_target()
   if not target_path:is_file() then
     return Result:new(
       Types.SELECTED_LAUNCH_TARGET_NOT_BUILT,
-      nil,
+      target_path.filename,
       "Selected target is not built: " .. target_path.filename
     )
   end
@@ -181,7 +177,6 @@ function Config:check_build_target()
   end
 
   -- 2. not select build target yet
-  -- print("SELECTED", self.build_target)
   if not self.build_target then
     return Result:new(Types.NOT_SELECT_BUILD_TARGET, nil, "You need to select Build target first")
   end
@@ -191,13 +186,11 @@ function Config:check_build_target()
     return codemodel_targets
   end
   codemodel_targets = codemodel_targets.data
-  -- print("ALL TARGETS", utils.dump(codemodel_targets)) -- uncomment utils in preamble (import section) to enable this. disabling for Lua check in CI/CD pipleine
 
   for _, target in ipairs(codemodel_targets) do
     if self.build_target == target["name"] then
       local target_info = self:get_code_model_target_info(target)
       -- local type = target_info["type"]:lower():gsub("_", " ")
-      -- print("TYPE",type)
       return Result:new(Types.SUCCESS, target_info, "Success")
     end
   end
@@ -217,7 +210,6 @@ function Config:get_build_target()
     return check_result
   end
   local target_info = check_result.data
-  -- print(utils.dump(target_info))
   local target_path = target_info["artifacts"][1]["path"]
   target_path = Path:new(target_path)
   if not target_path:is_absolute() then
@@ -262,10 +254,8 @@ local function get_targets(config, opt)
 
   codemodel_targets = codemodel_targets.data
   for _, target in ipairs(codemodel_targets) do
-    -- print(dump(target))
     local target_info = config:get_code_model_target_info(target)
     local target_name = target_info["name"]
-    -- print(target_name)
     if target_name:find("_autogen") == nil then
       local type = target_info["type"]:lower():gsub("_", " ")
       local display_name = target_name .. " (" .. type .. ")"

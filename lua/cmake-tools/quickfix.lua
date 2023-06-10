@@ -66,4 +66,12 @@ function quickfix.has_active_job()
   return true
 end
 
+function quickfix.stop()
+  quickfix.job:shutdown(1, 9)
+
+  for _, pid in ipairs(vim.api.nvim_get_proc_children(quickfix.job.pid)) do
+    vim.loop.kill(pid, 9)
+  end
+end
+
 return quickfix

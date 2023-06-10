@@ -3,7 +3,6 @@ local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
 local terminal = require("cmake-tools.terminal")
 local quickfix = require("cmake-tools.quickfix")
-local log = require("cmake-tools.log")
 
 -- local const = require("cmake-tools.const")
 
@@ -60,8 +59,9 @@ end
 
 --- Execute CMake launch target in terminal.
 -- @param executable executable file
+-- @param full_cmd full command line
 -- @param opts execute options
-function utils.execute(executable, opts)
+function utils.execute(executable, full_cmd, opts)
   -- Please save all
   vim.cmd("wall")
 
@@ -71,13 +71,13 @@ function utils.execute(executable, opts)
   end
 
   -- Then, execute it
-  terminal.execute(executable, opts)
+  terminal.execute(executable, full_cmd, opts)
 end
 
 function utils.softlink(src, target, opts)
   if opts.cmake_always_use_terminal and not utils.file_exists(target) then
     local cmd = "cmake -E create_symlink " .. src .. " " .. target
-    terminal.run(cmd, {}, {}, opts)
+    terminal.run(cmd, opts)
     return
   end
 
@@ -115,7 +115,7 @@ function utils.run(cmd, env, args, opts)
   vim.cmd("wall")
 
   if opts.cmake_always_use_terminal then
-    return terminal.run(cmd, env, args, opts)
+    return terminal.run(cmd, opts)
   else
     return quickfix.run(cmd, env, args, opts)
   end
@@ -125,7 +125,6 @@ end
 -- @return true if exists else false
 function utils.has_active_job(always_use_terminal)
   if always_use_terminal then
-    log.warn("This is an experimental feature! set \"cmake_always_use_terminal=false\" if this is causing trouble")
     return terminal.has_active_job()
   else
     return terminal.has_active_job() or quickfix.has_active_job()
@@ -145,6 +144,14 @@ function utils.file_exists(path)
     return false
   end
   return true
+end
+
+function utils.stop(opts)
+  if opts.cmake_always_use_terminal then
+    terminal.stop()
+  else
+    quickfix.stop()
+  end
 end
 
 return utils
