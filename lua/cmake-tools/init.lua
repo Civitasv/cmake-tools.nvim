@@ -905,10 +905,6 @@ function cmake.get_launch_target()
   return config.launch_target
 end
 
-function cmake.get_launch_targets()
-  return cmake.get_cmake_launch_targets()
-end
-
 function cmake.get_model_info()
   return config:get_code_model_info()
 end
