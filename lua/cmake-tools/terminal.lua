@@ -427,7 +427,7 @@ function terminal.prepare_cmd_for_execute(executable, args, launch_path)
     -- Weird windows thing: executables that are not in path only work as ".\executable" and not "executable" on the cmdline (even if focus is in the same directory)
     full_cmd = full_cmd .. ".\\" .. executable
   elseif osys.islinux then
-    full_cmd = full_cmd .. "./" .. executable
+    full_cmd = " " .. full_cmd .. "./" .. executable -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
   end
 
   -- Add args to the cmd

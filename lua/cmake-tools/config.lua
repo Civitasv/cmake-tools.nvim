@@ -139,15 +139,8 @@ function Config:check_launch_target()
   )
 end
 
--- Retrieve launch target path: self.launch_target
--- it will first check if this launch target is built
-function Config:get_launch_target()
-  local check_result = self:check_launch_target()
-  if check_result.code ~= Types.SUCCESS then
-    return check_result
-  end
-  local target_info = check_result.data
 
+function Config:get_launch_target_from_info(target_info)
   local target_path = target_info["artifacts"][1]["path"]
   target_path = Path:new(target_path)
   if not target_path:is_absolute() then
@@ -166,6 +159,18 @@ function Config:get_launch_target()
   end
 
   return Result:new(Types.SUCCESS, target_path.filename, "yeah, that's good")
+end
+
+-- Retrieve launch target path: self.launch_target
+-- it will first check if this launch target is built
+function Config:get_launch_target()
+  local check_result = self:check_launch_target()
+  if check_result.code ~= Types.SUCCESS then
+    return check_result
+  end
+  local target_info = check_result.data
+
+  return Config:get_launch_target_from_info(target_info)
 end
 
 -- Check if build target exists
@@ -242,7 +247,7 @@ function Config:validate_for_debugging()
 end
 
 local function get_targets(config, opt)
-  local targets, display_targets = {}, {}
+  local targets, display_targets, paths, abs_paths = {}, {}, {}, {}
   if opt.has_all then
     table.insert(targets, "all")
     table.insert(display_targets, "all")
@@ -256,16 +261,26 @@ local function get_targets(config, opt)
   for _, target in ipairs(codemodel_targets) do
     local target_info = config:get_code_model_target_info(target)
     local target_name = target_info["name"]
+    local target_name_on_disk = target_info["nameOnDisk"]
     if target_name:find("_autogen") == nil then
       local type = target_info["type"]:lower():gsub("_", " ")
       local display_name = target_name .. " (" .. type .. ")"
+      local path = target_info["paths"]["build"]
+      if (target_name_on_disk ~= nil) then -- only executables have name on disk?
+        path = path .. "/" .. target_name_on_disk
+      end
+      local abs_path = Config.build_directory .. "/" .. path
       if not (opt.only_executable and (type ~= "executable")) then
         if target_name == config.build_target then
           table.insert(targets, 1, target_name)
           table.insert(display_targets, 1, display_name)
+          table.insert(paths, 1, path)
+          table.insert(abs_paths, 1, abs_path)
         else
           table.insert(targets, target_name)
           table.insert(display_targets, display_name)
+          table.insert(paths, path)
+          table.insert(abs_paths, abs_path)
         end
       end
     end
@@ -273,9 +288,26 @@ local function get_targets(config, opt)
 
   return Result:new(
     Types.SUCCESS,
-    { targets = targets, display_targets = display_targets },
+    { targets = targets, display_targets = display_targets, paths = paths, abs_paths = abs_paths },
     "Success!"
   )
+end
+
+function Config:get_code_model_info()
+  local codemodel_targets = self:get_codemodel_targets()
+  if codemodel_targets.code ~= Types.SUCCESS then
+    return codemodel_targets
+  end
+
+  local result = {}
+
+  codemodel_targets = codemodel_targets.data
+  for _, target in ipairs(codemodel_targets) do
+    local target_info = self:get_code_model_target_info(target)
+    local name = target_info["name"]
+    result[name] = target_info
+  end
+  return result
 end
 
 function Config:launch_targets()

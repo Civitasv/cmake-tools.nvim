@@ -275,7 +275,10 @@ function cmake.build(opt, callback)
 
   vim.list_extend(args, config.build_options)
 
-  if config.build_target == "all" then
+  if opt.target ~= nil then
+    vim.list_extend(args, { "--target", opt.target })
+    vim.list_extend(args, fargs)
+  elseif config.build_target == "all" then
     vim.list_extend(args, { "--target", "all" })
     vim.list_extend(args, fargs)
   else
@@ -310,6 +313,39 @@ function cmake.build(opt, callback)
       cmake_always_use_terminal = const.cmake_always_use_terminal,
       cmake_quickfix_opts = const.cmake_quickfix_opts,
     })
+  end
+end
+
+function cmake.quick_build(opt, callback)
+  -- if no target was supplied, query via ui select
+  if opt.fargs[1] == nil then
+    if utils.has_active_job(const.cmake_always_use_terminal) then
+      return
+    end
+
+    if not (config.build_directory and config.build_directory:exists()) then
+      -- configure it
+      return cmake.generate({ bang = false, fargs = {} },
+        function()
+          cmake.quick_build(opt, callback)
+        end)
+    end
+
+    local targets_res = config:launch_targets()
+    local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
+
+    vim.ui.select(display_targets, { prompt = "Select target to build" },
+      vim.schedule_wrap(
+        function(_, idx)
+          if not idx then
+            return
+          end
+          cmake.build({ target = targets[idx] }, callback)
+        end
+      )
+    )
+  else
+    cmake.build({ target = opt.fargs[1] }, callback)
   end
 end
 
@@ -364,42 +400,17 @@ function cmake.run(opt)
     return
   end
 
-  local result = config:get_launch_target()
-  local result_code = result.code
-  if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
-    if const.cmake_always_use_terminal then
-      log.error("For terminal mode, you need to firstly invoke CMakeGenerate.")
-      full_cmd = ""
-      return
-    else
-      -- Configure it
-      return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) },
-        function()
-          cmake.run(opt)
-        end)
-    end
-  elseif result_code == Types.NOT_SELECT_LAUNCH_TARGET
-      or result_code == Types.NOT_A_LAUNCH_TARGET
-      or result_code == Types.NOT_EXECUTABLE
-  then
-    -- Re Select a target that could launch
-    return cmake.select_launch_target(
+  if opt.target then
+    -- explicit target requested. use that instead of the configured one
+    return cmake.build({ target = opt.target },
       function()
-        cmake.run(opt)
-      end), true
-  else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT
-    -- Build select launch target every time
-    config.build_target = config.launch_target
-    return cmake.build({ fargs = utils.deepcopy(opt.fargs) },
-      function()
-        result = config:get_launch_target()
+        local model = config:get_code_model_info()[opt.target]
+        local result = config:get_launch_target_from_info(model)
         local target_path = result.data
         local launch_path = vim.fn.fnamemodify(target_path, ":h")
 
         if full_cmd ~= "" then
-          -- This jumps to the working directory, builds the target and then launches it inside the launch terminal
-          -- Hence, "cd ".. vim.cwd .. " && "..    The \" is for path handling, specifically in win32
-          full_cmd = "cd \"" .. vim.loop.cwd() .. "\" && " .. full_cmd .. " && " .. terminal.prepare_cmd_for_execute(target_path, cmake:get_launch_args(), launch_path)
+          full_cmd = "cd \"" .. vim.loop.cwd() .. "\" && " .. full_cmd .. " && " .. terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path)
         else
           full_cmd = terminal.prepare_cmd_for_execute(target_path, cmake:get_launch_args(), launch_path)
         end
@@ -408,8 +419,88 @@ function cmake.run(opt)
           cmake_terminal_opts = const.cmake_terminal_opts
         })
         full_cmd = ""
+      end)
+  else
+    local result = config:get_launch_target()
+    local result_code = result.code
+    if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
+      if const.cmake_always_use_terminal then
+        log.error("For terminal mode, you need to firstly invoke CMakeGenerate.")
+        full_cmd = ""
+        return
+      else
+        -- Configure it
+        return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) },
+          function()
+            cmake.run(opt)
+          end)
       end
+    elseif result_code == Types.NOT_SELECT_LAUNCH_TARGET
+        or result_code == Types.NOT_A_LAUNCH_TARGET
+        or result_code == Types.NOT_EXECUTABLE
+    then
+      -- Re Select a target that could launch
+      return cmake.select_launch_target(
+        function()
+          cmake.run(opt)
+        end), true
+    else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT
+      -- Build select launch target every time
+      config.build_target = config.launch_target
+      return cmake.build({ fargs = utils.deepcopy(opt.fargs) },
+        function()
+          result = config:get_launch_target()
+          local target_path = result.data
+          local launch_path = vim.fn.fnamemodify(target_path, ":h")
+
+          if full_cmd ~= "" then
+            -- This jumps to the working directory, builds the target and then launches it inside the launch terminal
+            -- Hence, "cd ".. vim.cwd .. " && "..    The \" is for path handling, specifically in win32
+            full_cmd = "cd \"" .. vim.loop.cwd() .. "\" && " .. full_cmd .. " && " .. terminal.prepare_cmd_for_execute(target_path, cmake:get_launch_args(), launch_path)
+          else
+            full_cmd = terminal.prepare_cmd_for_execute(target_path, cmake:get_launch_args(), launch_path)
+          end
+          utils.execute(target_path, full_cmd, {
+            cmake_always_use_terminal = const.cmake_always_use_terminal,
+            cmake_terminal_opts = const.cmake_terminal_opts
+          })
+          full_cmd = ""
+        end
+      )
+    end
+  end
+end
+
+function cmake.quick_run(opt)
+  -- if no target was supplied, query via ui select
+  if opt.fargs[1] == nil then
+    if utils.has_active_job(const.cmake_always_use_terminal) then
+      return
+    end
+
+    if not (config.build_directory and config.build_directory:exists()) then
+      -- configure it
+      return cmake.generate({ bang = false, fargs = {} },
+        function()
+          cmake.quick_run(opt)
+        end)
+    end
+
+    local targets_res = config:launch_targets()
+    local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
+
+    vim.ui.select(display_targets, { prompt = "Select target to run" },
+      vim.schedule_wrap(
+        function(_, idx)
+          if not idx then
+            return
+          end
+          cmake.run({ target = targets[idx] })
+        end)
     )
+  else
+    local target = table.remove(opt.fargs, 1)
+    cmake.run({ target = target, args = opt.fargs })
   end
 end
 
@@ -440,47 +531,98 @@ if has_nvim_dap then
         end)
     end
 
-    local result = config:get_launch_target()
-    local result_code = result.code
-
-    if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
-      if const.cmake_always_use_terminal then
-        log.error("For terminal mode, you need to firstly invoke CMakeGenerate.")
-        full_cmd = ""
-        return
-      else
-        -- Configure it
-        return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) },
-          function()
-            cmake.debug(opt, callback)
-          end)
-      end
-    elseif result_code == Types.NOT_SELECT_LAUNCH_TARGET
-        or result_code == Types.NOT_A_LAUNCH_TARGET
-        or result_code == Types.NOT_EXECUTABLE
-    then
-      -- Re Select a target that could launch
-      return cmake.select_launch_target(
+    if opt.target then
+      -- explicit target requested. use that instead of the configured one
+      return cmake.build({ target = opt.target },
         function()
-          cmake.debug(opt, callback)
-        end), true
-    else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
-      -- Build select launch target every time
-      config.build_target = config.launch_target
-      return cmake.build({ fargs = utils.deepcopy(opt.fargs) },
-        function()
-          result = config:get_launch_target()
-          local target_path = result.data
+          local model = config:get_code_model_info()[opt.target]
+          local result = config:get_launch_target_from_info(model)
           local dap_config = {
-            name = config.launch_target,
-            program = target_path,
+            name = opt.target,
+            program = result.data,
             cwd = utils.get_path(result.data, "/"),
-            args = cmake:get_launch_args(),
+            args = opt.args
           }
           -- close cmake console
           cmake.close()
           dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
         end)
+    else
+      local result = config:get_launch_target()
+      local result_code = result.code
+
+      if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
+        if const.cmake_always_use_terminal then
+          log.error("For terminal mode, you need to firstly invoke CMakeGenerate.")
+          full_cmd = ""
+          return
+        else
+          -- Configure it
+          return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) },
+            function()
+              cmake.debug(opt, callback)
+            end)
+        end
+      elseif result_code == Types.NOT_SELECT_LAUNCH_TARGET
+          or result_code == Types.NOT_A_LAUNCH_TARGET
+          or result_code == Types.NOT_EXECUTABLE
+      then
+        -- Re Select a target that could launch
+        return cmake.select_launch_target(
+          function()
+            cmake.debug(opt, callback)
+          end), true
+      else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
+        -- Build select launch target every time
+        config.build_target = config.launch_target
+        return cmake.build({ fargs = utils.deepcopy(opt.fargs) },
+          function()
+            result = config:get_launch_target()
+            local target_path = result.data
+            local dap_config = {
+              name = config.launch_target,
+              program = target_path,
+              cwd = utils.get_path(result.data, "/"),
+              args = cmake:get_launch_args(),
+            }
+            -- close cmake console
+            cmake.close()
+            dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
+          end)
+      end
+    end
+  end
+
+  function cmake.quick_debug(opt, callback)
+    -- if no target was supplied, query via ui select
+    if opt.fargs[1] == nil then
+      if utils.has_active_job(const.cmake_always_use_terminal) then
+        return
+      end
+
+      if not (config.build_directory and config.build_directory:exists()) then
+        -- configure it
+        return cmake.generate({ bang = false, fargs = {} },
+          function()
+            cmake.quick_debug(opt, callback)
+          end)
+      end
+
+      local targets_res = config:launch_targets()
+      local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
+
+      vim.ui.select(display_targets, { prompt = "Select target to debug" },
+        vim.schedule_wrap(
+          function(_, idx)
+            if not idx then
+              return
+            end
+            cmake.debug({ target = targets[idx] }, callback)
+          end)
+      )
+    else
+      local target = table.remove(opt.fargs, 1)
+      cmake.debug({ target = target, args = opt.fargs }, callback)
     end
   end
 end
@@ -696,6 +838,18 @@ function cmake.select_build_target(callback, regenerate)
   )
 end
 
+function cmake.get_cmake_launch_targets(callback)
+  if not (config.build_directory and config.build_directory:exists()) then
+    -- configure it
+    return cmake.generate({ bang = false, fargs = {} },
+      function()
+        cmake.get_cmake_launch_targets(callback)
+      end)
+  end
+
+  callback(config:launch_targets())
+end
+
 function cmake.select_launch_target(callback, regenerate)
   if not (config.build_directory and config.build_directory:exists()) then
     -- configure it
@@ -749,6 +903,14 @@ end
 
 function cmake.get_launch_target()
   return config.launch_target
+end
+
+function cmake.get_launch_targets()
+  return cmake.get_cmake_launch_targets()
+end
+
+function cmake.get_model_info()
+  return config:get_code_model_info()
 end
 
 function cmake.get_launch_args()

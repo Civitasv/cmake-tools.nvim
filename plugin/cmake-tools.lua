@@ -38,6 +38,16 @@ vim.api.nvim_create_user_command(
   }
 )
 
+--- CMake quick build
+vim.api.nvim_create_user_command(
+  "CMakeQuickBuild", -- name
+  cmake_tools.quick_build, -- command
+  { -- opts
+    nargs = "?",
+    desc = "CMake quick build",
+  }
+)
+
 --- CMake install
 vim.api.nvim_create_user_command(
   "CMakeInstall", -- name
@@ -84,6 +94,16 @@ vim.api.nvim_create_user_command(
   }
 )
 
+--- CMake quick run
+vim.api.nvim_create_user_command(
+  "CMakeQuickRun", -- name
+  cmake_tools.quick_run, -- command
+  { -- opts
+    nargs = "*",
+    desc = "CMake quick run",
+  }
+)
+
 --- CMake launch args
 vim.api.nvim_create_user_command(
   "CMakeLaunchArgs", -- name
@@ -105,6 +125,16 @@ if has_nvim_dap then
     }
   )
 end
+
+--- CMake quick debug
+vim.api.nvim_create_user_command(
+  "CMakeQuickDebug", -- name
+  cmake_tools.quick_debug, -- command
+  { -- opts
+    nargs = "*",
+    desc = "CMake quick debug",
+  }
+)
 
 --- CMake select build type
 vim.api.nvim_create_user_command(
