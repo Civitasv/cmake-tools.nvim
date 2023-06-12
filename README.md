@@ -81,6 +81,10 @@ Generally, the default is enough.
 5. [cmake variants](./docs/cmake_variants.md)
 6. [how to](./docs/howto.md)
 
+## :muscle: Contribute
+
+If you want to implement a missing feature, [consider making a PR](./docs/contribute.md).
+
 ## LICENCE
 
 [GPL-3.0 License](https://www.gnu.org/licenses/gpl-3.0.html) © Civitasv
