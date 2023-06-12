@@ -847,7 +847,9 @@ function cmake.get_cmake_launch_targets(callback)
       end)
   end
 
-  callback(config:launch_targets())
+  if type(callback) == "function" then
+    callback(config:launch_targets())
+  end
 end
 
 function cmake.select_launch_target(callback, regenerate)
