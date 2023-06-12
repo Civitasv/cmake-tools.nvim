@@ -269,7 +269,10 @@ local function get_targets(config, opt)
       if (target_name_on_disk ~= nil) then -- only executables have name on disk?
         path = path .. "/" .. target_name_on_disk
       end
-      local abs_path = Config.build_directory .. "/" .. path
+      local abs_path = ""
+      if type == "executable" then
+        abs_path = Config.build_directory .. "/" .. target_info["artifacts"][1]["path"]
+      end
       if not (opt.only_executable and (type ~= "executable")) then
         if target_name == config.build_target then
           table.insert(targets, 1, target_name)
