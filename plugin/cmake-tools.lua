@@ -124,17 +124,17 @@ if has_nvim_dap then
       desc = "CMake debug",
     }
   )
+  
+  --- CMake quick debug
+  vim.api.nvim_create_user_command(
+    "CMakeQuickDebug", -- name
+    cmake_tools.quick_debug, -- command
+    { -- opts
+      nargs = "*",
+      desc = "CMake quick debug",
+    }
+  )
 end
-
---- CMake quick debug
-vim.api.nvim_create_user_command(
-  "CMakeQuickDebug", -- name
-  cmake_tools.quick_debug, -- command
-  { -- opts
-    nargs = "*",
-    desc = "CMake quick debug",
-  }
-)
 
 --- CMake select build type
 vim.api.nvim_create_user_command(
