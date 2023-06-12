@@ -397,7 +397,9 @@ function cmake.run(opt)
         local launch_path = vim.fn.fnamemodify(target_path, ":h")
 
         if full_cmd ~= "" then
-          full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_execute(target_path, cmake:get_launch_args(), launch_path)
+          -- This jumps to the working directory, builds the target and then launches it inside the launch terminal
+          -- Hence, "cd ".. vim.cwd .. " && "..    The \" is for path handling, specifically in win32
+          full_cmd = "cd \"" .. vim.loop.cwd() .. "\" && " .. full_cmd .. " && " .. terminal.prepare_cmd_for_execute(target_path, cmake:get_launch_args(), launch_path)
         else
           full_cmd = terminal.prepare_cmd_for_execute(target_path, cmake:get_launch_args(), launch_path)
         end
