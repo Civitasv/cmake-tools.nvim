@@ -6,7 +6,7 @@ There are two ways:
 
 - Use softlink: firstly, you should set `cmake_soft_link_compile_commands` to true, then, this plugin will automatically make a softlink to compile_commands.json after generation.
 - Use lsp: If you're using clangd or ccls configured through [lspconfig](https://github.com/neovim/nvim-lspconfig) you can
-set your compilation database directory to your active build directory by calling a hook in your on_new_config callback provided by lspconfig.
+  set your compilation database directory to your active build directory by calling a hook in your on_new_config callback provided by lspconfig.
 
 ```lua
 require('lspconfig').clangd.setup{
@@ -466,3 +466,16 @@ it looks like:
 By default, this plugin uses quickfix console for generate, build, clean, install, and others about cmake, and only uses terminal for run specific target.
 
 But if you want to always use terminal(for example, you want to record all commands and corresponding output), there is a way. You need set `cmake_always_use_terminal` to true, then, all commands will be executed in the terminal.
+
+For users that are using nvim-tree, to keep the size of terminal constant, you should add the following configuration for nvim-tree.
+
+```lua
+require("nvim-tree").setup {
+    --
+    view = {
+      preserve_window_proportions = true,
+      ---
+    },
+}
+```
+
