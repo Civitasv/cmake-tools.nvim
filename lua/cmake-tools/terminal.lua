@@ -53,8 +53,8 @@ function terminal.new_instance(term_name, opts)
   -- Now create the plit
   vim.cmd(":" .. opts.split_direction .. " " .. opts.split_size .. "sp | :term") -- Creater terminal in a split
   -- local new_name = vim.fn.fnamemodify(term_name, ":t")                           -- Extract only the terminal name and reassign it
-  vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), term_name) -- Set the buffer name
-  vim.cmd(":setlocal laststatus=3")                                    -- Let there be a single status/lualine in the neovim instance
+  vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), term_name)           -- Set the buffer name
+  vim.cmd(":setlocal laststatus=3")                                              -- Let there be a single status/lualine in the neovim instance
 
   -- Renamming a terminal buffer creates a new hidden buffer, so duplicate terminals need to be deleted
   local new_buffers_list = vim.api.nvim_list_bufs()
@@ -213,7 +213,7 @@ function terminal.reposition(opts)
       terminal.close_window_from_tabs_with_prefix(true, opts)                             -- Close all cmake windows in all other tabs
       local buflist = terminal.check_if_cmake_buffers_are_displayed_across_all_tabs(opts) -- Get list of all buffers that are displayed in current tab
       if next(buflist) then
-        for i = 1, #buflist do -- Buffers exist in current tab, so close all except first buffer in buflist
+        for i = 1, #buflist do                                                            -- Buffers exist in current tab, so close all except first buffer in buflist
           if i > 1 then
             vim.api.nvim_win_close(buflist[i], false)
           end
@@ -431,8 +431,10 @@ function terminal.prepare_cmd_for_execute(executable, args, launch_path)
   end
 
   -- Add args to the cmd
-  for _, arg in ipairs(args) do
-    full_cmd = full_cmd .. " " .. arg
+  if args then
+    for _, arg in ipairs(args) do
+      full_cmd = full_cmd .. " " .. arg
+    end
   end
 
   return full_cmd

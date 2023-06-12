@@ -257,7 +257,7 @@ function cmake.build(opt, callback)
       end)
   end
 
-  if config.build_target == nil then
+  if opt.target == nil and config.build_target == nil then
     return cmake.select_build_target(
       function()
         cmake.build(opt, callback)
