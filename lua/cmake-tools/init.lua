@@ -331,7 +331,7 @@ function cmake.quick_build(opt, callback)
         end)
     end
 
-    local targets_res = config:launch_targets()
+    local targets_res = config:build_targets()
     local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
 
     vim.ui.select(display_targets, { prompt = "Select target to build" },
@@ -412,7 +412,7 @@ function cmake.run(opt)
         if full_cmd ~= "" then
           full_cmd = "cd \"" .. vim.loop.cwd() .. "\" && " .. full_cmd .. " && " .. terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path)
         else
-          full_cmd = terminal.prepare_cmd_for_execute(target_path, cmake:get_launch_args(), launch_path)
+          full_cmd = terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path)
         end
         utils.execute(target_path, full_cmd, {
           cmake_always_use_terminal = const.cmake_always_use_terminal,
