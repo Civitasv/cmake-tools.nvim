@@ -21,6 +21,10 @@ local full_cmd = ""
 function cmake.setup(values)
   const = vim.tbl_deep_extend("force", const, values)
   config = Config:new(const)
+  -- preload the autocmd if the following option is true. only saves cmakelists.txt files
+  if const.cmake_regenerate_on_save then
+    cmake.create_regenerate_on_save_autocmd()
+  end
 end
 
 --- Generate build system for this project.
@@ -1006,9 +1010,8 @@ function cmake.ccls_on_new_config(new_config)
   new_config.init_options.compilationDatabaseDirectory = config.build_directory.filename
 end
 
--- preload the autocmd if the following option is true. only saves cmakelists.txt files
-local group = vim.api.nvim_create_augroup("cmaketools", { clear = true })
-if const.cmake_regenerate_on_save == true then
+function cmake.create_regenerate_on_save_autocmd()
+  local group = vim.api.nvim_create_augroup("cmaketools", { clear = true })
   vim.api.nvim_create_autocmd("BufWritePre", {
     group    = group,
     pattern  = "CMakeLists.txt",
