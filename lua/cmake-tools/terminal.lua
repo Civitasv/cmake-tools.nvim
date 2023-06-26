@@ -7,6 +7,10 @@ local terminal = {
 
 function terminal.has_active_job()
   if terminal.id then
+    -- first, check if this buffer is valid
+    if not vim.api.nvim_buf_is_valid(terminal.id) then
+      return
+    end
     local main_pid = vim.api.nvim_buf_get_var(terminal.id, "terminal_job_pid")
     local child_procs = vim.api.nvim_get_proc_children(main_pid)
 
