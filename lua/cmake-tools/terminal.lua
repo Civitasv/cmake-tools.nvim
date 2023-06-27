@@ -69,9 +69,7 @@ function terminal.new_instance(term_name, opts)
   -- Example: using a filter in 'hardtime.nvim' to make sure
   -- we can use chained hjkl keys in sucession in the terminal to scroll.
   -- It also makes it easier to get the terminals that are unique to cmake_tools
-  if opts.set_terminal_filetype then
-    vim.api.nvim_buf_set_option( vim.api.nvim_get_current_buf(),'filetype', 'cmake_tools_terminal')
-  end
+  vim.api.nvim_buf_set_option( vim.api.nvim_get_current_buf(),'filetype', 'cmake_tools_terminal')
 
   terminal.delete_scratch_buffers()
 
