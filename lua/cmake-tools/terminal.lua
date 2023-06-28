@@ -64,6 +64,13 @@ function terminal.new_instance(term_name, opts)
   local new_buffers_list = vim.api.nvim_list_bufs()
   local diff_buffers_list = terminal.symmetric_difference(buffers_before, new_buffers_list)
   terminal.delete_duplicate_terminal_buffers_except(term_name, diff_buffers_list)
+
+  -- This is mainly for users to do filtering if necessary, as termial does not have a default type.
+  -- Example: using a filter in 'hardtime.nvim' to make sure
+  -- we can use chained hjkl keys in sucession in the terminal to scroll.
+  -- It also makes it easier to get the terminals that are unique to cmake_tools
+  vim.api.nvim_buf_set_option( vim.api.nvim_get_current_buf(),'filetype', 'cmake_tools_terminal')
+
   terminal.delete_scratch_buffers()
 
   local new_buffer_idx = terminal.get_buffer_number_from_name(term_name)
@@ -186,12 +193,14 @@ function terminal.create_if_not_exists(term_name, opts)
     end
   end
 
+  local does_terminal_already_exist = false
   if term_idx ~= nil then
-    return true, term_idx
+    does_terminal_already_exist = true
   else
     term_idx = terminal.new_instance(term_name, opts)
-    return false, term_idx
+    -- does_terminal_already_exist terminal will be default (false)
   end
+    return does_terminal_already_exist, term_idx
 end
 
 function terminal.reposition(opts)

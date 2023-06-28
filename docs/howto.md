@@ -469,6 +469,12 @@ By default, this plugin uses quickfix console for generate, build, clean, instal
 
 But if you want to always use terminal(for example, you want to record all commands and corresponding output), there is a way. You need set `cmake_always_use_terminal` to true, then, all commands will be executed in the terminal.
 
+---
+
+## Integrations
+
+### NvimTree
+
 For users that are using nvim-tree, to keep the size of terminal constant, you should add the following configuration for nvim-tree.
 
 ```lua
@@ -480,4 +486,15 @@ require("nvim-tree").setup {
     },
 }
 ```
-
+### Terminal type buffer filtering (HardTime.nvim)
+When focused on a terminal buffer (not for quickfix-lists, except run terminal), you can check the filetype with `:set ft`. It should display `cmake_tools_terminal`.
+This can be useful for users of plugins like [hardtime.nvim](https://github.com/m4xshen/hardtime.nvim) you can specify the CMake terminal buffers like:
+(Scrolling becomes much easier without having to resort to vim motions like `CTRL H` + `zz` or `CTRL L` + `zz`) in order to scroll the buffer
+```lua
+{
+    "m4xshen/hardtime.nvim",
+    event = "VeryLazy",
+    opts = { disabled_filetypes = { "cmake_tools_terminal" },
+    }
+},
+```
