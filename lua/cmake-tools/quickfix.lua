@@ -13,7 +13,9 @@ local function append_to_quickfix(error, data)
   local line = error and error or data
   vim.fn.setqflist({}, "a", { lines = { line } })
   -- scroll the quickfix buffer to bottom
-  quickfix.scroll_to_bottom()
+  if quickfix.check_scroll() then
+    quickfix.scroll_to_bottom()
+  end
 end
 
 function quickfix.show(quickfix_opts)
@@ -72,6 +74,24 @@ function quickfix.stop()
   for _, pid in ipairs(vim.api.nvim_get_proc_children(quickfix.job.pid)) do
     vim.loop.kill(pid, 9)
   end
+end
+
+function quickfix.check_scroll()
+  local function is_cursor_at_last_line()
+    local current_buf = vim.api.nvim_win_get_buf(0)
+    local cursor_pos = vim.api.nvim_win_get_cursor(0)
+    local line_count = vim.api.nvim_buf_line_count(current_buf)
+
+    return cursor_pos[1] == line_count - 1
+  end
+
+  local buffer_type = vim.api.nvim_buf_get_option(0, "buftype")
+
+  if buffer_type == "quickfix" then
+    return is_cursor_at_last_line()
+  end
+
+  return true
 end
 
 return quickfix
