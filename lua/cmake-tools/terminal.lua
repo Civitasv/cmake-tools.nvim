@@ -69,7 +69,7 @@ function terminal.new_instance(term_name, opts)
   -- Example: using a filter in 'hardtime.nvim' to make sure
   -- we can use chained hjkl keys in sucession in the terminal to scroll.
   -- It also makes it easier to get the terminals that are unique to cmake_tools
-  vim.api.nvim_buf_set_option( vim.api.nvim_get_current_buf(),'filetype', 'cmake_tools_terminal')
+  vim.api.nvim_buf_set_option(vim.api.nvim_get_current_buf(), "filetype", "cmake_tools_terminal")
 
   terminal.delete_scratch_buffers()
 
@@ -200,7 +200,7 @@ function terminal.create_if_not_exists(term_name, opts)
     term_idx = terminal.new_instance(term_name, opts)
     -- does_terminal_already_exist terminal will be default (false)
   end
-    return does_terminal_already_exist, term_idx
+  return does_terminal_already_exist, term_idx
 end
 
 function terminal.reposition(opts)
@@ -441,6 +441,10 @@ function terminal.prepare_cmd_for_execute(executable, args, launch_path)
     full_cmd = full_cmd .. ".\\" .. executable
   elseif osys.islinux then
     full_cmd = " " .. full_cmd .. "./" .. executable -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
+  elseif osys.iswsl then
+    full_cmd = " " .. full_cmd .. "./" .. executable -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
+  elseif osys.ismac then
+    full_cmd = " " .. full_cmd .. "./" .. executable -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
   end
 
   -- Add args to the cmd
@@ -530,6 +534,10 @@ function terminal.prepare_launch_path(path)
   if osys.iswin32 then
     path = "\"" .. path .. "\"" -- The path is kept in double quotes ... Windows Duh!
   elseif osys.islinux then
+    path = path
+  elseif osys.iswsl then
+    path = path
+  elseif osys.ismac then
     path = path
   end
 
