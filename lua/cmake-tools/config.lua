@@ -18,7 +18,6 @@ local Config = {
   kit = nil,
   configure_preset = nil,
   build_preset = nil,
-  run_terminals = {} -- TODO Multiple terminals
 }
 
 function Config:new(const)
@@ -138,7 +137,6 @@ function Config:check_launch_target()
     "Unable to find the following target: " .. self.launch_target
   )
 end
-
 
 function Config:get_launch_target_from_info(target_info)
   local target_path = target_info["artifacts"][1]["path"]
@@ -271,7 +269,7 @@ local function get_targets(config, opt)
       end
       local abs_path = ""
       if type == "executable" then
-        abs_path = Config.build_directory .. "/" .. target_info["artifacts"][1]["path"]
+        abs_path = config.build_directory .. "/" .. target_info["artifacts"][1]["path"]
       end
       if not (opt.only_executable and (type ~= "executable")) then
         if target_name == config.build_target then

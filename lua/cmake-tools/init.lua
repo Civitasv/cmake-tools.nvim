@@ -10,6 +10,7 @@ local presets = require("cmake-tools.presets")
 local log = require("cmake-tools.log")
 local osys = require("cmake-tools.osys")
 local terminal = require("cmake-tools.terminal")
+local _session = require("cmake-tools.session")
 
 local config = Config:new(const)
 
@@ -24,6 +25,22 @@ function cmake.setup(values)
   -- preload the autocmd if the following option is true. only saves cmakelists.txt files
   if const.cmake_regenerate_on_save then
     cmake.create_regenerate_on_save_autocmd()
+  end
+
+  -- auto reload previous session
+  if cmake.is_cmake_project() then
+    local old_config = _session.load()
+    config:update_build_dir(old_config.build_directory)
+    config.generate_options = old_config.generate_options
+    config.build_options = old_config.build_options
+
+    config.build_type = old_config.build_type
+    config.build_target = old_config.build_target
+    config.launch_target = old_config.launch_target
+    config.launch_args = old_config.launch_args
+    config.kit = old_config.kit
+    config.configure_preset = old_config.configure_preset
+    config.build_preset = old_config.build_preset
   end
 end
 
@@ -1010,8 +1027,9 @@ function cmake.ccls_on_new_config(new_config)
   new_config.init_options.compilationDatabaseDirectory = config.build_directory.filename
 end
 
+local group = vim.api.nvim_create_augroup("cmaketools", { clear = true })
+
 function cmake.create_regenerate_on_save_autocmd()
-  local group = vim.api.nvim_create_augroup("cmaketools", { clear = true })
   vim.api.nvim_create_autocmd("BufWritePre", {
     group    = group,
     pattern  = "CMakeLists.txt",
@@ -1027,14 +1045,21 @@ function cmake.create_regenerate_on_save_autocmd()
   })
 end
 
--- For win32, we have a command to escape insert mode after proccess extis
+-- We have a command to escape insert mode after proccess extis
 -- because, we want to scroll the buffer output after completion of execution
-if osys.is_win32 then
+if cmake.is_cmake_project() then
   vim.api.nvim_create_autocmd("TermClose", {
     group    = group,
     callback = function()
       vim.cmd.stopinsert()
       vim.api.nvim_feedkeys("<C-\\><C-n><CR>", "n", false)
+    end
+  })
+
+  vim.api.nvim_create_autocmd("VimLeavePre", {
+    group    = group,
+    callback = function()
+      _session.save(config)
     end
   })
 end
