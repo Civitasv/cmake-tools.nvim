@@ -16,7 +16,7 @@ An Example:
   {
     "name": "My Compiler Kit",
 
-    "generator":"Ninja",
+    "generator": "Ninja",
 
     "compilers": {
       "C": "/usr/bin/gcc",

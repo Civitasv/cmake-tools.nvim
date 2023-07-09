@@ -79,6 +79,7 @@ Generally, the default is enough.
 3. [cmake presets](./docs/cmake_presets.md)
 4. [cmake kits](./docs/cmake_kits.md)
 5. [cmake variants](./docs/cmake_variants.md)
+6. [sessions](./docs/sessions.md)
 6. [how to](./docs/howto.md)
 
 ## :muscle: Contribute
