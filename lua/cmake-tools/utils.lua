@@ -131,6 +131,11 @@ function utils.has_active_job(always_use_terminal)
   end
 end
 
+function utils.mkdir(dir)
+  local _dir = Path:new(dir)
+  _dir:mkdir({ parents = true, exists_ok = true })
+end
+
 function utils.rmdir(dir)
   local _dir = Path:new(vim.loop.cwd(), dir)
   if _dir:exists() then
