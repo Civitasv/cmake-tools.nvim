@@ -30,17 +30,19 @@ function cmake.setup(values)
   -- auto reload previous session
   if cmake.is_cmake_project() then
     local old_config = _session.load()
-    config:update_build_dir(old_config.build_directory)
-    config.generate_options = old_config.generate_options
-    config.build_options = old_config.build_options
+    if next(old_config) ~= nil then
+      config:update_build_dir(old_config.build_directory)
+      config.generate_options = old_config.generate_options
+      config.build_options = old_config.build_options
 
-    config.build_type = old_config.build_type
-    config.build_target = old_config.build_target
-    config.launch_target = old_config.launch_target
-    config.launch_args = old_config.launch_args
-    config.kit = old_config.kit
-    config.configure_preset = old_config.configure_preset
-    config.build_preset = old_config.build_preset
+      config.build_type = old_config.build_type
+      config.build_target = old_config.build_target
+      config.launch_target = old_config.launch_target
+      config.launch_args = old_config.launch_args
+      config.kit = old_config.kit
+      config.configure_preset = old_config.configure_preset
+      config.build_preset = old_config.build_preset
+    end
   end
 end
 
