@@ -10,28 +10,38 @@ local session = {
   }
 }
 
+local function get_cache_path()
+  if osys.islinux then
+    return session.dir.unix
+  elseif osys.ismac then
+    return session.dir.mac
+  elseif osys.iswsl then
+    return session.dir.unix
+  elseif osys.iswin32 then
+    return session.dir.win
+  end
+end
 
 local function get_current_path()
   local current_path = vim.loop.cwd()
   local clean_path = current_path:gsub("/", "")
+  return get_cache_path() .. clean_path .. ".lua";
+end
 
-  local path;
-
-  if osys.islinux then
-    path = session.dir.unix .. clean_path .. ".lua";
-  elseif osys.ismac then
-    path = session.dir.mac .. clean_path .. ".lua";
-  elseif osys.iswsl then
-    path = session.dir.unix .. clean_path .. ".lua";
-  elseif osys.iswin32 then
-    path = session.dir.win .. clean_path .. ".lua";
+local function init_cache()
+  local cache_path = get_cache_path()
+  if not utils.file_exists(cache_path) then
+    utils.mkdir(cache_path)
   end
+end
 
+local function init_session()
+  init_cache()
+
+  local path = get_current_path()
   if not utils.file_exists(path) then
     os.execute("touch " .. path)
   end
-
-  return path;
 end
 
 function session.load()
@@ -42,6 +52,7 @@ function session.load()
     return config
   end
 
+  init_session()
   return {}
 end
 
