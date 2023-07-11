@@ -160,7 +160,8 @@ function cmake.generate(opt, callback)
   if const.cmake_build_directory ~= "" then
     config:update_build_dir(const.cmake_build_directory)
   else
-    config:update_build_dir(const.cmake_build_directory_prefix .. config.build_type)
+    local _build_type = config.build_type:gsub("+", "_"):gsub(" ", "")
+    config:update_build_dir(const.cmake_build_directory_prefix .. _build_type)
   end
 
   config:generate_build_directory()
@@ -669,14 +670,14 @@ function cmake.select_build_type(callback)
     end
   end
 
-  vim.ui.select(types, { prompt = "Select build type" },
+  vim.ui.select(types, { prompt = "Select build type", format_item = function(item) return item.short .. item.long end },
     vim.schedule_wrap(
       function(build_type)
         if not build_type then
           return
         end
         if config.build_type ~= build_type then
-          config.build_type = build_type
+          config.build_type = build_type.short
           if type(callback) == "function" then
             callback()
           else
