@@ -5,6 +5,7 @@ local syaml = require("simpleyaml")
 
 -- fallback if no cmake-variants.[yaml|json] is found
 local DEFAULT_VARIANTS = { "Debug", "Release", "RelWithDebInfo", "MinSizeRel" }
+local DEFAULT_VARIANTS_VAL = { { short = "Debug", long = "" }, { short = "Release", long = "" }, { short = "RelWithDebInfo", long = "" }, { short = "MinSizeRel", long = "" } }
 
 -- checks if there is a cmake-variants.[yaml|json] file and parses it to a Lua table
 function variants.parse()
@@ -156,7 +157,7 @@ function variants.get(variants_opt)
     return combinations
   end                                                                             -- otherwise return the defaults
 
-  return DEFAULT_VARIANTS
+  return DEFAULT_VARIANTS_VAL
 end
 
 function variants.debuggable(variant)
