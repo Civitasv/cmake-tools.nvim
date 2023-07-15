@@ -463,6 +463,20 @@ it looks like:
 
 ![lualine UI](./images/2023-06-06-22-02-06.png)
 
+## Integration of external Tools
+
+`cmake-tools.run` can be used to run an executable with an external tool such as `valgrind` or `perf` by prepending the run call with custom arguments.
+
+This example creates a custom function that runs the currently selected launch target with `perf`
+
+```lua
+function RunPerf()
+  local cmake = require "cmake-tools"
+  cmake.run { wrap_call = { "perf", "record", "--call-graph", "dwarf" } }
+end
+```
+Calling `:lua RunPerf()` will then run `perf record --call-graph dwarf {target} {launch_args}`.
+
 ## Experimental: Awalys use terminal
 
 By default, this plugin uses quickfix console for generate, build, clean, install, and others about cmake, and only uses terminal for run specific target.

@@ -431,12 +431,13 @@ function cmake.run(opt)
         local model = config:get_code_model_info()[opt.target]
         local result = config:get_launch_target_from_info(model)
         local target_path = result.data
+        
         local launch_path = vim.fn.fnamemodify(target_path, ":h")
 
         if full_cmd ~= "" then
-          full_cmd = "cd \"" .. vim.loop.cwd() .. "\" && " .. full_cmd .. " && " .. terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path)
+          full_cmd = "cd \"" .. vim.loop.cwd() .. "\" && " .. full_cmd .. " && " .. terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path, opt.wrap_call)
         else
-          full_cmd = terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path)
+          full_cmd = terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path, opt.wrap_call)
         end
         utils.execute(target_path, full_cmd, {
           cmake_always_use_terminal = const.cmake_always_use_terminal,
@@ -480,9 +481,9 @@ function cmake.run(opt)
           if full_cmd ~= "" then
             -- This jumps to the working directory, builds the target and then launches it inside the launch terminal
             -- Hence, "cd ".. vim.cwd .. " && "..    The \" is for path handling, specifically in win32
-            full_cmd = "cd \"" .. vim.loop.cwd() .. "\" && " .. full_cmd .. " && " .. terminal.prepare_cmd_for_execute(target_path, cmake:get_launch_args(), launch_path)
+            full_cmd = "cd \"" .. vim.loop.cwd() .. "\" && " .. full_cmd .. " && " .. terminal.prepare_cmd_for_execute(target_path, cmake:get_launch_args(), launch_path, opt.wrap_call)
           else
-            full_cmd = terminal.prepare_cmd_for_execute(target_path, cmake:get_launch_args(), launch_path)
+            full_cmd = terminal.prepare_cmd_for_execute(target_path, cmake:get_launch_args(), launch_path, opt.wrap_call)
           end
           utils.execute(target_path, full_cmd, {
             cmake_always_use_terminal = const.cmake_always_use_terminal,
@@ -519,12 +520,12 @@ function cmake.quick_run(opt)
           if not idx then
             return
           end
-          cmake.run({ target = targets[idx] })
+          cmake.run({ target = targets[idx], wrap_call = opt.wrap_call })
         end)
     )
   else
     local target = table.remove(opt.fargs, 1)
-    cmake.run({ target = target, args = opt.fargs })
+    cmake.run({ target = target, args = opt.fargs, wrap_call = opt.wrap_call })
   end
 end
 
