@@ -428,24 +428,31 @@ function terminal.get_buffers_with_prefix(prefix)
   return filtered_buffers
 end
 
-function terminal.prepare_cmd_for_execute(executable, args, launch_path)
+function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_call)
   local full_cmd = ""
   executable = vim.fn.fnamemodify(executable, ":t")
 
   -- Launch form executable's build directory by default
   launch_path = terminal.prepare_launch_path(launch_path)
-  full_cmd = "cd " .. launch_path .. " && "
+  full_cmd = "cd " .. launch_path .. " &&"
+
+  -- prepend wrap_call args
+  if wrap_call then
+    for _, arg in ipairs(wrap_call) do
+      full_cmd = full_cmd .. " " .. arg
+    end
+  end
+
+  full_cmd = full_cmd .. " "
 
   if osys.iswin32 then
     -- Weird windows thing: executables that are not in path only work as ".\executable" and not "executable" on the cmdline (even if focus is in the same directory)
-    full_cmd = full_cmd .. ".\\" .. executable
-  elseif osys.islinux then
-    full_cmd = " " .. full_cmd .. "./" .. executable -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
-  elseif osys.iswsl then
-    full_cmd = " " .. full_cmd .. "./" .. executable -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
-  elseif osys.ismac then
-    full_cmd = " " .. full_cmd .. "./" .. executable -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
+    full_cmd = full_cmd .. ".\\"
+  elseif osys.islinux or osys.iswsl or osys.ismac then
+    full_cmd = " " .. full_cmd .. "./" -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
   end
+
+  full_cmd = full_cmd .. executable
 
   -- Add args to the cmd
   if args then
