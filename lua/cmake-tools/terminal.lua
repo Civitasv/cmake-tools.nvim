@@ -194,9 +194,19 @@ function terminal.create_if_not_exists(term_name, opts)
   end
 
   local does_terminal_already_exist = false
-  if term_idx ~= nil then
-    does_terminal_already_exist = true
-  else
+
+  if term_idx ~= nil and vim.api.nvim_buf_is_valid(term_idx) then
+    local type = vim.api.nvim_get_option_value("buftype", {
+      buf = term_idx
+    })
+    if type == "terminal" then
+      does_terminal_already_exist = true
+    else
+      vim.api.nvim_buf_delete(term_idx, { force = true })
+    end
+  end
+
+  if not does_terminal_already_exist then
     term_idx = terminal.new_instance(term_name, opts)
     -- does_terminal_already_exist terminal will be default (false)
   end
