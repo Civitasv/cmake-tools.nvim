@@ -32,6 +32,7 @@ cmake.get_build_type() -- return current build type
 cmake.get_kit() -- return current using kit
 cmake.get_configure_preset() -- return current using configure preset
 cmake.get_build_preset() -- return current using build preset
+cmake.get_build_directory() -- return current using build directory
 ```
 
 With these helper functions, I've mimic the UI using lualine.

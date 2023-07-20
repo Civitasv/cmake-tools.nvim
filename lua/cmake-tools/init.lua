@@ -960,6 +960,10 @@ function cmake.get_build_preset()
   return config.build_preset
 end
 
+function cmake.get_build_directory()
+  return config.build_directory
+end
+
 function cmake.is_cmake_project()
   local result = utils.get_cmake_configuration()
   return result.code == Types.SUCCESS
