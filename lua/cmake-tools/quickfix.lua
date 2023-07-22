@@ -2,7 +2,7 @@ local log = require("cmake-tools.log")
 local Job = require("plenary.job")
 
 local quickfix = {
-  job = nil
+  job = nil,
 }
 
 function quickfix.scroll_to_bottom()

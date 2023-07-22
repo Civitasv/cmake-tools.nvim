@@ -63,7 +63,7 @@ end
 -- @param opts execute options
 function utils.execute(executable, full_cmd, opts)
   -- Please save all
-  vim.cmd("silent exec " .. "\"wall\"")
+  vim.cmd("silent exec " .. '"wall"')
 
   -- First, if we use quickfix to generate, build, etc, we should close it
   if not opts.cmake_always_use_terminal then
@@ -83,7 +83,7 @@ function utils.softlink(src, target, opts)
 
   if utils.file_exists(src) and not utils.file_exists(target) then
     -- if we don't always use terminal
-    local cmd = "silent exec " .. "\"!cmake -E create_symlink " .. src .. " " .. target .. "\""
+    local cmd = "silent exec " .. '"!cmake -E create_symlink ' .. src .. " " .. target .. '"'
     vim.cmd(cmd)
   end
 end

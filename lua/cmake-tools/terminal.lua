@@ -2,7 +2,7 @@ local osys = require("cmake-tools.osys")
 local log = require("cmake-tools.log")
 
 local terminal = {
-  id = nil -- id for the unified terminal
+  id = nil, -- id for the unified terminal
 }
 
 function terminal.has_active_job()
@@ -179,7 +179,9 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
   end
 
   -- Focus on the last line in the buffer to keep the scrolling output
-  vim.api.nvim_buf_call(buffer_idx, function() vim.cmd("normal! G") end)
+  vim.api.nvim_buf_call(buffer_idx, function()
+    vim.cmd("normal! G")
+  end)
 
   local chan = vim.api.nvim_buf_get_var(buffer_idx, "terminal_job_id")
   vim.api.nvim_chan_send(chan, cmd)
@@ -200,7 +202,7 @@ function terminal.create_if_not_exists(term_name, opts)
 
   if term_idx ~= nil and vim.api.nvim_buf_is_valid(term_idx) then
     local type = vim.api.nvim_get_option_value("buftype", {
-      buf = term_idx
+      buf = term_idx,
     })
     if type == "terminal" then
       does_terminal_already_exist = true
@@ -223,10 +225,13 @@ function terminal.reposition(opts)
   -- Check how, where and weather the buffers are displayed in the neovim instance
   local all_buffer_display_info = {}
   for _, buffer in ipairs(all_open_cmake_terminal_buffers) do
-    table.insert(all_buffer_display_info, terminal.get_buffer_display_info(buffer, {
-      ignore_current_tab = false, -- Set this to true to get info of all tabs execept current tab
-      get_unindexed_list = false  -- Set this to true for viewing a visually appealing nice table
-    }))
+    table.insert(
+      all_buffer_display_info,
+      terminal.get_buffer_display_info(buffer, {
+        ignore_current_tab = false, -- Set this to true to get info of all tabs execept current tab
+        get_unindexed_list = false, -- Set this to true for viewing a visually appealing nice table
+      })
+    )
   end
 
   local single_terminal_per_instance = opts.single_terminal_per_instance
@@ -321,14 +326,14 @@ function terminal.get_buffer_display_info(buffer_idx, opts)
         else
           if opts.ignore_current_tab then
             local tabpage_id = vim.api.nvim_tabpage_get_number(tabpage)
-            if (opts.ignore_current_tab and vim.api.nvim_get_current_tabpage() == tabpage) then
+            if opts.ignore_current_tab and vim.api.nvim_get_current_tabpage() == tabpage then
               -- Ignore current tabpage if set: do nothing
             else
               table.insert(buffer_display_info.windows, { tabpage_id = tabpage_id, win = win })
             end
           else
             local tabpage_id = vim.api.nvim_tabpage_get_number(tabpage)
-            if (opts.ignore_current_tab and vim.api.nvim_get_current_tabpage() == tabpage) then
+            if opts.ignore_current_tab and vim.api.nvim_get_current_tabpage() == tabpage then
               -- Ignore current tabpage if set: do nothing
             else
               table.insert(buffer_display_info.windows, { tabpage_id = tabpage_id, win = win })
@@ -352,16 +357,12 @@ function terminal.close_window_from_tabs_with_prefix(ignore_current_tab, opts)
   local buffers = terminal.get_buffers_with_prefix(opts.prefix_name)
   local unindexed_window_list = {}
   for _, buffer in ipairs(buffers) do
-    local windows_open_for_buffer = terminal.get_buffer_display_info(buffer,
-      {
-        ignore_current_tab = ignore_current_tab,
-        get_unindexed_list = true
-      })
+    local windows_open_for_buffer = terminal.get_buffer_display_info(buffer, {
+      ignore_current_tab = ignore_current_tab,
+      get_unindexed_list = true,
+    })
     for _, win in ipairs(windows_open_for_buffer) do
-      table.insert(
-        unindexed_window_list,
-        win
-      )
+      table.insert(unindexed_window_list, win)
     end
   end
   for i = 1, #unindexed_window_list do
@@ -392,16 +393,12 @@ function terminal.check_if_cmake_buffers_are_displayed_across_all_tabs(opts)
   local all_open_cmake_terminal_buffers = terminal.get_buffers_with_prefix(opts.prefix_name)
   local unindexed_window_list = {}
   for _, buffer in ipairs(all_open_cmake_terminal_buffers) do
-    local windows_open_for_buffer = terminal.get_buffer_display_info(buffer,
-      {
-        ignore_current_tab = false,
-        get_unindexed_list = true
-      })
+    local windows_open_for_buffer = terminal.get_buffer_display_info(buffer, {
+      ignore_current_tab = false,
+      get_unindexed_list = true,
+    })
     for _, win in ipairs(windows_open_for_buffer) do
-      table.insert(
-        unindexed_window_list,
-        win
-      )
+      table.insert(unindexed_window_list, win)
     end
   end
   -- Now, we return the list of buffers
@@ -462,7 +459,9 @@ function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_ca
     -- Weird windows thing: executables that are not in path only work as ".\executable" and not "executable" on the cmdline (even if focus is in the same directory)
     full_cmd = full_cmd .. ".\\"
   elseif osys.islinux or osys.iswsl or osys.ismac then
-    full_cmd = " " .. full_cmd .. "./" -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
+    full_cmd = " " ..
+    full_cmd ..
+    "./"                               -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
   end
 
   full_cmd = full_cmd .. executable
@@ -485,24 +484,21 @@ function terminal.execute(executable, full_cmd, opts)
 
   -- Buffer name of executable needs to be set with a prefix
   -- so that the reposition_term() function can find it
-  local _, buffer_idx = terminal.create_if_not_exists(
-    prefix .. executable,
-    opts.cmake_terminal_opts
-  )
+  local _, buffer_idx =
+      terminal.create_if_not_exists(prefix .. executable, opts.cmake_terminal_opts)
   terminal.id = buffer_idx
 
   -- Reposition the terminal buffer, before sending commands
   local final_win_id = terminal.reposition(opts.cmake_terminal_opts)
 
   -- Send final cmd to terminal
-  terminal.send_data_to_terminal(buffer_idx, full_cmd,
-    {
-      win_id = final_win_id,
-      split_direction = opts.cmake_terminal_opts.split_direction,
-      split_size = opts.cmake_terminal_opts.split_size,
-      start_insert = opts.cmake_terminal_opts.start_insert_in_launch_task,
-      focus_on_launch_terminal = opts.cmake_terminal_opts.focus_on_launch_terminal
-    })
+  terminal.send_data_to_terminal(buffer_idx, full_cmd, {
+    win_id = final_win_id,
+    split_direction = opts.cmake_terminal_opts.split_direction,
+    split_size = opts.cmake_terminal_opts.split_size,
+    start_insert = opts.cmake_terminal_opts.start_insert_in_launch_task,
+    focus_on_launch_terminal = opts.cmake_terminal_opts.focus_on_launch_terminal,
+  })
 end
 
 function terminal.prepare_cmd_for_run(cmd, env, args)
@@ -540,19 +536,18 @@ function terminal.run(full_cmd, opts)
   full_cmd = "cd " .. launch_path .. " && " .. full_cmd
 
   -- Send final cmd to terminal
-  terminal.send_data_to_terminal(buffer_idx, full_cmd,
-    {
-      win_id = final_win_id,
-      split_direction = opts.cmake_terminal_opts.split_direction,
-      split_size = opts.cmake_terminal_opts.split_size,
-      start_insert = opts.cmake_terminal_opts.start_insert_in_other_tasks,
-      focus_on_main_terminal = opts.cmake_terminal_opts.focus_on_main_terminal,
-    })
+  terminal.send_data_to_terminal(buffer_idx, full_cmd, {
+    win_id = final_win_id,
+    split_direction = opts.cmake_terminal_opts.split_direction,
+    split_size = opts.cmake_terminal_opts.split_size,
+    start_insert = opts.cmake_terminal_opts.start_insert_in_other_tasks,
+    focus_on_main_terminal = opts.cmake_terminal_opts.focus_on_main_terminal,
+  })
 end
 
 function terminal.prepare_launch_path(path)
   if osys.iswin32 then
-    path = "\"" .. path .. "\"" -- The path is kept in double quotes ... Windows Duh!
+    path = '"' .. path .. '"' -- The path is kept in double quotes ... Windows Duh!
   elseif osys.islinux then
     path = path
   elseif osys.iswsl then

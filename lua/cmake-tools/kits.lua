@@ -10,8 +10,8 @@ function kits.parse(global_kits_path)
     -- it will use local kits path first,
     -- otherwise, it will use global kits path
     local file = global_kits_path
-    for _, f in ipairs(files) do -- iterate over files in current directory
-      if (f == "cmake-kits.json" or f == "CMakeKits.json") then -- if a kits config file is found
+    for _, f in ipairs(files) do                              -- iterate over files in current directory
+      if f == "cmake-kits.json" or f == "CMakeKits.json" then -- if a kits config file is found
         file = vim.fn.resolve("./" .. f)
         break
       end
@@ -22,8 +22,8 @@ function kits.parse(global_kits_path)
   -- start parsing
   local config = nil
 
-  local file = findcfg() -- check for config file
-  if file then -- if one is found ...
+  local file = findcfg()           -- check for config file
+  if file then                     -- if one is found ...
     if file:match(".*%.json") then -- .. and is a json file
       config = vim.fn.json_decode(vim.fn.readfile(file))
     end
@@ -86,7 +86,7 @@ function kits.build_env_and_args(kit_name, always_use_terminal)
   if kit.compilers then
     for lang, compiler in pairs(kit.compilers) do
       if always_use_terminal then
-        add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=\"" .. compiler .. "\"" })
+        add_args({ "-DCMAKE_" .. lang .. '_COMPILER:FILEPATH="' .. compiler .. '"' })
       else
         add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=" .. compiler })
       end
@@ -96,14 +96,14 @@ function kits.build_env_and_args(kit_name, always_use_terminal)
   -- See : https://metricpanda.com/rival-fortress-update-27-compiling-with-clang-on-windows/
   if kit.linker then
     if always_use_terminal then
-      table.insert(args, "-DCMAKE_LINKER=" .. "\"" .. kit.linker .. "\"")
+      table.insert(args, "-DCMAKE_LINKER=" .. '"' .. kit.linker .. '"')
     else -- Quick Fix Lists
       table.insert(args, "-DCMAKE_LINKER=" .. kit.linker)
     end
   end
   if kit.generator then
     if always_use_terminal then
-      table.insert(args, "-G" .. "\"" .. kit.generator .. "\"")
+      table.insert(args, "-G" .. '"' .. kit.generator .. '"')
     else -- Quick Fix Lists
       table.insert(args, "-G" .. kit.generator)
     end

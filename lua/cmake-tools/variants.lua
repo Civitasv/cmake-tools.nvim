@@ -5,7 +5,12 @@ local syaml = require("simpleyaml")
 
 -- fallback if no cmake-variants.[yaml|json] is found
 local DEFAULT_VARIANTS = { "Debug", "Release", "RelWithDebInfo", "MinSizeRel" }
-local DEFAULT_VARIANTS_VAL = { { short = "Debug", long = "" }, { short = "Release", long = "" }, { short = "RelWithDebInfo", long = "" }, { short = "MinSizeRel", long = "" } }
+local DEFAULT_VARIANTS_VAL = {
+  { short = "Debug",          long = "" },
+  { short = "Release",        long = "" },
+  { short = "RelWithDebInfo", long = "" },
+  { short = "MinSizeRel",     long = "" },
+}
 
 -- checks if there is a cmake-variants.[yaml|json] file and parses it to a Lua table
 function variants.parse()
@@ -15,10 +20,12 @@ function variants.parse()
     local files = vim.fn.readdir(".")
     local file = nil
     for _, f in ipairs(files) do -- iterate over files in current directory
-      if f == "cmake-variants.yaml" or
-          f == "cmake-variants.json" or
-          f == "CMakeVariants.yaml" or
-          f == "CMakeVariants.json" then -- if a variants config file is found
+      if
+          f == "cmake-variants.yaml"
+          or f == "cmake-variants.json"
+          or f == "CMakeVariants.yaml"
+          or f == "CMakeVariants.json"
+      then -- if a variants config file is found
         file = vim.fn.resolve("./" .. f)
         break
       end
@@ -74,7 +81,7 @@ function variants.get(variants_opt)
     end
 
     local function clone(t)
-      local s = T {}
+      local s = T({})
       for k, v in ipairs(t) do
         s[k] = v
       end
@@ -90,11 +97,15 @@ function variants.get(variants_opt)
 
     -- implementation:
     local function cartprod(sets)
-      local temp, prod = T {}, T {}
+      local temp, prod = T({}), T({})
       local function descend(depth)
         for _, v in ipairs(sets[depth]) do
           temp[depth] = v
-          if (depth == #sets) then prod[#prod + 1] = clone(temp) else descend(depth + 1) end
+          if depth == #sets then
+            prod[#prod + 1] = clone(temp)
+          else
+            descend(depth + 1)
+          end
         end
       end
 
@@ -150,12 +161,14 @@ function variants.get(variants_opt)
   -- start parsing
 
   local config = variants.parse()
-  if config then                                                                  -- if a config is found
-    local choices = collect_choices(config)                                       -- collect all possible choices from it
-    local combinations = create_combinations(choices)                             -- calculate the cartesian product
-    table.sort(combinations, function(lhs, rhs) return lhs.short < rhs.short end) -- sort lexicographically
+  if config then                                      -- if a config is found
+    local choices = collect_choices(config)           -- collect all possible choices from it
+    local combinations = create_combinations(choices) -- calculate the cartesian product
+    table.sort(combinations, function(lhs, rhs)
+      return lhs.short < rhs.short
+    end) -- sort lexicographically
     return combinations
-  end                                                                             -- otherwise return the defaults
+  end    -- otherwise return the defaults
 
   return DEFAULT_VARIANTS_VAL
 end
@@ -189,7 +202,9 @@ function variants.debuggable(variant)
           break -- choice found, break loops
         end
       end
-      if choice_found then break end
+      if choice_found then
+        break
+      end
     end
   end
   return false
@@ -257,7 +272,9 @@ function variants.build_arglist(variant)
           break -- choice found, break loops
         end
       end
-      if choice_found then break end
+      if choice_found then
+        break
+      end
     end
   end
   return args
