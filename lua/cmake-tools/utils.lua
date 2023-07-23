@@ -115,7 +115,7 @@ function utils.run(cmd, env, args, opts)
   vim.cmd("wall")
 
   if opts.cmake_always_use_terminal then
-    return terminal.run(cmd, opts)
+    return terminal.run(cmd, opts, env)
   else
     return quickfix.run(cmd, env, args, opts)
   end

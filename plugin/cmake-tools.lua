@@ -194,3 +194,23 @@ vim.api.nvim_create_user_command(
     desc = "CMake select launch target",
   }
 )
+
+--- CMake configure environment variables for launch target
+vim.api.nvim_create_user_command(
+  "CMakeConfigureRunEnvironment",        -- name
+  cmake_tools.configure_run_environment, -- command
+  {                                      -- opts
+    nargs = "*",
+    desc = "CMake configure environment variables for launch target",
+  }
+)
+
+--- CMake configure build environment variables
+vim.api.nvim_create_user_command(
+  "CMakeConfigureBuildEnvironment",        -- name
+  cmake_tools.configure_build_environment, -- command
+  {                                        -- opts
+    nargs = 0,
+    desc = "CMake configure environment variables for the generate/build step",
+  }
+)

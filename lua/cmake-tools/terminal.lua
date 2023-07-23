@@ -438,13 +438,31 @@ function terminal.get_buffers_with_prefix(prefix)
   return filtered_buffers
 end
 
-function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_call)
+function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_call, env)
   local full_cmd = ""
   executable = vim.fn.fnamemodify(executable, ":t")
 
   -- Launch form executable's build directory by default
   launch_path = terminal.prepare_launch_path(launch_path)
   full_cmd = "cd " .. launch_path .. " &&"
+
+  if env then
+    for k, v in pairs(env) do
+      local var = k
+      if type(v) == "string" then
+        var = var .. '="' .. v .. '"'
+      elseif type(v) == "number" then
+        var = var .. "=" .. v
+      elseif type(v) == "function" then
+        var = var .. "=" .. v()
+      else
+        -- unsupported type
+        goto ignore
+      end
+      full_cmd = full_cmd .. " " .. var
+      ::ignore::
+    end
+  end
 
   -- prepend wrap_call args
   if wrap_call then
@@ -460,8 +478,8 @@ function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_ca
     full_cmd = full_cmd .. ".\\"
   elseif osys.islinux or osys.iswsl or osys.ismac then
     full_cmd = " " ..
-    full_cmd ..
-    "./"                               -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
+        full_cmd ..
+        "./" -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
   end
 
   full_cmd = full_cmd .. executable
@@ -517,7 +535,7 @@ function terminal.prepare_cmd_for_run(cmd, env, args)
   return full_cmd
 end
 
-function terminal.run(full_cmd, opts)
+function terminal.run(full_cmd, opts, env)
   local prefix = opts.cmake_terminal_opts.prefix_name -- [CMakeTools]
 
   -- prefix is added to the terminal name because the reposition_term() function needs to find it

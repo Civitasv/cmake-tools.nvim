@@ -72,6 +72,8 @@ function session.save(config)
     kit = config.kit,
     configure_preset = config.configure_preset,
     build_preset = config.build_preset,
+    build_environment = config.build_environment,
+    run_environments = config.run_environments,
   }
 
   if file then

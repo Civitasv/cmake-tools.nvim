@@ -11,6 +11,8 @@ local log = require("cmake-tools.log")
 local osys = require("cmake-tools.osys")
 local terminal = require("cmake-tools.terminal")
 local _session = require("cmake-tools.session")
+local window = require("cmake-tools.window")
+local environment = require("cmake-tools.environment")
 
 local config = Config:new(const)
 
@@ -42,6 +44,8 @@ function cmake.setup(values)
       config.kit = old_config.kit
       config.configure_preset = old_config.configure_preset
       config.build_preset = old_config.build_preset
+      config.build_environment = old_config.build_environment
+      config.run_environments = old_config.run_environments
     end
   end
 end
@@ -442,6 +446,7 @@ function cmake.run(opt)
       utils.execute(target_path, full_cmd, {
         cmake_always_use_terminal = const.cmake_always_use_terminal,
         cmake_terminal_opts = const.cmake_terminal_opts,
+        environment.get_run_environment(config, opt.target),
       })
       full_cmd = ""
     end)
@@ -488,20 +493,23 @@ function cmake.run(opt)
                 target_path,
                 cmake:get_launch_args(),
                 launch_path,
-                opt.wrap_call
+                opt.wrap_call,
+                environment.get_run_environment(config, config.launch_target)
               )
         else
           full_cmd = terminal.prepare_cmd_for_execute(
             target_path,
             cmake:get_launch_args(),
             launch_path,
-            opt.wrap_call
+            opt.wrap_call,
+            environment.get_run_environment(config, config.launch_target)
           )
         end
         utils.execute(target_path, full_cmd, {
           cmake_always_use_terminal = const.cmake_always_use_terminal,
           cmake_terminal_opts = const.cmake_terminal_opts,
         })
+
         full_cmd = ""
       end)
     end
@@ -928,6 +936,53 @@ function cmake.select_launch_target(callback, regenerate)
       end
     end)
   )
+end
+
+function cmake.configure_build_environment()
+  if not window.is_open() then
+    if not config.build_environment then
+      config.build_environment = [[
+return {
+  env = {
+
+  }
+}]]
+    end
+
+    window.set_content(config.build_environment)
+    window.title = "CMake-Tools build environment variables"
+    window.on_save = function(str)
+      config.build_environment = str
+    end
+    window.open()
+  end
+end
+
+function cmake.configure_run_environment(opt)
+  local target = opt.fargs[1] or cmake.get_build_target()
+
+  if target == nil then
+    log.warn("No launch target selected!")
+  end
+
+  if not window.is_open() then
+    if not config.run_environments[target] then
+      config.run_environments[target] = [[
+return {
+  inherit_build_environment = true,
+  env = {
+
+  }
+}]]
+    end
+
+    window.set_content(config.run_environments[target])
+    window.title = "CMake-Tools environment variables for " .. target
+    window.on_save = function(str)
+      config.run_environments[target] = str
+    end
+    window.open()
+  end
 end
 
 --[[ Getters ]]

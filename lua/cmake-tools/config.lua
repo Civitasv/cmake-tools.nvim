@@ -18,6 +18,8 @@ local Config = {
   kit = nil,
   configure_preset = nil,
   build_preset = nil,
+  build_environment = nil,
+  run_environments = {},
 }
 
 function Config:new(const)
