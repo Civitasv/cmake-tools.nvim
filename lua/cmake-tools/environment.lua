@@ -35,7 +35,7 @@ function environment.get_run_environment(config, target)
   local env = {}
 
   local runenv = nil
-  if config.run_environments[target] ~= nil then
+  if config.run_environments and config.run_environments[target] ~= nil then
     runenv = loadstring(config.run_environments[target])()
   end
 
