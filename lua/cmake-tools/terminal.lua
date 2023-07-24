@@ -174,6 +174,8 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
   elseif opts and opts.start_insert then
     vim.api.nvim_set_current_win(opts.win_id)
     vim.cmd("startinsert")
+  else
+    vim.api.nvim_set_current_win(opts.win_id)
   end
 
   -- Focus on the last line in the buffer to keep the scrolling output
