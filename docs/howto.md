@@ -464,6 +464,39 @@ it looks like:
 
 ![lualine UI](./images/2023-06-06-22-02-06.png)
 
+## Setting build and run environment variables
+
+`cmake-tools` can add additional user defined environment variables to cmake calls and/or when running launch targets.
+
+To configure build environment variables use `CMakeConfigureBuildEnvironment`. This will open up a popup window to configure
+environment variables using a lua buffer. For example:
+
+```lua
+return {
+  env = {
+    VERBOSE = 1,
+  }
+}
+```
+
+This will add `VERBOSE=1` to all cmake call such as `build`, `generate` or `clean`. Numbers and strings are supported
+as values for environment variables.
+
+`CMakeConfigureRunEnvironment` is used to configure environment variables for each individual executable. It also
+supports the additional option `inherit_build_environment` to automatically inherit the same variables configured with
+`CMakeConfigureRunEnvironment`
+
+```lua
+return {
+  inherit_build_environment = true,
+  env = {
+    log_level="trace"
+  }
+}
+```
+
+The popup window autosaves and can be closed with `q` or `<esc>`
+
 ## Integration of external Tools
 
 `cmake-tools.run` can be used to run an executable with an external tool such as `valgrind` or `perf` by prepending the run call with custom arguments.
@@ -476,6 +509,7 @@ function RunPerf()
   cmake.run { wrap_call = { "perf", "record", "--call-graph", "dwarf" } }
 end
 ```
+
 Calling `:lua RunPerf()` will then run `perf record --call-graph dwarf {target} {launch_args}`.
 
 ## Experimental: Awalys use terminal
@@ -501,10 +535,13 @@ require("nvim-tree").setup {
     },
 }
 ```
+
 ### Terminal type buffer filtering (HardTime.nvim)
+
 When focused on a terminal buffer (not for quickfix-lists, except run terminal), you can check the filetype with `:set ft`. It should display `cmake_tools_terminal`.
 This can be useful for users of plugins like [hardtime.nvim](https://github.com/m4xshen/hardtime.nvim) you can specify the CMake terminal buffers like:
 (Scrolling becomes much easier without having to resort to vim motions like `CTRL H` + `zz` or `CTRL L` + `zz`) in order to scroll the buffer
+
 ```lua
 {
     "m4xshen/hardtime.nvim",
