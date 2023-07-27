@@ -21,4 +21,17 @@ jobs:
         with:
           files: .
           annotate: warning
+  format:
+    name: Lint
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v2
 
+      - name: Stylua
+        uses: JohnnyMorganz/stylua-action@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest # NOTE: we recommend pinning to a specific version in case of formatting changes
+          args: --check -f ./stylua.toml .
+          
