@@ -1,7 +1,3 @@
-local osys = require("cmake-tools.osys")
-local utils = require("cmake-tools.utils")
-local logger = require("cmake-tools.log")
-
 local environment = {}
 
 -- expected format:

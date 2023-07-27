@@ -1,5 +1,4 @@
 local popup = require("plenary.popup")
-local logger = require("cmake-tools.log")
 
 local function create_window(title)
   local width = 80
@@ -7,7 +6,7 @@ local function create_window(title)
   local borderchars = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" }
   local bufnr = vim.api.nvim_create_buf(false, false)
 
-  local win_id, win = popup.create(bufnr, {
+  local win_id, _ = popup.create(bufnr, {
     title = title,
     line = math.floor(((vim.o.lines - height) / 2) - 1),
     col = math.floor((vim.o.columns - width) / 2),
