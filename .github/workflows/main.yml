@@ -22,7 +22,7 @@ jobs:
           files: .
           annotate: warning
   format:
-    name: Lint
+    name: Format
     runs-on: ubuntu-20.04
     steps:
       - name: Clone repo
