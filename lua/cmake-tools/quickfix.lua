@@ -33,9 +33,27 @@ function quickfix.run(cmd, env, args, opts)
     quickfix.show(opts.cmake_quickfix_opts)
   end
 
+  local job_args = {}
+
+  if next(env) then
+    table.insert(job_args, "-E")
+    table.insert(job_args, "env")
+    for _, v in ipairs(env) do
+      table.insert(job_args, v)
+    end
+    table.insert(job_args, "cmake")
+    for _, v in ipairs(args) do
+      table.insert(job_args, v)
+    end
+  else
+    job_args = args
+  end
+
+  log.info(vim.inspect(job_args))
+
   quickfix.job = Job:new({
     command = cmd,
-    args = next(env) and { "-E", "env", table.concat(env, " "), "cmake", unpack(args) } or args,
+    args = job_args,
     cwd = vim.loop.cwd(),
     on_stdout = vim.schedule_wrap(append_to_quickfix),
     on_stderr = vim.schedule_wrap(append_to_quickfix),
