@@ -99,11 +99,15 @@ function cmake.generate(opt, callback)
     vim.list_extend(args, config.generate_options)
     vim.list_extend(args, fargs)
 
+    local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
+
     if const.cmake_always_use_terminal then
       if full_cmd ~= "" then
-        full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+        full_cmd = full_cmd
+            .. " && "
+            .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
       else
-        full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+        full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, env, args)
       end
       if type(callback) == "function" then
         callback()
@@ -117,7 +121,7 @@ function cmake.generate(opt, callback)
         full_cmd = ""
       end
     else
-      return utils.run(const.cmake_command, {}, args, {
+      return utils.run(const.cmake_command, env, args, {
         on_success = function()
           if type(callback) == "function" then
             callback()
@@ -176,11 +180,13 @@ function cmake.generate(opt, callback)
   vim.list_extend(args, config.generate_options)
   vim.list_extend(args, fargs)
 
+  local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
+
   if const.cmake_always_use_terminal then
     if full_cmd ~= "" then
-      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     else
-      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     end
     if type(callback) == "function" then
       callback()
@@ -194,7 +200,8 @@ function cmake.generate(opt, callback)
       full_cmd = ""
     end
   else
-    utils.run(const.cmake_command, kit_option.env, args, {
+    env = vim.tbl_extend("keep", env, kit_option.env)
+    utils.run(const.cmake_command, env, args, {
       on_success = function()
         if type(callback) == "function" then
           callback()
@@ -220,12 +227,13 @@ function cmake.clean(callback)
   end
 
   local args = { "--build", config.build_directory.filename, "--target", "clean" }
+  local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
 
   if const.cmake_always_use_terminal then
     if full_cmd ~= "" then
-      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     else
-      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     end
     if type(callback) == "function" then
       return callback()
@@ -238,7 +246,7 @@ function cmake.clean(callback)
       full_cmd = ""
     end
   else
-    return utils.run(const.cmake_command, {}, args, {
+    return utils.run(const.cmake_command, env, args, {
       on_success = function()
         if type(callback) == "function" then
           callback()
@@ -294,6 +302,7 @@ function cmake.build(opt, callback)
   end
 
   vim.list_extend(args, config.build_options)
+  local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
 
   if opt.target ~= nil then
     vim.list_extend(args, { "--target", opt.target })
@@ -308,9 +317,9 @@ function cmake.build(opt, callback)
 
   if const.cmake_always_use_terminal then
     if full_cmd ~= "" then
-      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     else
-      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     end
     if type(callback) == "function" then
       callback()
@@ -323,7 +332,7 @@ function cmake.build(opt, callback)
       full_cmd = ""
     end
   else
-    utils.run(const.cmake_command, {}, args, {
+    utils.run(const.cmake_command, env, args, {
       on_success = function()
         if type(callback) == "function" then
           callback()
@@ -438,15 +447,25 @@ function cmake.run(opt)
             .. '" && '
             .. full_cmd
             .. " && "
-            .. terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path, opt.wrap_call)
+            .. terminal.prepare_cmd_for_execute(
+              target_path,
+              opt.args,
+              launch_path,
+              opt.wrap_call,
+              environment.get_run_environment(config, opt.target, true)
+            )
       else
-        full_cmd =
-            terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path, opt.wrap_call)
+        full_cmd = terminal.prepare_cmd_for_execute(
+          target_path,
+          opt.args,
+          launch_path,
+          opt.wrap_call,
+          environment.get_run_environment(config, opt.target, true)
+        )
       end
       utils.execute(target_path, full_cmd, {
         cmake_always_use_terminal = const.cmake_always_use_terminal,
         cmake_terminal_opts = const.cmake_terminal_opts,
-        environment.get_run_environment(config, opt.target),
       })
       full_cmd = ""
     end)
@@ -494,7 +513,7 @@ function cmake.run(opt)
                 cmake:get_launch_args(),
                 launch_path,
                 opt.wrap_call,
-                environment.get_run_environment(config, config.launch_target)
+                environment.get_run_environment(config, config.launch_target, true)
               )
         else
           full_cmd = terminal.prepare_cmd_for_execute(
@@ -502,7 +521,7 @@ function cmake.run(opt)
             cmake:get_launch_args(),
             launch_path,
             opt.wrap_call,
-            environment.get_run_environment(config, config.launch_target)
+            environment.get_run_environment(config, config.launch_target, true)
           )
         end
         utils.execute(target_path, full_cmd, {

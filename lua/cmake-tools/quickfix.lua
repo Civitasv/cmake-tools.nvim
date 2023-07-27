@@ -49,8 +49,6 @@ function quickfix.run(cmd, env, args, opts)
     job_args = args
   end
 
-  log.info(vim.inspect(job_args))
-
   quickfix.job = Job:new({
     command = cmd,
     args = job_args,

@@ -2,11 +2,9 @@ local popup = require("plenary.popup")
 local logger = require("cmake-tools.log")
 
 local function create_window(title)
-  local config = {} -- todo
-  local width = config.width or 60
-  local height = config.height or 10
-  local borderchars = config.borderchars
-      or { "─", "│", "─", "│", "╭", "╮", "╯", "╰" }
+  local width = 80
+  local height = 20
+  local borderchars = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" }
   local bufnr = vim.api.nvim_create_buf(false, false)
 
   local win_id, win = popup.create(bufnr, {

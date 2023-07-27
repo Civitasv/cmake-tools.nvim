@@ -14,8 +14,36 @@ local environment = {}
 --   }
 -- }
 
+-- terminal needs strings to be esacaped
+-- for quickfix (plenary.job) dont escape strings because of how it's being passed to cmake.
+-- We dont want additional " " in the env vars
+local function unroll(env, escape)
+  local res = {}
+
+  for k, v in pairs(env) do
+    local var = k
+    if type(v) == "string" then
+      if escape then
+        var = var .. '="' .. v .. '"'
+      else
+        var = var .. "=" .. v
+      end
+      table.insert(res, var)
+    elseif type(v) == "number" then
+      var = var .. "=" .. v
+      table.insert(res, var)
+    else
+      -- unsupported type
+      goto ignore
+    end
+    ::ignore::
+  end
+
+  return res
+end
+
 -- parse and merge configured environment variables
-function environment.get_build_environment(config)
+function environment.get_build_environment_tbl(config)
   local env = {}
 
   local buildenv = nil
@@ -30,8 +58,12 @@ function environment.get_build_environment(config)
   return env
 end
 
+function environment.get_build_environment(config, escape)
+  return unroll(environment.get_build_environment_tbl(config), escape)
+end
+
 -- parse and merge configured environment variables
-function environment.get_run_environment(config, target)
+function environment.get_run_environment(config, target, escape)
   local env = {}
 
   local runenv = nil
@@ -39,7 +71,7 @@ function environment.get_run_environment(config, target)
     runenv = loadstring(config.run_environments[target])()
   end
 
-  local buildenv = environment.get_build_environment(config)
+  local buildenv = environment.get_build_environment_tbl(config)
 
   if runenv ~= nil then
     if runenv.inherit_build_environment ~= nil and runenv.inherit_build_environment == true then
@@ -53,7 +85,8 @@ function environment.get_run_environment(config, target)
       env = vim.tbl_deep_extend("force", env, buildenv)
     end
   end
-  return env
+
+  return unroll(env, escape)
 end
 
 return environment
