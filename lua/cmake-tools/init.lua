@@ -586,6 +586,15 @@ if has_nvim_dap then
       return
     end
 
+    local env = environment.get_run_environment_table(
+      config,
+      opt.target and opt.target or config.launch_target
+    )
+    -- nvim.dap expects all env vars as string
+    for index, value in pairs(env) do
+      env[index] = tostring(value)
+    end
+
     local can_debug_result = config:validate_for_debugging()
     if can_debug_result.code == Types.CANNOT_DEBUG_LAUNCH_TARGET then
       -- Select build type to debug
@@ -604,6 +613,7 @@ if has_nvim_dap then
           program = result.data,
           cwd = utils.get_path(result.data, "/"),
           args = opt.args,
+          env = env,
         }
         -- close cmake console
         cmake.close()
@@ -645,6 +655,7 @@ if has_nvim_dap then
             program = target_path,
             cwd = utils.get_path(result.data, "/"),
             args = cmake:get_launch_args(),
+            env = env,
           }
           -- close cmake console
           cmake.close()

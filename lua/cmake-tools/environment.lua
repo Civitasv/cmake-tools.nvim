@@ -45,7 +45,7 @@ local function unroll(env, escape)
 end
 
 -- parse and merge configured environment variables
-function environment.get_build_environment_tbl(config)
+function environment.get_build_environment_table(config)
   local env = {}
 
   local buildenv = nil
@@ -61,11 +61,11 @@ function environment.get_build_environment_tbl(config)
 end
 
 function environment.get_build_environment(config, escape)
-  return unroll(environment.get_build_environment_tbl(config), escape)
+  return unroll(environment.get_build_environment_table(config), escape)
 end
 
 -- parse and merge configured environment variables
-function environment.get_run_environment(config, target, escape)
+function environment.get_run_environment_table(config, target)
   local env = {}
 
   local runenv = nil
@@ -73,7 +73,7 @@ function environment.get_run_environment(config, target, escape)
     runenv = loadstring(config.run_environments[target])()
   end
 
-  local buildenv = environment.get_build_environment_tbl(config)
+  local buildenv = environment.get_build_environment_table(config)
 
   if runenv ~= nil then
     if runenv.inherit_build_environment ~= nil and runenv.inherit_build_environment == true then
@@ -86,7 +86,11 @@ function environment.get_run_environment(config, target, escape)
     env = vim.tbl_deep_extend("force", env, buildenv)
   end
 
-  return unroll(env, escape)
+  return env
+end
+
+function environment.get_run_environment(config, target, escape)
+  return unroll(environment.get_run_environment_table(config, target), escape)
 end
 
 return environment
