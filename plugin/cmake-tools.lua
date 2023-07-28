@@ -124,7 +124,7 @@ if has_nvim_dap then
       desc = "CMake debug",
     }
   )
-  
+
   --- CMake quick debug
   vim.api.nvim_create_user_command(
     "CMakeQuickDebug", -- name
