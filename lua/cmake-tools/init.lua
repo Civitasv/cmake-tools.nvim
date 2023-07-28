@@ -86,7 +86,7 @@ function cmake.generate(opt, callback)
     -- if exsist preset file and set configure preset, then
     -- set build directory to the `binaryDir` option of `configurePresets`
     local build_directory =
-        presets.get_build_dir(presets.get_preset_by_name(config.configure_preset, "configurePresets"))
+      presets.get_build_dir(presets.get_preset_by_name(config.configure_preset, "configurePresets"))
     if build_directory ~= "" then
       config:update_build_dir(build_directory)
     end
@@ -104,8 +104,8 @@ function cmake.generate(opt, callback)
     if const.cmake_always_use_terminal then
       if full_cmd ~= "" then
         full_cmd = full_cmd
-            .. " && "
-            .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
+          .. " && "
+          .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
       else
         full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, env, args)
       end
@@ -443,17 +443,17 @@ function cmake.run(opt)
 
       if full_cmd ~= "" then
         full_cmd = 'cd "'
-            .. vim.loop.cwd()
-            .. '" && '
-            .. full_cmd
-            .. " && "
-            .. terminal.prepare_cmd_for_execute(
-              target_path,
-              opt.args,
-              launch_path,
-              opt.wrap_call,
-              environment.get_run_environment(config, opt.target, true)
-            )
+          .. vim.loop.cwd()
+          .. '" && '
+          .. full_cmd
+          .. " && "
+          .. terminal.prepare_cmd_for_execute(
+            target_path,
+            opt.args,
+            launch_path,
+            opt.wrap_call,
+            environment.get_run_environment(config, opt.target, true)
+          )
       else
         full_cmd = terminal.prepare_cmd_for_execute(
           target_path,
@@ -484,9 +484,9 @@ function cmake.run(opt)
         end)
       end
     elseif
-        result_code == Types.NOT_SELECT_LAUNCH_TARGET
-        or result_code == Types.NOT_A_LAUNCH_TARGET
-        or result_code == Types.NOT_EXECUTABLE
+      result_code == Types.NOT_SELECT_LAUNCH_TARGET
+      or result_code == Types.NOT_A_LAUNCH_TARGET
+      or result_code == Types.NOT_EXECUTABLE
     then
       -- Re Select a target that could launch
       return cmake.select_launch_target(function()
@@ -504,17 +504,17 @@ function cmake.run(opt)
           -- This jumps to the working directory, builds the target and then launches it inside the launch terminal
           -- Hence, "cd ".. vim.cwd .. " && "..    The \" is for path handling, specifically in win32
           full_cmd = 'cd "'
-              .. vim.loop.cwd()
-              .. '" && '
-              .. full_cmd
-              .. " && "
-              .. terminal.prepare_cmd_for_execute(
-                target_path,
-                cmake:get_launch_args(),
-                launch_path,
-                opt.wrap_call,
-                environment.get_run_environment(config, config.launch_target, true)
-              )
+            .. vim.loop.cwd()
+            .. '" && '
+            .. full_cmd
+            .. " && "
+            .. terminal.prepare_cmd_for_execute(
+              target_path,
+              cmake:get_launch_args(),
+              launch_path,
+              opt.wrap_call,
+              environment.get_run_environment(config, config.launch_target, true)
+            )
         else
           full_cmd = terminal.prepare_cmd_for_execute(
             target_path,
@@ -625,15 +625,15 @@ if has_nvim_dap then
           end)
         end
       elseif
-          result_code == Types.NOT_SELECT_LAUNCH_TARGET
-          or result_code == Types.NOT_A_LAUNCH_TARGET
-          or result_code == Types.NOT_EXECUTABLE
+        result_code == Types.NOT_SELECT_LAUNCH_TARGET
+        or result_code == Types.NOT_A_LAUNCH_TARGET
+        or result_code == Types.NOT_EXECUTABLE
       then
         -- Re Select a target that could launch
         return cmake.select_launch_target(function()
-              cmake.debug(opt, callback)
-            end),
-            true
+          cmake.debug(opt, callback)
+        end),
+          true
       else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
         -- Build select launch target every time
         config.build_target = config.launch_target
@@ -788,7 +788,7 @@ function cmake.select_configure_preset(callback)
   if presets_file then
     local configure_preset_names = presets.parse("configurePresets", { include_hidden = false })
     local configure_presets =
-        presets.parse_name_mapped("configurePresets", { include_hidden = false })
+      presets.parse_name_mapped("configurePresets", { include_hidden = false })
     local format_preset_name = function(p_name)
       local p = configure_presets[p_name]
       return p.displayName or p.name
@@ -806,7 +806,7 @@ function cmake.select_configure_preset(callback)
         if config.configure_preset ~= choice then
           config.configure_preset = choice
           config.build_type =
-              presets.get_build_type(presets.get_preset_by_name(choice, "configurePresets"))
+            presets.get_build_type(presets.get_preset_by_name(choice, "configurePresets"))
         end
         if type(callback) == "function" then
           callback()
@@ -1072,9 +1072,9 @@ function cmake.compile_commands_from_soft_link(cmake_always_use_terminal, cmake_
   end
 
   local source = vim.loop.cwd()
-      .. "/"
-      .. config.build_directory.filename
-      .. "/compile_commands.json"
+    .. "/"
+    .. config.build_directory.filename
+    .. "/compile_commands.json"
   local destination = vim.loop.cwd() .. "/compile_commands.json"
   if cmake_always_use_terminal or utils.file_exists(source) then
     utils.softlink(source, destination, {

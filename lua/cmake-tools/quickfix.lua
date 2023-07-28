@@ -78,8 +78,8 @@ function quickfix.has_active_job()
   end
   log.error(
     "A CMake task is already running: "
-    .. quickfix.job.command
-    .. " Stop it before trying to run a new CMake task."
+      .. quickfix.job.command
+      .. " Stop it before trying to run a new CMake task."
   )
   return true
 end

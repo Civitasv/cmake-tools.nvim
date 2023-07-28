@@ -6,10 +6,10 @@ local syaml = require("simpleyaml")
 -- fallback if no cmake-variants.[yaml|json] is found
 local DEFAULT_VARIANTS = { "Debug", "Release", "RelWithDebInfo", "MinSizeRel" }
 local DEFAULT_VARIANTS_VAL = {
-  { short = "Debug",          long = "" },
-  { short = "Release",        long = "" },
+  { short = "Debug", long = "" },
+  { short = "Release", long = "" },
   { short = "RelWithDebInfo", long = "" },
-  { short = "MinSizeRel",     long = "" },
+  { short = "MinSizeRel", long = "" },
 }
 
 -- checks if there is a cmake-variants.[yaml|json] file and parses it to a Lua table
@@ -21,10 +21,10 @@ function variants.parse()
     local file = nil
     for _, f in ipairs(files) do -- iterate over files in current directory
       if
-          f == "cmake-variants.yaml"
-          or f == "cmake-variants.json"
-          or f == "CMakeVariants.yaml"
-          or f == "CMakeVariants.json"
+        f == "cmake-variants.yaml"
+        or f == "cmake-variants.json"
+        or f == "CMakeVariants.yaml"
+        or f == "CMakeVariants.json"
       then -- if a variants config file is found
         file = vim.fn.resolve("./" .. f)
         break
@@ -38,11 +38,11 @@ function variants.parse()
 
   local config = nil
 
-  local file = findcfg()           -- check for config file
-  if file then                     -- if one is found ...
+  local file = findcfg() -- check for config file
+  if file then -- if one is found ...
     if file:match(".*%.yaml") then -- .. and is a YAML file, parse it with simpleyaml
       config = syaml.parse_file(file)
-    else                           -- otherwise parse it with neovim's JSON parser
+    else -- otherwise parse it with neovim's JSON parser
       config = vim.fn.json_decode(vim.fn.readfile(file))
     end
   end
@@ -56,10 +56,10 @@ function variants.get(variants_opt)
   local function collect_choices(config)
     local choices = {}
 
-    for _, option in pairs(config) do              -- for all options
+    for _, option in pairs(config) do -- for all options
       local cs = {}
       for _, choice in pairs(option["choices"]) do -- for all choices of that option
-        table.insert(cs, choice)                   -- collect their short name
+        table.insert(cs, choice) -- collect their short name
       end
       table.insert(choices, cs)
     end
@@ -161,14 +161,14 @@ function variants.get(variants_opt)
   -- start parsing
 
   local config = variants.parse()
-  if config then                                      -- if a config is found
-    local choices = collect_choices(config)           -- collect all possible choices from it
+  if config then -- if a config is found
+    local choices = collect_choices(config) -- collect all possible choices from it
     local combinations = create_combinations(choices) -- calculate the cartesian product
     table.sort(combinations, function(lhs, rhs)
       return lhs.short < rhs.short
     end) -- sort lexicographically
     return combinations
-  end    -- otherwise return the defaults
+  end -- otherwise return the defaults
 
   return DEFAULT_VARIANTS_VAL
 end
@@ -190,11 +190,11 @@ function variants.debuggable(variant)
   -- for each choice in the chosen variant
   for choice in string.gmatch(variant, "%s*([^+]+)%s*") do -- split variant string on + to get choices
     local choice_found = false
-    choice = choice:match("^%s*(.-)%s*$")                  -- trim (or come up with a better regex above)
-    for _, option in pairs(config) do                      -- search for the choice
+    choice = choice:match("^%s*(.-)%s*$") -- trim (or come up with a better regex above)
+    for _, option in pairs(config) do -- search for the choice
       for _, chc in pairs(option["choices"]) do
         local short = chc["short"]
-        if choice == short then           -- if the choice is found, add to the argument list according to the defined keys
+        if choice == short then -- if the choice is found, add to the argument list according to the defined keys
           if chc["buildType"] ~= nil then -- CMAKE_BUILD_TYPE
             return chc["buildType"] == "Debug" or chc["buildType"] == "RelWithDebInfo"
           end
@@ -244,11 +244,11 @@ function variants.build_arglist(variant)
   -- for each choice in the chosen variant
   for choice in string.gmatch(variant, "%s*([^+]+)%s*") do -- split variant string on + to get choices
     local choice_found = false
-    choice = choice:match("^%s*(.-)%s*$")                  -- trim (or come up with a better regex above)
-    for _, option in pairs(config) do                      -- search for the choice
+    choice = choice:match("^%s*(.-)%s*$") -- trim (or come up with a better regex above)
+    for _, option in pairs(config) do -- search for the choice
       for _, chc in pairs(option["choices"]) do
         local short = chc["short"]
-        if choice == short then           -- if the choice is found, add to the argument list according to the defined keys
+        if choice == short then -- if the choice is found, add to the argument list according to the defined keys
           if chc["buildType"] ~= nil then -- CMAKE_BUILD_TYPE
             add_args({ "-DCMAKE_BUILD_TYPE=" .. chc["buildType"] })
           end

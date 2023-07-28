@@ -15,10 +15,10 @@ function presets.check()
     local presetFiles = {}
     for _, f in ipairs(files) do -- iterate over files in current directory
       if
-          f == "CMakePresets.json"
-          or f == "CMakeUserPresets.json"
-          or f == "cmake-presets.json"
-          or f == "cmake-user-presets.json"
+        f == "CMakePresets.json"
+        or f == "CMakeUserPresets.json"
+        or f == "cmake-presets.json"
+        or f == "cmake-user-presets.json"
       then -- if a preset file is found
         presetFiles[#presetFiles + 1] = vim.fn.resolve("./" .. f)
       end

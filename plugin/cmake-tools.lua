@@ -8,9 +8,9 @@ local has_nvim_dap, _ = pcall(require, "dap")
 
 --- CMake
 vim.api.nvim_create_user_command(
-  "CMakeGenerate",      -- name
+  "CMakeGenerate", -- name
   cmake_tools.generate, -- command
-  {                     -- opts
+  { -- opts
     nargs = "*",
     bang = true,
     desc = "CMake configure",
@@ -19,9 +19,9 @@ vim.api.nvim_create_user_command(
 
 --- CMake clean
 vim.api.nvim_create_user_command(
-  "CMakeClean",      -- name
+  "CMakeClean", -- name
   cmake_tools.clean, -- command
-  {                  -- opts
+  { -- opts
     nargs = 0,
     desc = "Clean CMake result",
   }
@@ -29,9 +29,9 @@ vim.api.nvim_create_user_command(
 
 --- CMake build
 vim.api.nvim_create_user_command(
-  "CMakeBuild",      -- name
+  "CMakeBuild", -- name
   cmake_tools.build, -- command
-  {                  -- opts
+  { -- opts
     nargs = "*",
     bang = true,
     desc = "CMake build",
@@ -40,9 +40,9 @@ vim.api.nvim_create_user_command(
 
 --- CMake quick build
 vim.api.nvim_create_user_command(
-  "CMakeQuickBuild",       -- name
+  "CMakeQuickBuild", -- name
   cmake_tools.quick_build, -- command
-  {                        -- opts
+  { -- opts
     nargs = "?",
     desc = "CMake quick build",
   }
@@ -50,45 +50,45 @@ vim.api.nvim_create_user_command(
 
 --- CMake install
 vim.api.nvim_create_user_command(
-  "CMakeInstall",      -- name
+  "CMakeInstall", -- name
   cmake_tools.install, -- command
-  {                    -- opts
+  { -- opts
     nargs = "*",
     desc = "CMake install",
   }
 )
 --- CMake stop
 vim.api.nvim_create_user_command(
-  "CMakeStop",      -- name
+  "CMakeStop", -- name
   cmake_tools.stop, -- command
-  {                 -- opts
+  { -- opts
     desc = "CMake stop",
   }
 )
 
 --- CMake close
 vim.api.nvim_create_user_command(
-  "CMakeClose",      -- name
+  "CMakeClose", -- name
   cmake_tools.close, -- command
-  {                  -- opts
+  { -- opts
     desc = "Close CMake quickfix window",
   }
 )
 
 --- CMake open
 vim.api.nvim_create_user_command(
-  "CMakeOpen",      -- name
+  "CMakeOpen", -- name
   cmake_tools.open, -- command
-  {                 -- opts
+  { -- opts
     desc = "Open CMake quickfix window",
   }
 )
 
 --- CMake run
 vim.api.nvim_create_user_command(
-  "CMakeRun",      -- name
+  "CMakeRun", -- name
   cmake_tools.run, -- command
-  {                -- opts
+  { -- opts
     nargs = "*",
     desc = "CMake run",
   }
@@ -96,9 +96,9 @@ vim.api.nvim_create_user_command(
 
 --- CMake quick run
 vim.api.nvim_create_user_command(
-  "CMakeQuickRun",       -- name
+  "CMakeQuickRun", -- name
   cmake_tools.quick_run, -- command
-  {                      -- opts
+  { -- opts
     nargs = "*",
     desc = "CMake quick run",
   }
@@ -106,9 +106,9 @@ vim.api.nvim_create_user_command(
 
 --- CMake launch args
 vim.api.nvim_create_user_command(
-  "CMakeLaunchArgs",       -- name
+  "CMakeLaunchArgs", -- name
   cmake_tools.launch_args, -- command
-  {                        -- opts
+  { -- opts
     nargs = "*",
     desc = "CMake launch args",
   }
@@ -117,9 +117,9 @@ vim.api.nvim_create_user_command(
 if has_nvim_dap then
   --- CMake debug
   vim.api.nvim_create_user_command(
-    "CMakeDebug",      -- name
+    "CMakeDebug", -- name
     cmake_tools.debug, -- command
-    {                  -- opts
+    { -- opts
       nargs = "*",
       desc = "CMake debug",
     }
@@ -127,9 +127,9 @@ if has_nvim_dap then
 
   --- CMake quick debug
   vim.api.nvim_create_user_command(
-    "CMakeQuickDebug",       -- name
+    "CMakeQuickDebug", -- name
     cmake_tools.quick_debug, -- command
-    {                        -- opts
+    { -- opts
       nargs = "*",
       desc = "CMake quick debug",
     }
@@ -138,9 +138,9 @@ end
 
 --- CMake select build type
 vim.api.nvim_create_user_command(
-  "CMakeSelectBuildType",        -- name
+  "CMakeSelectBuildType", -- name
   cmake_tools.select_build_type, -- command
-  {                              -- opts
+  { -- opts
     nargs = 0,
     desc = "CMake select build type",
   }
@@ -148,9 +148,9 @@ vim.api.nvim_create_user_command(
 
 --- CMake select kit
 vim.api.nvim_create_user_command(
-  "CMakeSelectKit",       -- name
+  "CMakeSelectKit", -- name
   cmake_tools.select_kit, -- command
-  {                       -- opts
+  { -- opts
     nargs = 0,
     desc = "CMake select cmake kit",
   }
@@ -158,9 +158,9 @@ vim.api.nvim_create_user_command(
 
 --- CMake select configure preset
 vim.api.nvim_create_user_command(
-  "CMakeSelectConfigurePreset",        -- name
+  "CMakeSelectConfigurePreset", -- name
   cmake_tools.select_configure_preset, -- command
-  {                                    -- opts
+  { -- opts
     nargs = 0,
     desc = "CMake select cmake configure preset",
   }
@@ -168,18 +168,18 @@ vim.api.nvim_create_user_command(
 
 --- CMake select build preset
 vim.api.nvim_create_user_command(
-  "CMakeSelectBuildPreset",        -- name
+  "CMakeSelectBuildPreset", -- name
   cmake_tools.select_build_preset, -- command
-  {                                -- opts
+  { -- opts
     nargs = 0,
     desc = "CMake select cmake kit",
   }
 )
 --- CMake select build target
 vim.api.nvim_create_user_command(
-  "CMakeSelectBuildTarget",        -- name
+  "CMakeSelectBuildTarget", -- name
   cmake_tools.select_build_target, -- command
-  {                                -- opts
+  { -- opts
     nargs = 0,
     desc = "CMake select build target",
   }
@@ -187,9 +187,9 @@ vim.api.nvim_create_user_command(
 
 --- CMake select launch target
 vim.api.nvim_create_user_command(
-  "CMakeSelectLaunchTarget",        -- name
+  "CMakeSelectLaunchTarget", -- name
   cmake_tools.select_launch_target, -- command
-  {                                 -- opts
+  { -- opts
     nargs = 0,
     desc = "CMake select launch target",
   }
@@ -197,9 +197,9 @@ vim.api.nvim_create_user_command(
 
 --- CMake configure environment variables for launch target
 vim.api.nvim_create_user_command(
-  "CMakeConfigureRunEnvironment",        -- name
+  "CMakeConfigureRunEnvironment", -- name
   cmake_tools.configure_run_environment, -- command
-  {                                      -- opts
+  { -- opts
     nargs = "*",
     desc = "CMake configure environment variables for launch target",
   }
@@ -207,9 +207,9 @@ vim.api.nvim_create_user_command(
 
 --- CMake configure build environment variables
 vim.api.nvim_create_user_command(
-  "CMakeConfigureBuildEnvironment",        -- name
+  "CMakeConfigureBuildEnvironment", -- name
   cmake_tools.configure_build_environment, -- command
-  {                                        -- opts
+  { -- opts
     nargs = 0,
     desc = "CMake configure environment variables for the generate/build step",
   }

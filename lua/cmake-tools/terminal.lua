@@ -57,8 +57,8 @@ function terminal.new_instance(term_name, opts)
   -- Now create the plit
   vim.cmd(":" .. opts.split_direction .. " " .. opts.split_size .. "sp | :term") -- Creater terminal in a split
   -- local new_name = vim.fn.fnamemodify(term_name, ":t")                           -- Extract only the terminal name and reassign it
-  vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), term_name)           -- Set the buffer name
-  vim.cmd(":setlocal laststatus=3")                                              -- Let there be a single status/lualine in the neovim instance
+  vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), term_name) -- Set the buffer name
+  vim.cmd(":setlocal laststatus=3") -- Let there be a single status/lualine in the neovim instance
 
   -- Renamming a terminal buffer creates a new hidden buffer, so duplicate terminals need to be deleted
   local new_buffers_list = vim.api.nvim_list_bufs()
@@ -241,10 +241,10 @@ function terminal.reposition(opts)
   local final_win_id = -1 -- If -1, then a new window needs to be created, otherwise, we must return an existing winid
   if single_terminal_per_instance then
     if static_window_location then
-      terminal.close_window_from_tabs_with_prefix(true, opts)                             -- Close all cmake windows in all other tabs
+      terminal.close_window_from_tabs_with_prefix(true, opts) -- Close all cmake windows in all other tabs
       local buflist = terminal.check_if_cmake_buffers_are_displayed_across_all_tabs(opts) -- Get list of all buffers that are displayed in current tab
       if next(buflist) then
-        for i = 1, #buflist do                                                            -- Buffers exist in current tab, so close all except first buffer in buflist
+        for i = 1, #buflist do -- Buffers exist in current tab, so close all except first buffer in buflist
           if i > 1 then
             vim.api.nvim_win_close(buflist[i], false)
           end
@@ -252,7 +252,7 @@ function terminal.reposition(opts)
         final_win_id = buflist[1]
       end
     else
-      terminal.close_window_from_tabs_with_prefix(true, opts)                             -- Close all cmake windows in all tabs
+      terminal.close_window_from_tabs_with_prefix(true, opts) -- Close all cmake windows in all tabs
       local buflist = terminal.check_if_cmake_buffers_are_displayed_across_all_tabs(opts) -- Get list of all buffers that are displayed in current tab
       if next(buflist) then
         -- Buffers exist in current tab, so close all buffers in buflist
@@ -467,9 +467,7 @@ function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_ca
     -- Weird windows thing: executables that are not in path only work as ".\executable" and not "executable" on the cmdline (even if focus is in the same directory)
     full_cmd = full_cmd .. ".\\"
   elseif osys.islinux or osys.iswsl or osys.ismac then
-    full_cmd = " " ..
-    full_cmd ..
-    "./"                               -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
+    full_cmd = " " .. full_cmd .. "./" -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
   end
 
   full_cmd = full_cmd .. executable
@@ -497,7 +495,7 @@ function terminal.execute(executable, full_cmd, opts)
   -- Buffer name of executable needs to be set with a prefix
   -- so that the reposition_term() function can find it
   local _, buffer_idx =
-      terminal.create_if_not_exists(prefix .. executable, opts.cmake_terminal_opts)
+    terminal.create_if_not_exists(prefix .. executable, opts.cmake_terminal_opts)
   terminal.id = buffer_idx
 
   -- Reposition the terminal buffer, before sending commands
