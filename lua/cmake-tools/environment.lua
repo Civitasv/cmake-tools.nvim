@@ -1,3 +1,5 @@
+local osys = require("cmake-tools.osys")
+
 local environment = {}
 
 -- expected format:
@@ -15,6 +17,10 @@ local environment = {}
 -- We dont want additional " " in the env vars
 local function unroll(env, escape)
   local res = {}
+
+  if osys.iswin32 then
+    escape = false -- windows wants env vars unescaped -> set VAL=TEST1 TEST2 ...
+  end
 
   for k, v in pairs(env) do
     local var = k
