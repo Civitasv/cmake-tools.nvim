@@ -14,10 +14,12 @@ function presets.check()
     local file = nil
     local presetFiles = {}
     for _, f in ipairs(files) do -- iterate over files in current directory
-      if f == "CMakePresets.json" or
-          f == "CMakeUserPresets.json" or
-          f == "cmake-presets.json" or
-          f == "cmake-user-presets.json" then -- if a preset file is found
+      if
+        f == "CMakePresets.json"
+        or f == "CMakeUserPresets.json"
+        or f == "cmake-presets.json"
+        or f == "cmake-user-presets.json"
+      then -- if a preset file is found
         presetFiles[#presetFiles + 1] = vim.fn.resolve("./" .. f)
       end
     end
@@ -53,15 +55,16 @@ local function decode(file)
   if not data then
     error(string.format("Could not parse %s", file))
   end
-  local includes = data["include"]
-  local isUserPreset = string.find(file, "CMakeUserPresets.json")
+  local includes = data["include"] or {}
+  local isUserPreset = string.find(file:lower(), "user")
   if not includes and isUserPreset then
     local parentDir = vim.fs.dirname(file)
     local parentPreset = parentDir .. "/CMakePresets.json"
+    local parentPresetKebapCase = parentDir .. "/cmake-presets.json"
     if vim.fn.filereadable(parentPreset) then
-      includes = {
-        parentPreset,
-      }
+      includes[#includes + 1] = parentPreset
+    elseif vim.fn.filereadable(parentPresetKebapCase) then
+      includes[#includes + 1] = parentPresetKebapCase
     end
   end
   if not includes then
