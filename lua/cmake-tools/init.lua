@@ -982,6 +982,7 @@ function cmake.configure_run_environment(opt)
 
   if target == nil then
     log.warn("No launch target selected!")
+    return
   end
 
   if not window.is_open() then

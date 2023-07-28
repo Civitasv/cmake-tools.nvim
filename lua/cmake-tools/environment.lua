@@ -83,9 +83,7 @@ function environment.get_run_environment(config, target, escape)
       env = vim.tbl_deep_extend("force", env, runenv.env)
     end
   else
-    if buildenv ~= nil and buildenv.env ~= nil then
-      env = vim.tbl_deep_extend("force", env, buildenv)
-    end
+    env = vim.tbl_deep_extend("force", env, buildenv)
   end
 
   return unroll(env, escape)
