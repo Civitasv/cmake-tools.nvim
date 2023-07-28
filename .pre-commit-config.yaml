@@ -1,0 +1,9 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0  # Use the ref you want to point at
+    hooks:
+      - id: trailing-whitespace
+  - repo: https://github.com/JohnnyMorganz/StyLua
+    rev: v0.17.1
+    hooks:
+      - id: stylua-github
