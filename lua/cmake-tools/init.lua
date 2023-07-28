@@ -1037,6 +1037,17 @@ function cmake.get_launch_args()
   return config.launch_args[cmake.get_launch_target()]
 end
 
+function cmake.get_build_environment()
+  return environment.get_build_environment_table(config)
+end
+
+function cmake.get_run_environment(target)
+  return environment.get_run_environment_table(
+    config,
+    target and target or cmake.get_launch_target()
+  )
+end
+
 function cmake.get_build_type()
   return config.build_type
 end
