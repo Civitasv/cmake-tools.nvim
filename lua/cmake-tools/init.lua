@@ -20,6 +20,7 @@ local full_cmd = ""
 
 --- Setup cmake-tools
 function cmake.setup(values)
+  require("telescope").load_extension("cmake_tools")
   const = vim.tbl_deep_extend("force", const, values)
   config = Config:new(const)
   -- preload the autocmd if the following option is true. only saves cmakelists.txt files
@@ -44,6 +45,10 @@ function cmake.setup(values)
       config.build_preset = old_config.build_preset
     end
   end
+end
+
+function cmake.get_config()
+  return config
 end
 
 --- Generate build system for this project.

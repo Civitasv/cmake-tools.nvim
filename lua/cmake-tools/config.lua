@@ -61,7 +61,35 @@ function Config:generate_query_files()
       )
     end
   end
+
+  local cmakeFiles_file = query_directory / "cmakeFiles-v1"
+  if not cmakeFiles_file:is_file() then
+    if not cmakeFiles_file:touch() then
+      return Result:new(
+        Types.CANNOT_CREATE_CODEMODEL_QUERY_FILE,
+        nil,
+        "Unable to create file " .. cmakeFiles_file.filename
+      )
+    end
+  end
+
   return Result:new(Types.SUCCESS, true, "yeah, that could be")
+end
+
+function Config:get_cmakeFiles()
+  -- if reply_directory exists
+  local reply_directory = Path:new(vim.loop.cwd(), self.reply_directory)
+  if not reply_directory:exists() then
+    return Result:new(Types.NOT_CONFIGURED, nil, "Configure fail")
+  end
+
+  local found_files = scandir.scan_dir(reply_directory.filename, { search_pattern = "cmakeFiles*" })
+  if #found_files == 0 then
+    return Result:new(Types.CANNOT_FIND_CODEMODEL_FILE, nil, "Unable to find codemodel file")
+  end
+  local codemodel = Path:new(found_files[1])
+  local codemodel_json = vim.json.decode(codemodel:read())
+  return Result:new(Types.SUCCESS, codemodel_json["inputs"], "find it")
 end
 
 function Config:get_codemodel_targets()
