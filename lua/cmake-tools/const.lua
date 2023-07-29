@@ -44,9 +44,9 @@ local const = {
     focus_on_launch_terminal = false, -- Focus on cmake launch terminal when executable target in launched.
   },
   cmake_notifications = {
-    enabled = true,                                                 -- show cmake execution progress in nvim-notify
+    enabled = true, -- show cmake execution progress in nvim-notify
     spinner = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }, -- icons used for progress display
-    refresh_rate_ms = 100,                                          -- how often to iterate icons
+    refresh_rate_ms = 100, -- how often to iterate icons
   },
 }
 
