@@ -45,7 +45,7 @@ local function append_to_quickfix(error, data)
   end
 
   if line and line:match("^%[%s*(%d+)%s*%%%]") then -- only show lines containing build progress e.g [ 12%]
-    quickfix.notification.id = quickfix.notify(     -- notify with percentage and message
+    quickfix.notification.id = quickfix.notify( -- notify with percentage and message
       line,
       quickfix.notification.level,
       { replace = quickfix.notification.id, title = "CMakeTools" }
@@ -75,7 +75,7 @@ function quickfix.run(cmd, env, args, opts)
     quickfix.notification.level = "info"
 
     quickfix.notification.id =
-        quickfix.notify(cmd, quickfix.notification.level, { title = "CMakeTools" })
+      quickfix.notify(cmd, quickfix.notification.level, { title = "CMakeTools" })
     quickfix.update_spinner()
   end
 
@@ -126,8 +126,8 @@ function quickfix.has_active_job()
   end
   log.error(
     "A CMake task is already running: "
-    .. quickfix.job.command
-    .. " Stop it before trying to run a new CMake task."
+      .. quickfix.job.command
+      .. " Stop it before trying to run a new CMake task."
   )
   return true
 end

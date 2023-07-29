@@ -1,7 +1,7 @@
 local Result = {
   code = 0,
   data = nil,
-  message = ""
+  message = "",
 }
 
 function Result:new(code, data, message)

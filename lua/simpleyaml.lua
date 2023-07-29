@@ -38,26 +38,16 @@ function simpleyaml.parse_file(path)
 
   -- helper function to insert a new `key` at `nestingLevel` of `tab`
   local function insertKey(key, nestingLevel, tab)
-    atNestingLevel(
-      nestingLevel,
-      function(k, t)
-        table.insert(t, { key = k, val = {} })
-      end,
-      key,
-      tab
-    )
+    atNestingLevel(nestingLevel, function(k, t)
+      table.insert(t, { key = k, val = {} })
+    end, key, tab)
   end
 
   -- helper function to insert value `str` at `nestingLevel` of `tab`
   local function insertString(str, nestingLevel, tab)
-    atNestingLevel(
-      nestingLevel,
-      function(s, t)
-        t[#t].val = s
-      end,
-      str,
-      tab
-    )
+    atNestingLevel(nestingLevel, function(s, t)
+      t[#t].val = s
+    end, str, tab)
   end
 
   -- flatten parsing table by removing indices, so the resulting table can directly be indexed with the YAML keys
@@ -82,12 +72,17 @@ function simpleyaml.parse_file(path)
   end
 
   local nestingLevel = 0 -- current nesting level
-  local indents      = {} -- stack of indents
-  local parsed       = {} -- resulting table
+  local indents = {} -- stack of indents
+  local parsed = {} -- resulting table
 
   for line in file:lines() do -- for all lines in the file
     -- goto next line if current line is empty, a comment, the document start, or a directive
-    if line:gsub("%s*", "") == "" or line:find("^#") ~= nil or line:find("^---") ~= nil or line:find("^%%") ~= nil then
+    if
+      line:gsub("%s*", "") == ""
+      or line:find("^#") ~= nil
+      or line:find("^---") ~= nil
+      or line:find("^%%") ~= nil
+    then
       goto cont_processing_lines
     end
 

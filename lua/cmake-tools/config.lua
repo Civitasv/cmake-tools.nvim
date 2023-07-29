@@ -32,20 +32,8 @@ end
 
 function Config:update_build_dir(build_dir)
   self.build_directory = Path:new(build_dir)
-  self.query_directory = Path:new(
-    build_dir,
-    ".cmake",
-    "api",
-    "v1",
-    "query"
-  )
-  self.reply_directory = Path:new(
-    build_dir,
-    ".cmake",
-    "api",
-    "v1",
-    "reply"
-  )
+  self.query_directory = Path:new(build_dir, ".cmake", "api", "v1", "query")
+  self.reply_directory = Path:new(build_dir, ".cmake", "api", "v1", "reply")
 end
 
 function Config:generate_build_directory()
@@ -83,10 +71,7 @@ function Config:get_codemodel_targets()
     return Result:new(Types.NOT_CONFIGURED, nil, "Configure fail")
   end
 
-  local found_files = scandir.scan_dir(
-    reply_directory.filename,
-    { search_pattern = "codemodel*" }
-  )
+  local found_files = scandir.scan_dir(reply_directory.filename, { search_pattern = "codemodel*" })
   if #found_files == 0 then
     return Result:new(Types.CANNOT_FIND_CODEMODEL_FILE, nil, "Unable to find codemodel file")
   end
@@ -264,7 +249,7 @@ local function get_targets(config, opt)
       local type = target_info["type"]:lower():gsub("_", " ")
       local display_name = target_name .. " (" .. type .. ")"
       local path = target_info["paths"]["build"]
-      if (target_name_on_disk ~= nil) then -- only executables have name on disk?
+      if target_name_on_disk ~= nil then -- only executables have name on disk?
         path = path .. "/" .. target_name_on_disk
       end
       local abs_path = ""
