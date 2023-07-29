@@ -1,6 +1,7 @@
 local osys = require("cmake-tools.osys")
 local utils = require("cmake-tools.utils")
 
+
 local session = {
   dir = {
     unix = vim.fn.expand("~") .. "/.cache/cmake_tools_nvim/",
@@ -24,7 +25,9 @@ end
 local function get_current_path()
   local current_path = vim.loop.cwd()
   local clean_path = current_path:gsub("/", "")
-  return get_cache_path() .. clean_path .. ".lua"
+  clean_path = clean_path:gsub("\\", "")
+  clean_path = clean_path:gsub(":", "")
+  return get_cache_path() .. clean_path .. ".lua";
 end
 
 local function init_cache()
@@ -40,7 +43,9 @@ local function init_session()
   local path = get_current_path()
   if not utils.file_exists(path) then
     local file = io.open(path, 'w')
-    file:close()
+    if file then
+      file:close()
+    end
   end
 end
 
