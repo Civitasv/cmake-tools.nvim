@@ -1,5 +1,6 @@
 -- cmake-tools's API
 local has_nvim_dap, dap = pcall(require, "dap")
+local has_telescope, telescope = pcall(require, "telescope")
 local utils = require("cmake-tools.utils")
 local Types = require("cmake-tools.types")
 local const = require("cmake-tools.const")
@@ -8,9 +9,9 @@ local variants = require("cmake-tools.variants")
 local kits = require("cmake-tools.kits")
 local presets = require("cmake-tools.presets")
 local log = require("cmake-tools.log")
-local osys = require("cmake-tools.osys")
 local terminal = require("cmake-tools.terminal")
 local _session = require("cmake-tools.session")
+local file_picker = require("cmake-tools.file_picker")
 
 local config = Config:new(const)
 
@@ -20,6 +21,9 @@ local full_cmd = ""
 
 --- Setup cmake-tools
 function cmake.setup(values)
+  if has_telescope then
+    telescope.load_extension("cmake_tools")
+  end
   const = vim.tbl_deep_extend("force", const, values)
   config = Config:new(const)
   -- preload the autocmd if the following option is true. only saves cmakelists.txt files
@@ -44,6 +48,10 @@ function cmake.setup(values)
       config.build_preset = old_config.build_preset
     end
   end
+end
+
+function cmake.get_config()
+  return config
 end
 
 --- Generate build system for this project.
@@ -509,6 +517,47 @@ function cmake.run(opt)
         })
         full_cmd = ""
       end)
+    end
+  end
+end
+
+if has_telescope then
+  function cmake.show_target_files(opt)
+    -- if no target was supplied, query via ui select
+    if opt.fargs[1] == nil then
+      if utils.has_active_job(const.cmake_always_use_terminal) then
+        return
+      end
+
+      if not (config.build_directory and config.build_directory:exists()) then
+        -- configure it
+        return cmake.generate({ bang = false, fargs = {} }, function()
+          cmake.show(opt)
+        end)
+      end
+
+      local targets_res = config:build_targets()
+      local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
+
+      for idx, v in ipairs(targets) do
+        if v == "all" then -- this default target does not exist in the code model
+          table.remove(targets, idx)
+          table.remove(display_targets, idx)
+        end
+      end
+
+      vim.ui.select(
+        display_targets,
+        { prompt = "Select target to run" },
+        vim.schedule_wrap(function(_, idx)
+          if not idx then
+            return
+          end
+          file_picker.show_target_files(targets[idx])
+        end)
+      )
+    else
+      file_picker.show_target_files(opt.fargs[1])
     end
   end
 end

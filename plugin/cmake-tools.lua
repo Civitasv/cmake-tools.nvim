@@ -194,3 +194,13 @@ vim.api.nvim_create_user_command(
     desc = "CMake select launch target",
   }
 )
+
+--- CMake quick run
+vim.api.nvim_create_user_command(
+  "CMakeShowTargetFiles", -- name
+  cmake_tools.show_target_files, -- command
+  { -- opts
+    nargs = "*",
+    desc = "CMake show cmake model files or target",
+  }
+)
