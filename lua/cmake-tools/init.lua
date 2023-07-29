@@ -134,6 +134,7 @@ function cmake.generate(opt, callback)
         cmake_launch_path = vim.loop.cwd(),
         cmake_always_use_terminal = const.cmake_always_use_terminal,
         cmake_quickfix_opts = const.cmake_quickfix_opts,
+        cmake_notifications = const.cmake_notifications,
       })
     end
   end
@@ -211,6 +212,7 @@ function cmake.generate(opt, callback)
       cmake_launch_path = vim.loop.cwd(),
       cmake_always_use_terminal = const.cmake_always_use_terminal,
       cmake_quickfix_opts = const.cmake_quickfix_opts,
+      cmake_notifications = const.cmake_notifications,
     })
   end
 end
@@ -255,6 +257,7 @@ function cmake.clean(callback)
       cmake_launch_path = vim.loop.cwd(),
       cmake_always_use_terminal = const.cmake_always_use_terminal,
       cmake_quickfix_opts = const.cmake_quickfix_opts,
+      cmake_notifications = const.cmake_notifications,
     })
   end
 end
@@ -341,6 +344,7 @@ function cmake.build(opt, callback)
       cmake_launch_path = vim.loop.cwd(),
       cmake_always_use_terminal = const.cmake_always_use_terminal,
       cmake_quickfix_opts = const.cmake_quickfix_opts,
+      cmake_notifications = const.cmake_notifications,
     })
   end
 end
@@ -409,6 +413,7 @@ function cmake.install(opt)
     cmake_always_use_terminal = const.cmake_always_use_terminal,
     cmake_quickfix_opts = const.cmake_quickfix_opts,
     cmake_terminal_opts = const.cmake_terminal_opts,
+    cmake_notifications = const.cmake_notifications,
   })
 end
 
