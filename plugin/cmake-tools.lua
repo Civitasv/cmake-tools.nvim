@@ -195,6 +195,7 @@ vim.api.nvim_create_user_command(
   }
 )
 
+
 --- CMake configure environment variables for launch target
 vim.api.nvim_create_user_command(
   "CMakeTargetSettings", -- name
