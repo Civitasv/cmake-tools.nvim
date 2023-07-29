@@ -41,7 +41,7 @@ local function init_session()
 
   local path = get_current_path()
   if not utils.file_exists(path) then
-    local file = io.open(path, 'w')
+    local file = io.open(path, "w")
     if file then
       file:close()
     end
