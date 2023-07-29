@@ -438,13 +438,21 @@ function terminal.get_buffers_with_prefix(prefix)
   return filtered_buffers
 end
 
-function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_call)
+function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_call, env)
   local full_cmd = ""
   executable = vim.fn.fnamemodify(executable, ":t")
 
   -- Launch form executable's build directory by default
   launch_path = terminal.prepare_launch_path(launch_path)
   full_cmd = "cd " .. launch_path .. " &&"
+
+  if osys.iswin32 then
+    for _, v in ipairs(env) do
+      full_cmd = full_cmd .. " set " .. v .. " &&"
+    end
+  else
+    full_cmd = full_cmd .. " " .. table.concat(env, " ")
+  end
 
   -- prepend wrap_call args
   if wrap_call then
@@ -469,6 +477,10 @@ function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_ca
     for _, arg in ipairs(args) do
       full_cmd = full_cmd .. " " .. arg
     end
+  end
+
+  if osys.iswin32 then -- wrap in sub process to prevent env vars from being persited
+    full_cmd = 'cmd /C "' .. full_cmd .. '"'
   end
 
   return full_cmd

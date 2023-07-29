@@ -195,7 +195,27 @@ vim.api.nvim_create_user_command(
   }
 )
 
---- CMake quick run
+--- CMake configure environment variables for launch target
+vim.api.nvim_create_user_command(
+  "CMakeTargetSettings", -- name
+  cmake_tools.target_settings, -- command
+  { -- opts
+    nargs = "*",
+    desc = "configure target settings",
+  }
+)
+
+--- CMake configure build environment variables
+vim.api.nvim_create_user_command(
+  "CMakeSettings", -- name
+  cmake_tools.settings, -- command
+  { -- opts
+    nargs = 0,
+    desc = "configure base settings",
+  }
+)
+
+--- CMake show files
 vim.api.nvim_create_user_command(
   "CMakeShowTargetFiles", -- name
   cmake_tools.show_target_files, -- command

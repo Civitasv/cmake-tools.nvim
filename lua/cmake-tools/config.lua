@@ -18,6 +18,8 @@ local Config = {
   kit = nil,
   configure_preset = nil,
   build_preset = nil,
+  base_settings = nil, -- general config
+  target_settings = {}, -- target specific config
 }
 
 function Config:new(const)

@@ -11,6 +11,8 @@ local presets = require("cmake-tools.presets")
 local log = require("cmake-tools.log")
 local terminal = require("cmake-tools.terminal")
 local _session = require("cmake-tools.session")
+local window = require("cmake-tools.window")
+local environment = require("cmake-tools.environment")
 local file_picker = require("cmake-tools.file_picker")
 
 local config = Config:new(const)
@@ -18,6 +20,15 @@ local config = Config:new(const)
 local cmake = {}
 
 local full_cmd = ""
+
+local base_settings_default = {
+  env = {},
+}
+
+local target_settings_default = {
+  inherit_base_environment = true,
+  env = {},
+}
 
 --- Setup cmake-tools
 function cmake.setup(values)
@@ -46,6 +57,8 @@ function cmake.setup(values)
       config.kit = old_config.kit
       config.configure_preset = old_config.configure_preset
       config.build_preset = old_config.build_preset
+      config.base_settings = old_config.base_settings
+      config.target_settings = old_config.target_settings
     end
   end
 end
@@ -103,11 +116,15 @@ function cmake.generate(opt, callback)
     vim.list_extend(args, config.generate_options)
     vim.list_extend(args, fargs)
 
+    local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
+
     if const.cmake_always_use_terminal then
       if full_cmd ~= "" then
-        full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+        full_cmd = full_cmd
+          .. " && "
+          .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
       else
-        full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+        full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, env, args)
       end
       if type(callback) == "function" then
         callback()
@@ -121,7 +138,7 @@ function cmake.generate(opt, callback)
         full_cmd = ""
       end
     else
-      return utils.run(const.cmake_command, {}, args, {
+      return utils.run(const.cmake_command, env, args, {
         on_success = function()
           if type(callback) == "function" then
             callback()
@@ -181,11 +198,13 @@ function cmake.generate(opt, callback)
   vim.list_extend(args, config.generate_options)
   vim.list_extend(args, fargs)
 
+  local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
+
   if const.cmake_always_use_terminal then
     if full_cmd ~= "" then
-      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     else
-      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     end
     if type(callback) == "function" then
       callback()
@@ -199,7 +218,8 @@ function cmake.generate(opt, callback)
       full_cmd = ""
     end
   else
-    utils.run(const.cmake_command, kit_option.env, args, {
+    env = vim.tbl_extend("keep", env, kit_option.env)
+    utils.run(const.cmake_command, env, args, {
       on_success = function()
         if type(callback) == "function" then
           callback()
@@ -226,12 +246,13 @@ function cmake.clean(callback)
   end
 
   local args = { "--build", config.build_directory.filename, "--target", "clean" }
+  local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
 
   if const.cmake_always_use_terminal then
     if full_cmd ~= "" then
-      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     else
-      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     end
     if type(callback) == "function" then
       return callback()
@@ -244,7 +265,7 @@ function cmake.clean(callback)
       full_cmd = ""
     end
   else
-    return utils.run(const.cmake_command, {}, args, {
+    return utils.run(const.cmake_command, env, args, {
       on_success = function()
         if type(callback) == "function" then
           callback()
@@ -301,6 +322,7 @@ function cmake.build(opt, callback)
   end
 
   vim.list_extend(args, config.build_options)
+  local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
 
   if opt.target ~= nil then
     vim.list_extend(args, { "--target", opt.target })
@@ -315,9 +337,9 @@ function cmake.build(opt, callback)
 
   if const.cmake_always_use_terminal then
     if full_cmd ~= "" then
-      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     else
-      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     end
     if type(callback) == "function" then
       callback()
@@ -330,7 +352,7 @@ function cmake.build(opt, callback)
       full_cmd = ""
     end
   else
-    utils.run(const.cmake_command, {}, args, {
+    utils.run(const.cmake_command, env, args, {
       on_success = function()
         if type(callback) == "function" then
           callback()
@@ -447,10 +469,21 @@ function cmake.run(opt)
           .. '" && '
           .. full_cmd
           .. " && "
-          .. terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path, opt.wrap_call)
+          .. terminal.prepare_cmd_for_execute(
+            target_path,
+            opt.args,
+            launch_path,
+            opt.wrap_call,
+            environment.get_run_environment(config, opt.target, true)
+          )
       else
-        full_cmd =
-          terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path, opt.wrap_call)
+        full_cmd = terminal.prepare_cmd_for_execute(
+          target_path,
+          opt.args,
+          launch_path,
+          opt.wrap_call,
+          environment.get_run_environment(config, opt.target, true)
+        )
       end
       utils.execute(target_path, full_cmd, {
         cmake_always_use_terminal = const.cmake_always_use_terminal,
@@ -501,20 +534,23 @@ function cmake.run(opt)
               target_path,
               cmake:get_launch_args(),
               launch_path,
-              opt.wrap_call
+              opt.wrap_call,
+              environment.get_run_environment(config, config.launch_target, true)
             )
         else
           full_cmd = terminal.prepare_cmd_for_execute(
             target_path,
             cmake:get_launch_args(),
             launch_path,
-            opt.wrap_call
+            opt.wrap_call,
+            environment.get_run_environment(config, config.launch_target, true)
           )
         end
         utils.execute(target_path, full_cmd, {
           cmake_always_use_terminal = const.cmake_always_use_terminal,
           cmake_terminal_opts = const.cmake_terminal_opts,
         })
+
         full_cmd = ""
       end)
     end
@@ -613,6 +649,15 @@ if has_nvim_dap then
       return
     end
 
+    local env = environment.get_run_environment_table(
+      config,
+      opt.target and opt.target or config.launch_target
+    )
+    -- nvim.dap expects all env vars as string
+    for index, value in pairs(env) do
+      env[index] = tostring(value)
+    end
+
     local can_debug_result = config:validate_for_debugging()
     if can_debug_result.code == Types.CANNOT_DEBUG_LAUNCH_TARGET then
       -- Select build type to debug
@@ -631,6 +676,7 @@ if has_nvim_dap then
           program = result.data,
           cwd = utils.get_path(result.data, "/"),
           args = opt.args,
+          env = env,
         }
         -- close cmake console
         cmake.close()
@@ -672,6 +718,7 @@ if has_nvim_dap then
             program = target_path,
             cwd = utils.get_path(result.data, "/"),
             args = cmake:get_launch_args(),
+            env = env,
           }
           -- close cmake console
           cmake.close()
@@ -984,6 +1031,56 @@ function cmake.select_launch_target(callback, regenerate)
   )
 end
 
+function cmake.settings()
+  if not window.is_open() then
+    if not config.base_settings then
+      config.base_settings = {}
+    end
+
+    -- insert missing fields
+    config.base_settings = vim.tbl_deep_extend("keep", config.base_settings, base_settings_default)
+
+    window.set_content("return " .. vim.inspect(config.base_settings))
+    window.title = "CMake-Tools base settings"
+    window.on_save = function(str)
+      local fn = loadstring(str)
+      if fn then
+        config.base_settings = fn()
+      end
+    end
+    window.open()
+  end
+end
+
+function cmake.target_settings(opt)
+  local target = opt.fargs[1] or cmake.get_launch_target()
+
+  if target == nil then
+    log.warn("No launch target selected!")
+    return
+  end
+
+  if not window.is_open() then
+    if not config.target_settings[target] then
+      config.target_settings[target] = {}
+    end
+
+    -- insert missing fields
+    config.target_settings[target] =
+      vim.tbl_deep_extend("keep", config.target_settings[target], target_settings_default)
+
+    window.set_content("return " .. vim.inspect(config.target_settings[target]))
+    window.title = "CMake-Tools settings for " .. target
+    window.on_save = function(str)
+      local fn = loadstring(str)
+      if fn then
+        config.target_settings[target] = fn()
+      end
+    end
+    window.open()
+  end
+end
+
 --[[ Getters ]]
 
 function cmake.get_build_target()
@@ -1003,6 +1100,17 @@ function cmake.get_launch_args()
     return {}
   end
   return config.launch_args[cmake.get_launch_target()]
+end
+
+function cmake.get_build_environment()
+  return environment.get_build_environment_table(config)
+end
+
+function cmake.get_run_environment(target)
+  return environment.get_run_environment_table(
+    config,
+    target and target or cmake.get_launch_target()
+  )
 end
 
 function cmake.get_build_type()
