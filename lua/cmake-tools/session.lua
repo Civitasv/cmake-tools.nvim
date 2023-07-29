@@ -1,7 +1,6 @@
 local osys = require("cmake-tools.osys")
 local utils = require("cmake-tools.utils")
 
-
 local session = {
   dir = {
     unix = vim.fn.expand("~") .. "/.cache/cmake_tools_nvim/",
@@ -27,7 +26,7 @@ local function get_current_path()
   local clean_path = current_path:gsub("/", "")
   clean_path = clean_path:gsub("\\", "")
   clean_path = clean_path:gsub(":", "")
-  return get_cache_path() .. clean_path .. ".lua";
+  return get_cache_path() .. clean_path .. ".lua"
 end
 
 local function init_cache()
