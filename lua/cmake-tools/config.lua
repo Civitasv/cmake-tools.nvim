@@ -14,7 +14,6 @@ local Config = {
   build_type = nil,
   build_target = nil,
   launch_target = nil,
-  launch_args = {},
   kit = nil,
   configure_preset = nil,
   build_preset = nil,

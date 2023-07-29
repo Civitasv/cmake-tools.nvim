@@ -53,12 +53,18 @@ function cmake.setup(values)
       config.build_type = old_config.build_type
       config.build_target = old_config.build_target
       config.launch_target = old_config.launch_target
-      config.launch_args = old_config.launch_args
       config.kit = old_config.kit
       config.configure_preset = old_config.configure_preset
       config.build_preset = old_config.build_preset
       config.base_settings = old_config.base_settings
-      config.target_settings = old_config.target_settings
+      config.target_settings = old_config.target_settings or {}
+
+      -- migrate old launch args to new config
+      if old_config.launch_args then
+        for k, v in pairs(old_config.launch_args) do
+          config.target_settings[k].args = v
+        end
+      end
     end
   end
 end
@@ -638,7 +644,11 @@ function cmake.launch_args(opt)
   end
 
   if cmake.get_launch_target() ~= nil then
-    config.launch_args[cmake.get_launch_target()] = utils.deepcopy(opt.fargs)
+    if not config.target_settings[cmake.get_launch_target()] then
+      config.target_settings[cmake.get_launch_target()] = {}
+    end
+
+    config.target_settings[cmake.get_launch_target()].args = utils.deepcopy(opt.fargs)
   end
 end
 
@@ -1096,10 +1106,18 @@ function cmake.get_model_info()
 end
 
 function cmake.get_launch_args()
-  if cmake.get_launch_target() == nil or config.launch_args[cmake.get_launch_target()] == nil then
+  if cmake.get_launch_target() == nil then
     return {}
   end
-  return config.launch_args[cmake.get_launch_target()]
+
+  if
+    config.target_settings[cmake.get_launch_target()]
+    and config.target_settings[cmake.get_launch_target()].args
+  then
+    return config.target_settings[cmake.get_launch_target()].args
+  end
+
+  return {}
 end
 
 function cmake.get_build_environment()

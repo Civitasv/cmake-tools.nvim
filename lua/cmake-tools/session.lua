@@ -73,7 +73,6 @@ function session.save(config)
     build_type = config.build_type,
     build_target = config.build_target,
     launch_target = config.launch_target,
-    launch_args = config.launch_args,
     kit = config.kit,
     configure_preset = config.configure_preset,
     build_preset = config.build_preset,
