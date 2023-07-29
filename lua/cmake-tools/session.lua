@@ -39,7 +39,8 @@ local function init_session()
 
   local path = get_current_path()
   if not utils.file_exists(path) then
-    os.execute("touch " .. path)
+    local file = io.open(path, 'w')
+    file:close()
   end
 end
 
