@@ -66,7 +66,7 @@ function M.get_cmake_files()
   local cmake = require("cmake-tools")
   local config = cmake.get_config()
 
-  local cmakeFiles = config:get_cmakeFiles()
+  local cmakeFiles = config:get_cmake_files()
 
   if cmakeFiles.code ~= Types.SUCCESS then
     return files

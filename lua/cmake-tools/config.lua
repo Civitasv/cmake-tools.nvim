@@ -76,7 +76,7 @@ function Config:generate_query_files()
   return Result:new(Types.SUCCESS, true, "yeah, that could be")
 end
 
-function Config:get_cmakeFiles()
+function Config:get_cmake_files()
   -- if reply_directory exists
   local reply_directory = Path:new(vim.loop.cwd(), self.reply_directory)
   if not reply_directory:exists() then
