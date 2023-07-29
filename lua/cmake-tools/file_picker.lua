@@ -15,22 +15,26 @@ function M.get_files_from_target(target)
 
   local files = {}
 
-  for _, v in ipairs(info.sourceGroups) do
-    -- ignore cerain files such as .o/.obj files and cmake rules
+  if info.sourceGroups then
+    for _, v in ipairs(info.sourceGroups) do
+      -- ignore cerain files such as .o/.obj files and cmake rules
 
-    if v.name == "CMake Rules" then
-      goto skip
+      if v.name == "CMake Rules" then
+        goto skip
+      end
+
+      if v.name == "Object Libraries" then
+        goto skip
+      end
+
+      if v.sourceIndexes then
+        for _, srcIdx in ipairs(v.sourceIndexes) do
+          table.insert(files, info.sources[srcIdx + 1].path) -- +1 because lua is 1 indexed
+        end
+      end
+
+      ::skip::
     end
-
-    if v.name == "Object Libraries" then
-      goto skip
-    end
-
-    for _, srcIdx in ipairs(v.sourceIndexes) do
-      table.insert(files, info.sources[srcIdx + 1].path) -- +1 because lua is 1 indexed
-    end
-
-    ::skip::
   end
 
   return files
