@@ -42,7 +42,12 @@ local const = {
     start_insert_in_other_tasks = false, -- If you want to enter terminal with :startinsert upon launching all other cmake tasks in the terminal. Generally set as false
     focus_on_main_terminal = false, -- Focus on cmake terminal when cmake task is launched. Only used if cmake_always_use_terminal is true.
     focus_on_launch_terminal = false, -- Focus on cmake launch terminal when executable target in launched.
-  }
+  },
+  cmake_notifications = {
+    enabled = true,                                                 -- show cmake execution progress in nvim-notify
+    spinner = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }, -- icons used for progress display
+    refresh_rate_ms = 100,                                          -- how often to iterate icons
+  },
 }
 
 return const

@@ -1,9 +1,36 @@
 local log = require("cmake-tools.log")
 local Job = require("plenary.job")
+local has_notify, notify = pcall(require, "notify")
 
 local quickfix = {
-  job = nil
+  job = nil,
+  notification = {},
 }
+
+function quickfix.update_spinner() -- update spinner helper function to defer
+  if quickfix.notification.spinner_idx then
+    local new_spinner = (quickfix.notification.spinner_idx + 1) % #quickfix.notification.spinner
+    quickfix.notification.spinner_idx = new_spinner
+
+    quickfix.notification.id = quickfix.notify(nil, quickfix.notification.level, {
+      title = "CMakeTools",
+      hide_from_history = true,
+      icon = quickfix.notification.spinner[new_spinner],
+      replace = quickfix.notification.id,
+    })
+
+    vim.defer_fn(function()
+      quickfix.update_spinner()
+    end, quickfix.notification.refresh_rate_ms)
+  end
+end
+
+function quickfix.notify(msg, lvl, opts)
+  if quickfix.notification.enabled and has_notify then
+    opts.hide_from_history = true
+    return notify(msg, lvl, opts)
+  end
+end
 
 function quickfix.scroll_to_bottom()
   vim.api.nvim_command("cbottom")
@@ -15,6 +42,14 @@ local function append_to_quickfix(error, data)
   -- scroll the quickfix buffer to bottom
   if quickfix.check_scroll() then
     quickfix.scroll_to_bottom()
+  end
+
+  if line and line:match("^%[%s*(%d+)%s*%%%]") then -- only show lines containing build progress e.g [ 12%]
+    quickfix.notification.id = quickfix.notify(     -- notify with percentage and message
+      line,
+      quickfix.notification.level,
+      { replace = quickfix.notification.id, title = "CMakeTools" }
+    )
   end
 end
 
@@ -33,15 +68,36 @@ function quickfix.run(cmd, env, args, opts)
     quickfix.show(opts.cmake_quickfix_opts)
   end
 
+  quickfix.notification = opts.cmake_notifications
+
+  if quickfix.notification.enabled then
+    quickfix.notification.spinner_idx = 1
+    quickfix.notification.level = "info"
+
+    quickfix.notification.id =
+        quickfix.notify(cmd, quickfix.notification.level, { title = "CMakeTools" })
+    quickfix.update_spinner()
+  end
+
   quickfix.job = Job:new({
     command = cmd,
     args = next(env) and { "-E", "env", table.concat(env, " "), "cmake", unpack(args) } or args,
     cwd = vim.loop.cwd(),
     on_stdout = vim.schedule_wrap(append_to_quickfix),
-    on_stderr = vim.schedule_wrap(append_to_quickfix),
+    on_stderr = vim.schedule_wrap(function(err, data)
+      quickfix.level = "warn"
+      append_to_quickfix(err, data)
+    end),
     on_exit = vim.schedule_wrap(function(_, code, signal)
-      append_to_quickfix("Exited with code " .. (signal == 0 and code or 128 + signal))
+      local msg = "Exited with code " .. (signal == 0 and code or 128 + signal)
+      local level = "error"
+      local icon = ""
+
+      append_to_quickfix(msg)
+
       if code == 0 and signal == 0 then
+        level = quickfix.level -- either info or warn
+        icon = ""
         if opts.on_success then
           opts.on_success()
         end
@@ -49,6 +105,14 @@ function quickfix.run(cmd, env, args, opts)
         quickfix.show(opts.cmake_quickfix_opts)
         quickfix.scroll_to_bottom()
       end
+
+      quickfix.notify(
+        msg,
+        level,
+        { icon = icon, replace = quickfix.notification.id, timeout = 3000 }
+      )
+
+      quickfix.notification = {} -- reset and stop update_spinner
     end),
   })
 
