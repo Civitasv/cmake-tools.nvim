@@ -21,6 +21,15 @@ local cmake = {}
 
 local full_cmd = ""
 
+local base_settings_default = {
+  env = {},
+}
+
+local target_settings_default = {
+  inherit_base_environment = true,
+  env = {},
+}
+
 --- Setup cmake-tools
 function cmake.setup(values)
   if has_telescope then
@@ -1025,18 +1034,19 @@ end
 function cmake.settings()
   if not window.is_open() then
     if not config.base_settings then
-      config.base_settings = [[
-return {
-  env = {
-
-  }
-}]]
+      config.base_settings = {}
     end
 
-    window.set_content(config.base_settings)
+    -- insert missing fields
+    config.base_settings = vim.tbl_deep_extend("keep", config.base_settings, base_settings_default)
+
+    window.set_content("return " .. vim.inspect(config.base_settings))
     window.title = "CMake-Tools base settings"
     window.on_save = function(str)
-      config.base_settings = str
+      local fn = loadstring(str)
+      if fn then
+        config.base_settings = fn()
+      end
     end
     window.open()
   end
@@ -1052,19 +1062,20 @@ function cmake.target_settings(opt)
 
   if not window.is_open() then
     if not config.target_settings[target] then
-      config.target_settings[target] = [[
-return {
-  inherit_base_environment = true,
-  env = {
-
-  }
-}]]
+      config.target_settings[target] = {}
     end
 
-    window.set_content(config.target_settings[target])
+    -- insert missing fields
+    config.target_settings[target] =
+      vim.tbl_deep_extend("keep", config.target_settings[target], target_settings_default)
+
+    window.set_content("return " .. vim.inspect(config.target_settings[target]))
     window.title = "CMake-Tools settings for " .. target
     window.on_save = function(str)
-      config.target_settings[target] = str
+      local fn = loadstring(str)
+      if fn then
+        config.target_settings[target] = fn()
+      end
     end
     window.open()
   end

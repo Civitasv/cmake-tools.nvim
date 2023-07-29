@@ -72,8 +72,8 @@ function session.save(config)
     kit = config.kit,
     configure_preset = config.configure_preset,
     build_preset = config.build_preset,
-    base_settings = config.base_settings or "",
-    target_settings = config.target_settings or {},
+    base_settings = config.base_settings,
+    target_settings = config.target_settings,
   }
 
   if file then

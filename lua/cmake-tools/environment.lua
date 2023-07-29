@@ -50,7 +50,7 @@ function environment.get_build_environment_table(config)
 
   local buildenv = nil
   if config.base_settings ~= nil then
-    buildenv = loadstring(config.base_settings)()
+    buildenv = config.base_settings
   end
 
   if buildenv ~= nil and buildenv.env ~= nil then
@@ -70,7 +70,7 @@ function environment.get_run_environment_table(config, target)
 
   local runenv = nil
   if config.target_settings and config.target_settings[target] ~= nil then
-    runenv = loadstring(config.target_settings[target])()
+    runenv = config.target_settings[target]
   end
 
   local buildenv = environment.get_build_environment_table(config)
