@@ -476,6 +476,7 @@ function RunPerf()
   cmake.run { wrap_call = { "perf", "record", "--call-graph", "dwarf" } }
 end
 ```
+
 Calling `:lua RunPerf()` will then run `perf record --call-graph dwarf {target} {launch_args}`.
 
 ## Experimental: Awalys use terminal
@@ -501,10 +502,13 @@ require("nvim-tree").setup {
     },
 }
 ```
+
 ### Terminal type buffer filtering (HardTime.nvim)
+
 When focused on a terminal buffer (not for quickfix-lists, except run terminal), you can check the filetype with `:set ft`. It should display `cmake_tools_terminal`.
 This can be useful for users of plugins like [hardtime.nvim](https://github.com/m4xshen/hardtime.nvim) you can specify the CMake terminal buffers like:
 (Scrolling becomes much easier without having to resort to vim motions like `CTRL H` + `zz` or `CTRL L` + `zz`) in order to scroll the buffer
+
 ```lua
 {
     "m4xshen/hardtime.nvim",
@@ -513,3 +517,15 @@ This can be useful for users of plugins like [hardtime.nvim](https://github.com/
     }
 },
 ```
+
+### Telescope
+
+`cmake-tools` provides Telescope integration.
+
+`Telescope cmake_tools` shows files associated with the cmake project. Ignoring some files such as objects files or cmake rules. (Combines both `sources` and `cmake_files`).
+
+`Telescope cmake_tools sources` shows only source files and files directly added to targets.
+
+`Telescope cmake_tools cmake_files` shows files associated with the cmake-model (CMakeLists files and similar).
+
+Additionaly `CMakeShowTargetFiles` can be used to only show files associated with a specific target.
