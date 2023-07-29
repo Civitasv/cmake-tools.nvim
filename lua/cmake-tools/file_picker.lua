@@ -5,9 +5,9 @@ local conf = require("telescope.config").values
 local Types = require("cmake-tools.types")
 local log = require("cmake-tools.log")
 
-local telescope = {}
+local M = {}
 
-function telescope.get_files_from_target(target)
+function M.get_files_from_target(target)
   local cmake = require("cmake-tools")
   local config = cmake.get_config()
 
@@ -36,7 +36,7 @@ function telescope.get_files_from_target(target)
   return files
 end
 
-function telescope.get_source_files()
+function M.get_source_files()
   local files = {}
   local cmake = require("cmake-tools")
   local config = cmake.get_config()
@@ -48,7 +48,7 @@ function telescope.get_source_files()
   end
 
   for _, target in pairs(targets.data) do
-    for _, v in pairs(telescope.get_files_from_target(target)) do
+    for _, v in pairs(M.get_files_from_target(target)) do
       files[v] = 1
     end
   end
@@ -61,7 +61,7 @@ function telescope.get_source_files()
   return result
 end
 
-function telescope.get_cmake_files()
+function M.get_cmake_files()
   local files = {}
   local cmake = require("cmake-tools")
   local config = cmake.get_config()
@@ -100,7 +100,7 @@ function telescope.get_cmake_files()
   return result
 end
 
-function telescope.show_target_files(target)
+function M.show_target_files(target)
   local cmake = require("cmake-tools")
   local config = cmake.get_config()
 
@@ -113,7 +113,7 @@ function telescope.show_target_files(target)
         .new({}, {
           prompt_title = target,
           finder = finders.new_table({
-            results = telescope.get_files_from_target(v),
+            results = M.get_files_from_target(v),
             entry_maker = make_entry.gen_from_file({}),
           }),
           sorter = conf.file_sorter({}),
@@ -127,4 +127,4 @@ function telescope.show_target_files(target)
   log.warn("Target not found in CodeModel")
 end
 
-return telescope
+return M

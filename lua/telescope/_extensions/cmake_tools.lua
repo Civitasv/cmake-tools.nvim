@@ -2,7 +2,7 @@ local finders = require("telescope.finders")
 local pickers = require("telescope.pickers")
 local make_entry = require("telescope.make_entry")
 local conf = require("telescope.config").values
-local telescope = require("cmake-tools.telescope")
+local file_picker = require("cmake-tools.file_picker")
 
 local function create_picker(title, fn)
   return function(opts)
@@ -26,13 +26,13 @@ end
 return require("telescope").register_extension({
   exports = {
     cmake_tools = create_picker("CMake - Source Files", function()
-      local src = telescope.get_cmake_files()
-      for _, v in ipairs(telescope.get_source_files()) do
+      local src = file_picker.get_cmake_files()
+      for _, v in ipairs(file_picker.get_source_files()) do
         table.insert(src, v)
       end
       return src
     end),
-    cmake_files = create_picker("CMake - CMake Files", telescope.get_cmake_files),
-    cmake_sources = create_picker("CMake - Source Files", telescope.get_source_files),
+    cmake_files = create_picker("CMake - CMake Files", file_picker.get_cmake_files),
+    sources = create_picker("CMake - Source Files", file_picker.get_source_files),
   },
 })

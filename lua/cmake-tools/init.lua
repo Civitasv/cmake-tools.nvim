@@ -9,9 +9,9 @@ local variants = require("cmake-tools.variants")
 local kits = require("cmake-tools.kits")
 local presets = require("cmake-tools.presets")
 local log = require("cmake-tools.log")
-local osys = require("cmake-tools.osys")
 local terminal = require("cmake-tools.terminal")
 local _session = require("cmake-tools.session")
+local file_picker = require("cmake-tools.file_picker")
 
 local config = Config:new(const)
 
@@ -22,7 +22,7 @@ local full_cmd = ""
 --- Setup cmake-tools
 function cmake.setup(values)
   if has_telescope then
-    require("telescope").load_extension("cmake_tools")
+    telescope.load_extension("cmake_tools")
   end
   const = vim.tbl_deep_extend("force", const, values)
   config = Config:new(const)
@@ -546,11 +546,11 @@ if has_telescope then
           if not idx then
             return
           end
-          require("cmake-tools.telescope").show_target_files(targets[idx])
+          file_picker.show_target_files(targets[idx])
         end)
       )
     else
-      require("cmake-tools.telescope").show_target_files(opt.fargs[1])
+      file_picker.show_target_files(opt.fargs[1])
     end
   end
 end
