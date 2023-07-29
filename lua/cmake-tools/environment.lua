@@ -5,7 +5,7 @@ local environment = {}
 -- expected format:
 --
 -- {
---   inherit_build_environment = true/false -- for launch targets only
+--   inherit_base_environment = true/false -- for launch targets only
 --   env = {
 --      VERBOSE = 1,
 --      SOME_PATH = "/tmp/test.txt",
@@ -49,8 +49,8 @@ function environment.get_build_environment_table(config)
   local env = {}
 
   local buildenv = nil
-  if config.build_environment ~= nil then
-    buildenv = loadstring(config.build_environment)()
+  if config.base_settings ~= nil then
+    buildenv = loadstring(config.base_settings)()
   end
 
   if buildenv ~= nil and buildenv.env ~= nil then
@@ -69,14 +69,14 @@ function environment.get_run_environment_table(config, target)
   local env = {}
 
   local runenv = nil
-  if config.run_environments and config.run_environments[target] ~= nil then
-    runenv = loadstring(config.run_environments[target])()
+  if config.target_settings and config.target_settings[target] ~= nil then
+    runenv = loadstring(config.target_settings[target])()
   end
 
   local buildenv = environment.get_build_environment_table(config)
 
   if runenv ~= nil then
-    if runenv.inherit_build_environment ~= nil and runenv.inherit_build_environment == true then
+    if runenv.inherit_base_environment ~= nil and runenv.inherit_base_environment == true then
       env = vim.tbl_deep_extend("force", env, buildenv)
     end
     if runenv.env ~= nil then

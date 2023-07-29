@@ -44,8 +44,8 @@ function cmake.setup(values)
       config.kit = old_config.kit
       config.configure_preset = old_config.configure_preset
       config.build_preset = old_config.build_preset
-      config.build_environment = old_config.build_environment
-      config.run_environments = old_config.run_environments
+      config.base_settings = old_config.base_settings
+      config.target_settings = old_config.target_settings
     end
   end
 end
@@ -973,10 +973,10 @@ function cmake.select_launch_target(callback, regenerate)
   )
 end
 
-function cmake.configure_build_environment()
+function cmake.settings()
   if not window.is_open() then
-    if not config.build_environment then
-      config.build_environment = [[
+    if not config.base_settings then
+      config.base_settings = [[
 return {
   env = {
 
@@ -984,17 +984,17 @@ return {
 }]]
     end
 
-    window.set_content(config.build_environment)
-    window.title = "CMake-Tools build environment variables"
+    window.set_content(config.base_settings)
+    window.title = "CMake-Tools base settings"
     window.on_save = function(str)
-      config.build_environment = str
+      config.base_settings = str
     end
     window.open()
   end
 end
 
-function cmake.configure_run_environment(opt)
-  local target = opt.fargs[1] or cmake.get_build_target()
+function cmake.target_settings(opt)
+  local target = opt.fargs[1] or cmake.get_launch_target()
 
   if target == nil then
     log.warn("No launch target selected!")
@@ -1002,20 +1002,20 @@ function cmake.configure_run_environment(opt)
   end
 
   if not window.is_open() then
-    if not config.run_environments[target] then
-      config.run_environments[target] = [[
+    if not config.target_settings[target] then
+      config.target_settings[target] = [[
 return {
-  inherit_build_environment = true,
+  inherit_base_environment = true,
   env = {
 
   }
 }]]
     end
 
-    window.set_content(config.run_environments[target])
-    window.title = "CMake-Tools environment variables for " .. target
+    window.set_content(config.target_settings[target])
+    window.title = "CMake-Tools settings for " .. target
     window.on_save = function(str)
-      config.run_environments[target] = str
+      config.target_settings[target] = str
     end
     window.open()
   end
