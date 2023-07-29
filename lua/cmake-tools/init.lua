@@ -536,8 +536,15 @@ if has_telescope then
         end)
       end
 
-      local targets_res = config:launch_targets()
+      local targets_res = config:build_targets()
       local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
+
+      for idx, v in ipairs(targets) do
+        if v == "all" then -- this default target does not exist in the code model
+          table.remove(targets, idx)
+          table.remove(display_targets, idx)
+        end
+      end
 
       vim.ui.select(
         display_targets,
