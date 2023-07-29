@@ -214,3 +214,13 @@ vim.api.nvim_create_user_command(
     desc = "configure base settings",
   }
 )
+
+--- CMake show files
+vim.api.nvim_create_user_command(
+  "CMakeShowTargetFiles", -- name
+  cmake_tools.show_target_files, -- command
+  { -- opts
+    nargs = "*",
+    desc = "CMake show cmake model files or target",
+  }
+)

@@ -550,3 +550,15 @@ This can be useful for users of plugins like [hardtime.nvim](https://github.com/
     }
 },
 ```
+
+### Telescope
+
+`cmake-tools` provides Telescope integration.
+
+`Telescope cmake_tools` shows files associated with the cmake project. Ignoring some files such as objects files or cmake rules. (Combines both `sources` and `cmake_files`).
+
+`Telescope cmake_tools sources` shows only source files and files directly added to targets.
+
+`Telescope cmake_tools cmake_files` shows files associated with the cmake-model (CMakeLists files and similar).
+
+Additionaly `CMakeShowTargetFiles` can be used to only show files associated with a specific target.
