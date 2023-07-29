@@ -85,7 +85,7 @@ function quickfix.run(cmd, env, args, opts)
     cwd = vim.loop.cwd(),
     on_stdout = vim.schedule_wrap(append_to_quickfix),
     on_stderr = vim.schedule_wrap(function(err, data)
-      quickfix.level = "warn"
+      quickfix.notification.level = "warn"
       append_to_quickfix(err, data)
     end),
     on_exit = vim.schedule_wrap(function(_, code, signal)
@@ -96,7 +96,7 @@ function quickfix.run(cmd, env, args, opts)
       append_to_quickfix(msg)
 
       if code == 0 and signal == 0 then
-        level = quickfix.level -- either info or warn
+        level = quickfix.notification.level -- either info or warn
         icon = ""
         if opts.on_success then
           opts.on_success()
