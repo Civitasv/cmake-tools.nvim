@@ -6,9 +6,6 @@ local terminal = {
   id = nil, -- id for the unified terminal
 }
 
----Checks if there is an active job
----@param opts table options for this adapter
----@return boolean
 function terminal.has_active_job(opts)
   if terminal.id then
     -- first, check if this buffer is valid
@@ -28,9 +25,6 @@ function terminal.has_active_job(opts)
   return false
 end
 
----Show the current executing command
----@param opts table options for this adapter
----@return nil
 function terminal.show(opts)
   if not terminal.id then
     log.info("There is no terminal instance")
@@ -580,15 +574,10 @@ function terminal.prepare_launch_path(path)
   return path
 end
 
----@param opts table options for this adapter
----@return nil
 function terminal.close(opts)
   -- TODO
 end
 
----Stop the active job
----@param opts table options for this adapter
----@return nil
 function terminal.stop(opts)
   local main_pid = vim.api.nvim_buf_get_var(terminal.id, "terminal_job_pid")
   local child_procs = vim.api.nvim_get_proc_children(main_pid)
