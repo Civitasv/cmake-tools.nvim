@@ -63,7 +63,7 @@ function cmake.setup(values)
   end
 
   -- preload the autocmd if the following option is true. only saves cmakelists.txt files
-  if cmake.is_cmake_project and const.cmake_regenerate_on_save then
+  if cmake.is_cmake_project then
     cmake.create_regenerate_on_save_autocmd()
   end
 end
@@ -1239,6 +1239,9 @@ local group = vim.api.nvim_create_augroup("cmaketools", { clear = true })
 local regenerate_id = nil
 
 function cmake.create_regenerate_on_save_autocmd()
+  if not const.cmake_regenerate_on_save then
+    return
+  end
   if regenerate_id then
     vim.api.nvim_del_autocmd(regenerate_id)
   end
