@@ -533,14 +533,7 @@ function terminal.prepare_cmd_for_run(cmd, env, args)
   return full_cmd
 end
 
----Run a commond
----@param cmd string the executable to execute
----@param env table environment variables
----@param args table arguments to the executable
----@param opts table options for this adapter
----@param on_success nil|function extra arguments, f.e on_success is a callback to be called when the process finishes
----@return nil
-function terminal.run(cmd, env, args, opts, on_success)
+function terminal.run(cmd, env, args, opts)
   local prefix = opts.prefix_name -- [CMakeTools]
 
   -- prefix is added to the terminal name because the reposition_term() function needs to find it

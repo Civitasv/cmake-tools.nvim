@@ -2,6 +2,7 @@ local Path = require("plenary.path")
 local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
 local terminal = require("cmake-tools.executors.terminal")
+local notification = require("cmake-tools.notification")
 
 -- local const = require("cmake-tools.const")
 ---@alias executor_conf {name:string, opts:table}
@@ -111,6 +112,16 @@ function utils.deepcopy(orig, copies)
   return copy
 end
 
+function notify_update_line(line)
+  if line and line:match("^%[%s*(%d+)%s*%%%]") then -- only show lines containing build progress e.g [ 12%]
+    notification.notification.id = notification.notify( -- notify with percentage and message
+      line,
+      notification.notification.level,
+      { replace = notification.notification.id, title = "CMakeTools" }
+    )
+  end
+end
+
 ---Run a commond
 ---@param cmd string the executable to execute
 ---@param env table environment variables
@@ -118,10 +129,24 @@ end
 ---@param executor_data executor_conf the executor
 ---@param on_success nil|function extra arguments, f.e on_success is a callback to be called when the process finishes
 ---@return nil
-function utils.run(cmd, env, args, executor_data, on_success)
+function utils.run(cmd, env, args, executor_data, on_success, cmake_notifications)
   -- save all
   vim.cmd("wall")
-  utils.get_executor(executor_data.name).run(cmd, env, args, executor_data.opts, on_success)
+
+  notification.notification = cmake_notifications
+
+  if notification.notification.enabled then
+    notification.notification.spinner_idx = 1
+    notification.notification.level = "info"
+
+    notification.notification.id =
+      notification.notify(cmd, notification.notification.level, { title = "CMakeTools" })
+    notification.update_spinner()
+  end
+
+  utils
+    .get_executor(executor_data.name)
+    .run(cmd, env, args, executor_data.opts, on_success, notify_update_line)
 end
 
 --- Check if exists active job.
