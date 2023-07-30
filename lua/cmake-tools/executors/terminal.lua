@@ -593,7 +593,6 @@ function terminal.close(opts)
   -- TODO
 end
 
-
 ---Stop the active job
 ---@param opts table options for this adapter
 ---@return nil

@@ -33,10 +33,9 @@ local target_settings_default = {
 
 --- Setup cmake-tools
 function cmake.setup(values)
-
-	if has_telescope then
+  if has_telescope then
     telescope.load_extension("cmake_tools")
-    end
+  end
   if values.cmake_executor ~= nil then
     const.cmake_executor = values.cmake_executor
   end
@@ -128,7 +127,9 @@ function cmake.generate(opt, callback)
 
     if config.executor.name == "terminal" then
       if full_cmd ~= "" then
-        full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
+        full_cmd = full_cmd
+          .. " && "
+          .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
       else
         full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, env, args)
       end
@@ -137,17 +138,17 @@ function cmake.generate(opt, callback)
       else
         utils.run(full_cmd, {}, {}, config.executor)
         cmake.configure_compile_commands()
-	cmake.create_regenerate_on_save_autocmd()
+        cmake.create_regenerate_on_save_autocmd()
         full_cmd = ""
       end
     else
-	    -- TODO cmake_notifications = const.cmake_notifications,
+      -- TODO cmake_notifications = const.cmake_notifications,
       return utils.run(const.cmake_command, {}, args, config.executor, function()
         if type(callback) == "function" then
           callback()
         end
         cmake.configure_compile_commands()
-	cmake.create_regenerate_on_save_autocmd()
+        cmake.create_regenerate_on_save_autocmd()
       end)
     end
   end
@@ -194,7 +195,7 @@ function cmake.generate(opt, callback)
   vim.list_extend(args, config.generate_options)
   vim.list_extend(args, fargs)
 
-    local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
+  local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
 
   if config.executor.name == "terminal" then
     if full_cmd ~= "" then
@@ -211,14 +212,20 @@ function cmake.generate(opt, callback)
       full_cmd = ""
     end
   else
-	  env = vim.tbl_extend("keep", env, kit_option.env)
-utils.run(const.cmake_command, env, args, config.executor, function() -- TODO cmake_notifications
-      if type(callback) == "function" then
-        callback()
+    env = vim.tbl_extend("keep", env, kit_option.env)
+    utils.run(
+      const.cmake_command,
+      env,
+      args,
+      config.executor,
+      function() -- TODO cmake_notifications
+        if type(callback) == "function" then
+          callback()
+        end
+        cmake.configure_compile_commands()
+        cmake.create_regenerate_on_save_autocmd()
       end
-      cmake.configure_compile_commands()
-      cmake.create_regenerate_on_save_autocmd()
-    end)
+    )
   end
 end
 
@@ -250,7 +257,7 @@ function cmake.clean(callback)
       full_cmd = ""
     end
   else
-	  -- TODO cmake_notifications
+    -- TODO cmake_notifications
     return utils.run(const.cmake_command, env, args, config.executor, function()
       if type(callback) == "function" then
         callback()
@@ -302,7 +309,7 @@ function cmake.build(opt, callback)
   end
 
   vim.list_extend(args, config.build_options)
-local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
+  local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
 
   if opt.target ~= nil then
     vim.list_extend(args, { "--target", opt.target })
@@ -328,7 +335,7 @@ local env = environment.get_build_environment(config, const.cmake_always_use_ter
       full_cmd = ""
     end
   else
-	  -- TODO cmake notifications
+    -- TODO cmake notifications
     utils.run(const.cmake_command, {}, args, config.executor, function()
       if type(callback) == "function" then
         callback()
@@ -428,10 +435,21 @@ function cmake.run(opt)
           .. '" && '
           .. full_cmd
           .. " && "
-          .. terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path, opt.wrap_call,             environment.get_run_environment(config, opt.target, true))
+          .. terminal.prepare_cmd_for_execute(
+            target_path,
+            opt.args,
+            launch_path,
+            opt.wrap_call,
+            environment.get_run_environment(config, opt.target, true)
+          )
       else
-        full_cmd =
-          terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path, opt.wrap_call,             environment.get_run_environment(config, opt.target, true))
+        full_cmd = terminal.prepare_cmd_for_execute(
+          target_path,
+          opt.args,
+          launch_path,
+          opt.wrap_call,
+          environment.get_run_environment(config, opt.target, true)
+        )
       end
       utils.execute(target_path, full_cmd, config.terminal, config.executor)
       full_cmd = ""
@@ -480,7 +498,7 @@ function cmake.run(opt)
               cmake:get_launch_args(),
               launch_path,
               opt.wrap_call,
-	      environment.get_run_environment(config, config.launch_target, true)
+              environment.get_run_environment(config, config.launch_target, true)
             )
         else
           full_cmd = terminal.prepare_cmd_for_execute(
@@ -488,7 +506,7 @@ function cmake.run(opt)
             cmake:get_launch_args(),
             launch_path,
             opt.wrap_call,
-	    environment.get_run_environment(config, config.launch_target, true)
+            environment.get_run_environment(config, config.launch_target, true)
           )
         end
         utils.execute(target_path, full_cmd, config.terminal, config.executor)
@@ -579,7 +597,7 @@ function cmake.launch_args(opt)
   end
 
   if cmake.get_launch_target() ~= nil then
-	   if not config.target_settings[cmake.get_launch_target()] then
+    if not config.target_settings[cmake.get_launch_target()] then
       config.target_settings[cmake.get_launch_target()] = {}
     end
 
@@ -621,7 +639,7 @@ if has_nvim_dap then
           program = result.data,
           cwd = utils.get_path(result.data, "/"),
           args = opt.args,
-	            env = env,
+          env = env,
         }
         -- close cmake console
         cmake.close()
@@ -663,7 +681,7 @@ if has_nvim_dap then
             program = target_path,
             cwd = utils.get_path(result.data, "/"),
             args = cmake:get_launch_args(),
-	    env = env,
+            env = env,
           }
           -- close cmake console
           cmake.close()
@@ -1029,7 +1047,6 @@ function cmake.target_settings(opt)
   end
 end
 
-
 --[[ Getters ]]
 
 function cmake.get_build_target()
@@ -1167,7 +1184,7 @@ local group = vim.api.nvim_create_augroup("cmaketools", { clear = true })
 local regenerate_id = nil
 
 function cmake.create_regenerate_on_save_autocmd()
-	if not const.cmake_regenerate_on_save then
+  if not const.cmake_regenerate_on_save then
     return
   end
   if regenerate_id then
