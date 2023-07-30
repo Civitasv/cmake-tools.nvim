@@ -23,8 +23,18 @@ function overseer_executor.run(cmd, env, args, opts, on_exit, on_output)
     strategy = opts.strategy,
   }
   overseer_executor.job = overseer.new_task(opts)
-  overseer_executor.job:subscribe("on_exit", on_exit)
-  overseer_executor.job:subscribe("on_output", on_output)
+  if on_exit ~= nil then
+    overseer_executor.job:subscribe("on_exit", function(out)
+      on_exit(out.exit_code)
+    end)
+  end
+  if on_output ~= nil then
+    overseer_executor.job:subscribe("on_output", function(_, data)
+      local stdout = data[0]
+      local stderr = data[1]
+      on_output(stdout, stderr)
+    end)
+  end
   overseer_executor.job:start()
 end
 

@@ -151,7 +151,6 @@ function cmake.generate(opt, callback)
         full_cmd = ""
       end
     else
-      -- TODO cmake_notifications = const.cmake_notifications,
       return utils.run(const.cmake_command, env, args, config.executor, function()
         if type(callback) == "function" then
           callback()
@@ -222,20 +221,13 @@ function cmake.generate(opt, callback)
     end
   else
     env = vim.tbl_extend("keep", env, kit_option.env)
-    utils.run(
-      const.cmake_command,
-      env,
-      args,
-      config.executor,
-      function() -- TODO cmake_notifications
-        if type(callback) == "function" then
-          callback()
-        end
-        cmake.configure_compile_commands()
-        cmake.create_regenerate_on_save_autocmd()
-      end,
-      const.cmake_notifications
-    )
+    utils.run(const.cmake_command, env, args, config.executor, function()
+      if type(callback) == "function" then
+        callback()
+      end
+      cmake.configure_compile_commands()
+      cmake.create_regenerate_on_save_autocmd()
+    end, const.cmake_notifications)
   end
 end
 
@@ -267,12 +259,11 @@ function cmake.clean(callback)
       full_cmd = ""
     end
   else
-    -- TODO cmake_notifications
     return utils.run(const.cmake_command, env, args, config.executor, function()
       if type(callback) == "function" then
         callback()
       end
-    end, config.opts.cmake_notifications)
+    end, const.cmake_notifications)
   end
 end
 
@@ -345,7 +336,6 @@ function cmake.build(opt, callback)
       full_cmd = ""
     end
   else
-    -- TODO cmake notifications
     utils.run(const.cmake_command, env, args, config.executor, function()
       if type(callback) == "function" then
         callback()

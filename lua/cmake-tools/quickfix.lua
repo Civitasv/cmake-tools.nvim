@@ -61,12 +61,11 @@ function quickfix.run(cmd, env, args, opts, on_exit, on_output)
     cwd = vim.loop.cwd(),
     on_stdout = vim.schedule_wrap(function(err, data)
       append_to_quickfix(err, data)
-      on_output(err and err or data)
+      on_output(data, err)
     end),
     on_stderr = vim.schedule_wrap(function(err, data)
-      notification.notification.level = "warn"
       append_to_quickfix(err, data)
-      on_output(err and err or data)
+      on_output(data, err)
     end),
     on_exit = vim.schedule_wrap(function(_, code, signal)
       code = signal == 0 and code or 128 + signal
