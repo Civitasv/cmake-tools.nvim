@@ -1,5 +1,6 @@
 -- cmake-tools's API
 local has_nvim_dap, dap = pcall(require, "dap")
+local has_telescope, telescope = pcall(require, "telescope")
 local utils = require("cmake-tools.utils")
 local Types = require("cmake-tools.types")
 local const = require("cmake-tools.const")
@@ -10,6 +11,9 @@ local presets = require("cmake-tools.presets")
 local log = require("cmake-tools.log")
 local terminal = require("cmake-tools.executors.terminal")
 local _session = require("cmake-tools.session")
+local window = require("cmake-tools.window")
+local environment = require("cmake-tools.environment")
+local file_picker = require("cmake-tools.file_picker")
 
 local config = Config:new(const)
 
@@ -17,35 +21,60 @@ local cmake = {}
 
 local full_cmd = ""
 
+local base_settings_default = {
+  env = {},
+}
+
+local target_settings_default = {
+  args = {},
+  inherit_base_environment = true,
+  env = {},
+}
+
 --- Setup cmake-tools
 function cmake.setup(values)
+
+	if has_telescope then
+    telescope.load_extension("cmake_tools")
+    end
   if values.cmake_executor ~= nil then
     const.cmake_executor = values.cmake_executor
   end
   const = vim.tbl_deep_extend("force", const, values)
   config = Config:new(const)
   -- preload the autocmd if the following option is true. only saves cmakelists.txt files
-  if const.cmake_regenerate_on_save then
-    cmake.create_regenerate_on_save_autocmd()
-  end
 
   -- auto reload previous session
   if cmake.is_cmake_project() then
     local old_config = _session.load()
     if next(old_config) ~= nil then
       config:update_build_dir(old_config.build_directory)
-      config.generate_options = old_config.generate_options
-      config.build_options = old_config.build_options
-
       config.build_type = old_config.build_type
       config.build_target = old_config.build_target
       config.launch_target = old_config.launch_target
-      config.launch_args = old_config.launch_args
       config.kit = old_config.kit
       config.configure_preset = old_config.configure_preset
       config.build_preset = old_config.build_preset
+      config.base_settings = old_config.base_settings
+      config.target_settings = old_config.target_settings or {}
+
+      -- migrate old launch args to new config
+      if old_config.launch_args then
+        for k, v in pairs(old_config.launch_args) do
+          config.target_settings[k].args = v
+        end
+      end
     end
   end
+
+  -- preload the autocmd if the following option is true. only saves cmakelists.txt files
+  if cmake.is_cmake_project() then
+    cmake.create_regenerate_on_save_autocmd()
+  end
+end
+
+function cmake.get_config()
+  return config
 end
 
 --- Generate build system for this project.
@@ -99,23 +128,26 @@ function cmake.generate(opt, callback)
 
     if config.executor.name == "terminal" then
       if full_cmd ~= "" then
-        full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+        full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
       else
-        full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+        full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, env, args)
       end
       if type(callback) == "function" then
         callback()
       else
         utils.run(full_cmd, {}, {}, config.executor)
         cmake.configure_compile_commands()
+	cmake.create_regenerate_on_save_autocmd()
         full_cmd = ""
       end
     else
+	    -- TODO cmake_notifications = const.cmake_notifications,
       return utils.run(const.cmake_command, {}, args, config.executor, function()
         if type(callback) == "function" then
           callback()
         end
         cmake.configure_compile_commands()
+	cmake.create_regenerate_on_save_autocmd()
       end)
     end
   end
@@ -162,25 +194,30 @@ function cmake.generate(opt, callback)
   vim.list_extend(args, config.generate_options)
   vim.list_extend(args, fargs)
 
+    local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
+
   if config.executor.name == "terminal" then
     if full_cmd ~= "" then
-      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     else
-      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     end
     if type(callback) == "function" then
       callback()
     else
       utils.run(full_cmd, {}, {}, config.executor)
       cmake.configure_compile_commands()
+      cmake.create_regenerate_on_save_autocmd()
       full_cmd = ""
     end
   else
-    utils.run(const.cmake_command, kit_option.env, args, config.executor, function()
+	  env = vim.tbl_extend("keep", env, kit_option.env)
+utils.run(const.cmake_command, env, args, config.executor, function() -- TODO cmake_notifications
       if type(callback) == "function" then
         callback()
       end
       cmake.configure_compile_commands()
+      cmake.create_regenerate_on_save_autocmd()
     end)
   end
 end
@@ -198,11 +235,13 @@ function cmake.clean(callback)
 
   local args = { "--build", config.build_directory.filename, "--target", "clean" }
 
+  local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
+
   if config.executor.name == "terminal" then
     if full_cmd ~= "" then
-      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     else
-      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     end
     if type(callback) == "function" then
       return callback()
@@ -211,7 +250,8 @@ function cmake.clean(callback)
       full_cmd = ""
     end
   else
-    return utils.run(const.cmake_command, {}, args, config.executor, function()
+	  -- TODO cmake_notifications
+    return utils.run(const.cmake_command, env, args, config.executor, function()
       if type(callback) == "function" then
         callback()
       end
@@ -262,6 +302,7 @@ function cmake.build(opt, callback)
   end
 
   vim.list_extend(args, config.build_options)
+local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
 
   if opt.target ~= nil then
     vim.list_extend(args, { "--target", opt.target })
@@ -274,12 +315,11 @@ function cmake.build(opt, callback)
     vim.list_extend(args, fargs)
   end
 
-  -- TODO
   if config.executor.name == "terminal" then
     if full_cmd ~= "" then
-      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     else
-      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, {}, args)
+      full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     end
     if type(callback) == "function" then
       callback()
@@ -288,6 +328,7 @@ function cmake.build(opt, callback)
       full_cmd = ""
     end
   else
+	  -- TODO cmake notifications
     utils.run(const.cmake_command, {}, args, config.executor, function()
       if type(callback) == "function" then
         callback()
@@ -312,7 +353,6 @@ function cmake.quick_build(opt, callback)
 
     local targets_res = config:build_targets()
     local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
-    -- TODO I should add a command to get the cmake command itself. It should use plentry async module.
 
     vim.ui.select(
       display_targets,
@@ -353,7 +393,7 @@ function cmake.install(opt)
 
   local args = { "--install", config.build_directory.filename }
   vim.list_extend(args, fargs)
-
+  --TODO notifications
   return utils.run(const.cmake_command, {}, args, config.executor)
 end
 
@@ -388,10 +428,10 @@ function cmake.run(opt)
           .. '" && '
           .. full_cmd
           .. " && "
-          .. terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path, opt.wrap_call)
+          .. terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path, opt.wrap_call,             environment.get_run_environment(config, opt.target, true))
       else
         full_cmd =
-          terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path, opt.wrap_call)
+          terminal.prepare_cmd_for_execute(target_path, opt.args, launch_path, opt.wrap_call,             environment.get_run_environment(config, opt.target, true))
       end
       utils.execute(target_path, full_cmd, config.terminal, config.executor)
       full_cmd = ""
@@ -439,19 +479,62 @@ function cmake.run(opt)
               target_path,
               cmake:get_launch_args(),
               launch_path,
-              opt.wrap_call
+              opt.wrap_call,
+	      environment.get_run_environment(config, config.launch_target, true)
             )
         else
           full_cmd = terminal.prepare_cmd_for_execute(
             target_path,
             cmake:get_launch_args(),
             launch_path,
-            opt.wrap_call
+            opt.wrap_call,
+	    environment.get_run_environment(config, config.launch_target, true)
           )
         end
         utils.execute(target_path, full_cmd, config.terminal, config.executor)
         full_cmd = ""
       end)
+    end
+  end
+end
+
+if has_telescope then
+  function cmake.show_target_files(opt)
+    -- if no target was supplied, query via ui select
+    if opt.fargs[1] == nil then
+      if utils.has_active_job(config.terminal, config.executor) then
+        return
+      end
+
+      if not (config.build_directory and config.build_directory:exists()) then
+        -- configure it
+        return cmake.generate({ bang = false, fargs = {} }, function()
+          cmake.show(opt)
+        end)
+      end
+
+      local targets_res = config:build_targets()
+      local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
+
+      for idx, v in ipairs(targets) do
+        if v == "all" then -- this default target does not exist in the code model
+          table.remove(targets, idx)
+          table.remove(display_targets, idx)
+        end
+      end
+
+      vim.ui.select(
+        display_targets,
+        { prompt = "Select target to run" },
+        vim.schedule_wrap(function(_, idx)
+          if not idx then
+            return
+          end
+          file_picker.show_target_files(targets[idx])
+        end)
+      )
+    else
+      file_picker.show_target_files(opt.fargs[1])
     end
   end
 end
@@ -496,7 +579,11 @@ function cmake.launch_args(opt)
   end
 
   if cmake.get_launch_target() ~= nil then
-    config.launch_args[cmake.get_launch_target()] = utils.deepcopy(opt.fargs)
+	   if not config.target_settings[cmake.get_launch_target()] then
+      config.target_settings[cmake.get_launch_target()] = {}
+    end
+
+    config.target_settings[cmake.get_launch_target()].args = utils.deepcopy(opt.fargs)
   end
 end
 
@@ -505,6 +592,15 @@ if has_nvim_dap then
   function cmake.debug(opt, callback)
     if utils.has_active_job(config.terminal, config.executor) then
       return
+    end
+
+    local env = environment.get_run_environment_table(
+      config,
+      opt.target and opt.target or config.launch_target
+    )
+    -- nvim.dap expects all env vars as string
+    for index, value in pairs(env) do
+      env[index] = tostring(value)
     end
 
     local can_debug_result = config:validate_for_debugging()
@@ -525,6 +621,7 @@ if has_nvim_dap then
           program = result.data,
           cwd = utils.get_path(result.data, "/"),
           args = opt.args,
+	            env = env,
         }
         -- close cmake console
         cmake.close()
@@ -566,6 +663,7 @@ if has_nvim_dap then
             program = target_path,
             cwd = utils.get_path(result.data, "/"),
             args = cmake:get_launch_args(),
+	    env = env,
           }
           -- close cmake console
           cmake.close()
@@ -878,6 +976,60 @@ function cmake.select_launch_target(callback, regenerate)
   )
 end
 
+function cmake.settings()
+  if not window.is_open() then
+    if not config.base_settings then
+      config.base_settings = {}
+    end
+
+    -- insert missing fields
+    config.base_settings = vim.tbl_deep_extend("keep", config.base_settings, base_settings_default)
+
+    window.set_content("return " .. vim.inspect(config.base_settings))
+    window.title = "CMake-Tools base settings"
+    window.on_save = function(str)
+      local fn = loadstring(str)
+      if fn then
+        config.base_settings = fn()
+      end
+    end
+    window.open()
+  end
+end
+
+function cmake.target_settings(opt)
+  local target = opt.fargs[1] or cmake.get_launch_target()
+
+  if target == nil then
+    log.warn("No launch target selected!")
+    return
+  end
+
+  if not window.is_open() then
+    if not config.target_settings then
+      config.target_settings = {}
+    end
+    if not config.target_settings[target] then
+      config.target_settings[target] = {}
+    end
+
+    -- insert missing fields
+    config.target_settings[target] =
+      vim.tbl_deep_extend("keep", config.target_settings[target], target_settings_default)
+
+    window.set_content("return " .. vim.inspect(config.target_settings[target]))
+    window.title = "CMake-Tools settings for " .. target
+    window.on_save = function(str)
+      local fn = loadstring(str)
+      if fn then
+        config.target_settings[target] = fn()
+      end
+    end
+    window.open()
+  end
+end
+
+
 --[[ Getters ]]
 
 function cmake.get_build_target()
@@ -893,10 +1045,28 @@ function cmake.get_model_info()
 end
 
 function cmake.get_launch_args()
-  if cmake.get_launch_target() == nil or config.launch_args[cmake.get_launch_target()] == nil then
+  if cmake.get_launch_target() == nil then
     return {}
   end
-  return config.launch_args[cmake.get_launch_target()]
+  if
+    config.target_settings[cmake.get_launch_target()]
+    and config.target_settings[cmake.get_launch_target()].args
+  then
+    return config.target_settings[cmake.get_launch_target()].args
+  end
+
+  return {}
+end
+
+function cmake.get_build_environment()
+  return environment.get_build_environment_table(config)
+end
+
+function cmake.get_run_environment(target)
+  return environment.get_run_environment_table(
+    config,
+    target and target or cmake.get_launch_target()
+  )
 end
 
 function cmake.get_build_type()
@@ -994,21 +1164,62 @@ function cmake.ccls_on_new_config(new_config)
 end
 
 local group = vim.api.nvim_create_augroup("cmaketools", { clear = true })
+local regenerate_id = nil
 
 function cmake.create_regenerate_on_save_autocmd()
-  vim.api.nvim_create_autocmd("BufWritePre", {
-    group = group,
-    pattern = "CMakeLists.txt",
-    callback = function()
-      local buf = vim.api.nvim_get_current_buf()
-      -- Check if buffer is actually modified, and only if it is modified,
-      -- execute the :CMakeGenerate, otherwise return. This is to avoid unnecessary regenerattion
-      local buf_modified = vim.api.nvim_buf_get_option(buf, "modified")
-      if buf_modified then
-        cmake.generate({ bang = false, fargs = {} }, nil)
-      end
-    end,
-  })
+	if not const.cmake_regenerate_on_save then
+    return
+  end
+  if regenerate_id then
+    vim.api.nvim_del_autocmd(regenerate_id)
+  end
+
+  local cmake_files = file_picker.get_cmake_files()
+
+  local pattern = {}
+  for _, item in ipairs(cmake_files) do
+    table.insert(pattern, vim.loop.cwd() .. "/" .. item)
+  end
+
+  local presets_file = presets.check()
+  if presets_file then
+    for _, item in ipairs({
+      "CMakePresets.json",
+      "CMakeUserPresets.json",
+      "cmake-presets.json",
+      "cmake-user-presets.json",
+    }) do
+      table.insert(pattern, vim.loop.cwd() .. "/" .. item)
+    end
+  else
+    for _, item in ipairs({
+      "CMakeVariants.json",
+      "CMakeVariants.yaml",
+      "cmake-variants.yaml",
+      "cmake-variants.json",
+      "CMakeKits.json",
+      "cmake-kits.json",
+    }) do
+      table.insert(pattern, vim.loop.cwd() .. "/" .. item)
+    end
+  end
+
+  if #pattern ~= 0 then
+    -- for cmake files
+    regenerate_id = vim.api.nvim_create_autocmd("BufWritePre", {
+      group = group,
+      pattern = pattern,
+      callback = function()
+        local buf = vim.api.nvim_get_current_buf()
+        -- Check if buffer is actually modified, and only if it is modified,
+        -- execute the :CMakeGenerate, otherwise return. This is to avoid unnecessary regenerattion
+        local buf_modified = vim.api.nvim_buf_get_option(buf, "modified")
+        if buf_modified then
+          cmake.generate({ bang = false, fargs = {} }, nil)
+        end
+      end,
+    })
+  end
 end
 
 -- We have a command to escape insert mode after proccess extis
