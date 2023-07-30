@@ -39,6 +39,8 @@ function cmake.setup(values)
   const = vim.tbl_deep_extend("force", const, values)
   if const.cmake_executor.name == "terminal" then
     const.cmake_executor = const.cmake_terminal
+    log.info("Cannot use cmake-tools notifications in terminal mode")
+    const.cmake_notifications.enabled = false
   else
     const.cmake_executor.opts = vim.tbl_deep_extend(
       "force",
