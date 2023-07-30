@@ -75,12 +75,13 @@ Generally, the default is enough.
 ## :magic_wand: Docs
 
 1. [basic usage](./docs/basic_usage.md)
-2. [all commands](./docs/all_commands.md)
-3. [cmake presets](./docs/cmake_presets.md)
-4. [cmake kits](./docs/cmake_kits.md)
-5. [cmake variants](./docs/cmake_variants.md)
-6. [sessions](./docs/sessions.md)
-6. [how to](./docs/howto.md)
+2. [settings](./docs/settings.md)
+3. [all commands](./docs/all_commands.md)
+4. [cmake presets](./docs/cmake_presets.md)
+5. [cmake kits](./docs/cmake_kits.md)
+6. [cmake variants](./docs/cmake_variants.md)
+7. [sessions](./docs/sessions.md)
+8. [how to](./docs/howto.md)
 
 ## :muscle: Contribute
 

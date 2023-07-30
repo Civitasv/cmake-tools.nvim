@@ -464,52 +464,6 @@ it looks like:
 
 ![lualine UI](./images/2023-06-06-22-02-06.png)
 
-## Setting build and run environment variables
-
-`cmake-tools` can add additional user defined environment variables to cmake calls and/or when running launch targets.
-
-To configure build environment variables use `CMakeSettings`. This will open up a popup window to configure
-environment variables using a lua buffer. For example:
-
-```lua
-return {
-  env = {
-    VERBOSE = 1,
-  }
-}
-```
-
-This will add `VERBOSE=1` to all cmake call such as `build`, `generate` or `clean`. Numbers and strings are supported
-as values for environment variables.
-
-`CMakeTargetSettings` is used to configure environment variables for each individual executable. It also
-supports the additional option `inherit_base_environment` to automatically inherit the same variables configured with
-`CMakeSettings`
-
-```lua
-return {
-  inherit_base_environment = true,
-  env = {
-    log_level="trace"
-  }
-}
-```
-
-The popup window autosaves and can be closed with `q` or `<esc>`
-
-## Integration of external Tools
-
-`cmake-tools.run` can be used to run an executable with an external tool such as `valgrind` or `perf` by prepending the run call with custom arguments.
-
-This example creates a custom function that runs the currently selected launch target with `perf`
-
-```lua
-function RunPerf()
-  local cmake = require "cmake-tools"
-  cmake.run { wrap_call = { "perf", "record", "--call-graph", "dwarf" } }
-end
-```
-
 Calling `:lua RunPerf()` will then run `perf record --call-graph dwarf {target} {launch_args}`.
 
 ## Experimental: Awalys use terminal
