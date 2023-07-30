@@ -38,10 +38,6 @@ function cmake.setup(values)
   end
   const = vim.tbl_deep_extend("force", const, values)
   config = Config:new(const)
-  -- preload the autocmd if the following option is true. only saves cmakelists.txt files
-  if const.cmake_regenerate_on_save then
-    cmake.create_regenerate_on_save_autocmd()
-  end
 
   -- auto reload previous session
   if cmake.is_cmake_project() then
@@ -64,6 +60,11 @@ function cmake.setup(values)
         end
       end
     end
+  end
+
+  -- preload the autocmd if the following option is true. only saves cmakelists.txt files
+  if cmake.is_cmake_project and const.cmake_regenerate_on_save then
+    cmake.create_regenerate_on_save_autocmd()
   end
 end
 
@@ -139,6 +140,7 @@ function cmake.generate(opt, callback)
           cmake_terminal_opts = const.cmake_terminal_opts,
         })
         cmake.configure_compile_commands(const.cmake_always_use_terminal, const.cmake_terminal_opts)
+        cmake.create_regenerate_on_save_autocmd()
         full_cmd = ""
       end
     else
@@ -151,6 +153,7 @@ function cmake.generate(opt, callback)
             const.cmake_always_use_terminal,
             const.cmake_terminal_opts
           )
+          cmake.create_regenerate_on_save_autocmd()
         end,
         cmake_launch_path = vim.loop.cwd(),
         cmake_always_use_terminal = const.cmake_always_use_terminal,
@@ -219,6 +222,7 @@ function cmake.generate(opt, callback)
         cmake_terminal_opts = const.cmake_terminal_opts,
       })
       cmake.configure_compile_commands(const.cmake_always_use_terminal, const.cmake_terminal_opts)
+      cmake.create_regenerate_on_save_autocmd()
       full_cmd = ""
     end
   else
@@ -229,6 +233,7 @@ function cmake.generate(opt, callback)
           callback()
         end
         cmake.configure_compile_commands(const.cmake_always_use_terminal, const.cmake_terminal_opts)
+        cmake.create_regenerate_on_save_autocmd()
       end,
       cmake_launch_path = vim.loop.cwd(),
       cmake_always_use_terminal = const.cmake_always_use_terminal,
@@ -1233,19 +1238,52 @@ end
 local group = vim.api.nvim_create_augroup("cmaketools", { clear = true })
 
 function cmake.create_regenerate_on_save_autocmd()
-  vim.api.nvim_create_autocmd("BufWritePre", {
-    group = group,
-    pattern = "CMakeLists.txt",
-    callback = function()
-      local buf = vim.api.nvim_get_current_buf()
-      -- Check if buffer is actually modified, and only if it is modified,
-      -- execute the :CMakeGenerate, otherwise return. This is to avoid unnecessary regenerattion
-      local buf_modified = vim.api.nvim_buf_get_option(buf, "modified")
-      if buf_modified then
-        cmake.generate({ bang = false, fargs = {} }, nil)
-      end
-    end,
-  })
+  local cmake_files = file_picker.get_cmake_files()
+
+  local pattern = {}
+  for _, item in ipairs(cmake_files) do
+    table.insert(pattern, vim.loop.cwd() .. "/" .. item)
+  end
+
+  local presets_file = presets.check()
+  if presets_file then
+    for _, item in ipairs({
+      "CMakePresets.json",
+      "CMakeUserPresets.json",
+      "cmake-presets.json",
+      "cmake-user-presets.json",
+    }) do
+      table.insert(pattern, vim.loop.cwd() .. "/" .. item)
+    end
+  else
+    for _, item in ipairs({
+      "CMakeVariants.json",
+      "CMakeVariants.yaml",
+      "cmake-variants.yaml",
+      "cmake-variants.json",
+      "CMakeKits.json",
+      "cmake-kits.json",
+    }) do
+      table.insert(pattern, vim.loop.cwd() .. "/" .. item)
+    end
+  end
+
+  if #pattern ~= 0 then
+    -- for cmake files
+    vim.api.nvim_create_autocmd("BufWritePre", {
+      group = group,
+      pattern = pattern,
+      callback = function()
+        local buf = vim.api.nvim_get_current_buf()
+        -- Check if buffer is actually modified, and only if it is modified,
+        -- execute the :CMakeGenerate, otherwise return. This is to avoid unnecessary regenerattion
+        local buf_modified = vim.api.nvim_buf_get_option(buf, "modified")
+        if buf_modified then
+          cmake.generate({ bang = false, fargs = {} }, nil)
+        end
+      end,
+    })
+  end
 end
 
 -- We have a command to escape insert mode after proccess extis
