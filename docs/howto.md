@@ -466,7 +466,17 @@ it looks like:
 
 Calling `:lua RunPerf()` will then run `perf record --call-graph dwarf {target} {launch_args}`.
 
-## Experimental: Awalys use terminal
+## Fix errors in quickfix list (Windows/msvc)
+
+If the errors and warnings are not being parsed correctly from the build output then navigation via the quickfix list will not function. It is possible that additional errorformats (`:h errorformat`) are required. Adding the following to your init.lua, or other suitable lua file, will enable quickfix support for MSBuild and cl.exe:
+```lua
+-- MSBuild:
+vim.opt.errorformat:append([[\ %#%f(%l\,%c):\ %m]])
+-- cl.exe:
+vim.opt.errorformat:append([[\ %#%f(%l)\ :\ %#%t%[A-z]%#\ %m]])
+```
+
+## Experimental: Always use terminal
 
 By default, this plugin uses quickfix console for generate, build, clean, install, and others about cmake, and only uses terminal for run specific target.
 
