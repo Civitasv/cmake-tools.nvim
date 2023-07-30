@@ -575,7 +575,19 @@ function terminal.prepare_launch_path(path)
 end
 
 function terminal.close(opts)
-  -- TODO
+  if not terminal.id then
+    log.info("There is no terminal instance")
+    return
+  end
+
+  local win_id = terminal.reposition(opts)
+
+  if win_id ~= -1 then
+    vim.api.nvim_win_close(win_id, false)
+  else
+    -- log.error("Invalid window Id!")
+    -- do nothing
+  end
 end
 
 function terminal.stop(opts)
