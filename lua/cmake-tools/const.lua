@@ -22,10 +22,14 @@ local const = {
   },
   cmake_executor = {
     name = "quickfix",
-    opts = {
-      show = "always", -- "always", "only_on_error"
-      position = "belowright", -- "bottom", "top"
-      size = 10,
+    default_opts = {
+      quickfix = {
+        show = "always", -- "always", "only_on_error"
+        position = "belowright", -- "bottom", "top"
+        size = 10,
+      },
+      overseer = {},
+      terminal = {},
     },
   },
   cmake_terminal = {

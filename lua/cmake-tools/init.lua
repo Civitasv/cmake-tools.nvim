@@ -36,10 +36,16 @@ function cmake.setup(values)
   if has_telescope then
     telescope.load_extension("cmake_tools")
   end
-  if values.cmake_executor ~= nil then
-    const.cmake_executor = values.cmake_executor
-  end
   const = vim.tbl_deep_extend("force", const, values)
+  if const.cmake_executor.name == "terminal" then
+    const.cmake_executor = const.cmake_terminal
+  else
+    const.cmake_executor.opts = vim.tbl_deep_extend(
+      "force",
+      const.cmake_executor.default_opts[const.cmake_executor.name],
+      const.cmake_executor.opts or {}
+    )
+  end
   config = Config:new(const)
 
   -- auto reload previous session
