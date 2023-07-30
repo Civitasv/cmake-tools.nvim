@@ -50,28 +50,69 @@ function quickfix.run(cmd, env, args, opts, on_success)
   if opts.show == "always" then
     quickfix.show(opts)
   end
+  --TODO
+  --[[quickfix.notification = opts.cmake_notifications
+
+  if quickfix.notification.enabled then
+    quickfix.notification.spinner_idx = 1
+    quickfix.notification.level = "info"
+
+    quickfix.notification.id =
+      quickfix.notify(cmd, quickfix.notification.level, { title = "CMakeTools" })
+    quickfix.update_spinner()
+  end]]--
+
+  local job_args = {}
+
+  if next(env) then
+    table.insert(job_args, "-E")
+    table.insert(job_args, "env")
+    for _, v in ipairs(env) do
+      table.insert(job_args, v)
+    end
+    table.insert(job_args, "cmake")
+    for _, v in ipairs(args) do
+      table.insert(job_args, v)
+    end
+  else
+    job_args = args
+    end
 
   quickfix.job = Job:new({
     command = cmd,
-    args = next(env) and { "-E", "env", table.concat(env, " "), "cmake", unpack(args) } or args,
+    args =  job_args,
     cwd = vim.loop.cwd(),
     on_stdout = vim.schedule_wrap(append_to_quickfix),
-    on_stderr = vim.schedule_wrap(append_to_quickfix),
+    on_stderr = vim.schedule_wrap(function(err, data)
+      quickfix.notification.level = "warn"
+      append_to_quickfix(err, data)
+    end),
     on_exit = vim.schedule_wrap(function(_, code, signal)
-      append_to_quickfix("Exited with code " .. (signal == 0 and code or 128 + signal))
+	    local msg = "Exited with code " .. (signal == 0 and code or 128 + signal)
+      local level = "error"
+      local icon = ""
+
+      append_to_quickfix(msg)
       if code == 0 and signal == 0 then
-        if on_success ~= nil then
+	      if on_success ~= nil then
           on_success()
         end
       elseif opts.show == "only_on_error" then
         quickfix.show(opts)
         quickfix.scroll_to_bottom()
       end
+
+      quickfix.notify(
+        msg,
+        level,
+        { icon = icon, replace = quickfix.notification.id, timeout = 3000 }
+      )
+
+      quickfix.notification = {} -- reset and stop update_spinner
     end),
   })
 
   quickfix.job:start()
-  --return quickfix.job
 end
 
 ---Checks if there is an active job

@@ -41,7 +41,6 @@ function cmake.setup(values)
   end
   const = vim.tbl_deep_extend("force", const, values)
   config = Config:new(const)
-  -- preload the autocmd if the following option is true. only saves cmakelists.txt files
 
   -- auto reload previous session
   if cmake.is_cmake_project() then
@@ -125,6 +124,8 @@ function cmake.generate(opt, callback)
     vim.list_extend(args, config.generate_options)
     vim.list_extend(args, fargs)
 
+    local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
+
     if config.executor.name == "terminal" then
       if full_cmd ~= "" then
         full_cmd = full_cmd
@@ -143,7 +144,7 @@ function cmake.generate(opt, callback)
       end
     else
       -- TODO cmake_notifications = const.cmake_notifications,
-      return utils.run(const.cmake_command, {}, args, config.executor, function()
+      return utils.run(const.cmake_command, env, args, config.executor, function()
         if type(callback) == "function" then
           callback()
         end
@@ -336,7 +337,7 @@ function cmake.build(opt, callback)
     end
   else
     -- TODO cmake notifications
-    utils.run(const.cmake_command, {}, args, config.executor, function()
+    utils.run(const.cmake_command, env, args, config.executor, function()
       if type(callback) == "function" then
         callback()
       end
