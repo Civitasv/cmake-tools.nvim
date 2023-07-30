@@ -1236,8 +1236,13 @@ function cmake.ccls_on_new_config(new_config)
 end
 
 local group = vim.api.nvim_create_augroup("cmaketools", { clear = true })
+local regenerate_id = nil
 
 function cmake.create_regenerate_on_save_autocmd()
+  if regenerate_id then
+    vim.api.nvim_del_autocmd(regenerate_id)
+  end
+
   local cmake_files = file_picker.get_cmake_files()
 
   local pattern = {}
@@ -1270,7 +1275,7 @@ function cmake.create_regenerate_on_save_autocmd()
 
   if #pattern ~= 0 then
     -- for cmake files
-    vim.api.nvim_create_autocmd("BufWritePre", {
+    regenerate_id = vim.api.nvim_create_autocmd("BufWritePre", {
       group = group,
       pattern = pattern,
       callback = function()
