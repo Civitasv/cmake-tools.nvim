@@ -1092,6 +1092,23 @@ function cmake.get_base_vars()
   return vars
 end
 
+local function convert_to_table(str)
+  -- do a roundtrip. this should remove unsupported stuff like function() which vim.inspect cannot convert
+  local fn = loadstring(str)
+  if not fn then
+    return false
+  end
+
+  str = "return " .. vim.inspect(fn())
+
+  fn = loadstring(str)
+  if not fn then
+    return false
+  end
+
+  return true, fn()
+end
+
 function cmake.get_target_vars(target)
   local vars = cmake.get_base_vars()
 
@@ -1111,14 +1128,14 @@ function cmake.settings()
     config.base_settings = vim.tbl_deep_extend("keep", config.base_settings, base_settings_default)
 
     local content = "local vars = " .. vim.inspect(cmake.get_base_vars())
-    content = content .. "\nreturn" .. vim.inspect(config.base_settings)
+    content = content .. "\nreturn " .. vim.inspect(config.base_settings)
 
     window.set_content(content)
     window.title = "CMake-Tools base settings"
     window.on_save = function(str)
-      local fn = loadstring(str)
-      if fn then
-        config.base_settings = fn()
+      local ok, val = convert_to_table(str)
+      if ok then
+        config.base_settings = val
       end
     end
     window.open()
@@ -1146,14 +1163,14 @@ function cmake.target_settings(opt)
       vim.tbl_deep_extend("keep", config.target_settings[target], target_settings_default)
 
     local content = "local vars = " .. vim.inspect(cmake.get_target_vars(target))
-    content = content .. "\nreturn" .. vim.inspect(config.target_settings[target])
+    content = content .. "\nreturn " .. vim.inspect(config.target_settings[target])
 
     window.set_content(content)
     window.title = "CMake-Tools settings for " .. target
     window.on_save = function(str)
-      local fn = loadstring(str)
-      if fn then
-        config.target_settings[target] = fn()
+      local ok, val = convert_to_table(str)
+      if ok then
+        config.target_settings[target] = val
       end
     end
     window.open()
