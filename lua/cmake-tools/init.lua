@@ -22,7 +22,6 @@ local cmake = {}
 local full_cmd = ""
 
 local base_settings_default = {
-  args = {},
   env = {},
 }
 
