@@ -58,7 +58,6 @@ function utils.get_path(str, sep)
   return str:match("(.*" .. sep .. ")")
 end
 
--- TODO change
 --- Execute CMake launch target in terminal.
 ---@param executable string executable file
 ---@param full_cmd string full command line
