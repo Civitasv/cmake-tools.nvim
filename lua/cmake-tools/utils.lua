@@ -112,13 +112,15 @@ function utils.deepcopy(orig, copies)
   return copy
 end
 
-function notify_update_line(line)
-  if line and line:match("^%[%s*(%d+)%s*%%%]") then -- only show lines containing build progress e.g [ 12%]
-    notification.notification.id = notification.notify( -- notify with percentage and message
-      line,
-      notification.notification.level,
-      { replace = notification.notification.id, title = "CMakeTools" }
-    )
+local notify_update_line = function(line)
+  if line ~= nil then
+    if line and line:match("^%[%s*(%d+)%s*%%%]") then -- only show lines containing build progress e.g [ 12%]
+      notification.notification.id = notification.notify( -- notify with percentage and message
+        line,
+        notification.notification.level,
+        { replace = notification.notification.id, title = "CMakeTools" }
+      )
+    end
   end
 end
 
