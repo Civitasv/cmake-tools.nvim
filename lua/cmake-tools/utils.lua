@@ -1,10 +1,10 @@
 local Path = require("plenary.path")
 local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
-local terminal = require("cmake-tools.terminal")
-local quickfix = require("cmake-tools.quickfix")
+local terminal = require("cmake-tools.executors.terminal")
 
 -- local const = require("cmake-tools.const")
+---@alias executor_conf {name:string, opts:table}
 
 local utils = {}
 
@@ -24,6 +24,13 @@ function utils.dump(o)
   end
 end
 
+--- Get the appropriate executor by name
+---@param name string
+---@return executor
+function utils.get_executor(name)
+  return require("cmake-tools.executors")[name]
+end
+
 function utils.get_cmake_configuration()
   local cmakelists = Path:new(vim.loop.cwd(), "CMakeLists.txt")
   if not cmakelists:is_file() then
@@ -36,20 +43,14 @@ function utils.get_cmake_configuration()
   return Result:new(Types.SUCCESS, cmakelists, "cmake-tools has found CMakeLists.txt.")
 end
 
-function utils.show_cmake_window(always_use_terminal, quickfix_opts, terminal_opts)
-  if always_use_terminal then
-    terminal.show(terminal_opts)
-  else
-    quickfix.show(quickfix_opts)
-  end
+---@param executor_data executor_conf
+function utils.show_cmake_window(executor_data)
+  utils.get_executor(executor_data.name).show(executor_data.opts)
 end
 
-function utils.close_cmake_window(always_use_terminal)
-  if always_use_terminal then
-    terminal.close()
-  else
-    quickfix.close()
-  end
+---@param executor_data executor_conf
+function utils.close_cmake_window(executor_data)
+  utils.get_executor(executor_data.name).close(executor_data.opts)
 end
 
 function utils.get_path(str, sep)
@@ -57,27 +58,29 @@ function utils.get_path(str, sep)
   return str:match("(.*" .. sep .. ")")
 end
 
+-- TODO change
 --- Execute CMake launch target in terminal.
--- @param executable executable file
--- @param full_cmd full command line
--- @param opts execute options
-function utils.execute(executable, full_cmd, opts)
+---@param executable string executable file
+---@param full_cmd string full command line
+---@param terminal_data executor_conf execute options
+---@param executor_data executor_conf execute options
+function utils.execute(executable, full_cmd, terminal_data, executor_data)
   -- Please save all
   vim.cmd("silent exec " .. '"wall"')
 
   -- First, if we use quickfix to generate, build, etc, we should close it
-  if not opts.cmake_always_use_terminal then
-    quickfix.close()
+  if executor_data.name ~= "terminal" then
+    utils.close_cmake_window(executor_data)
   end
 
   -- Then, execute it
-  terminal.execute(executable, full_cmd, opts)
+  terminal.execute(executable, full_cmd, terminal_data.opts)
 end
 
-function utils.softlink(src, target, opts)
-  if opts.cmake_always_use_terminal and not utils.file_exists(target) then
+function utils.softlink(src, target, use_terminal, opts)
+  if use_terminal and not utils.file_exists(target) then
     local cmd = "cmake -E create_symlink " .. src .. " " .. target
-    terminal.run(cmd, opts)
+    terminal.run(cmd, {}, {}, opts)
     return
   end
 
@@ -109,26 +112,26 @@ function utils.deepcopy(orig, copies)
   return copy
 end
 
--- Execute CMake command using job api
-function utils.run(cmd, env, args, opts)
+---Run a commond
+---@param cmd string the executable to execute
+---@param env table environment variables
+---@param args table arguments to the executable
+---@param executor_data executor_conf the executor
+---@param on_success nil|function extra arguments, f.e on_success is a callback to be called when the process finishes
+---@return nil
+function utils.run(cmd, env, args, executor_data, on_success)
   -- save all
   vim.cmd("wall")
-
-  if opts.cmake_always_use_terminal then
-    return terminal.run(cmd, opts)
-  else
-    return quickfix.run(cmd, env, args, opts)
-  end
+  utils.get_executor(executor_data.name).run(cmd, env, args, executor_data.opts, on_success)
 end
 
 --- Check if exists active job.
+---@param terminal_data executor_conf the executor
+---@param executor_data executor_conf the executor
 -- @return true if exists else false
-function utils.has_active_job(always_use_terminal)
-  if always_use_terminal then
-    return terminal.has_active_job()
-  else
-    return terminal.has_active_job() or quickfix.has_active_job()
-  end
+function utils.has_active_job(terminal_data, executor_data)
+  return utils.get_executor(executor_data.name).has_active_job(executor_data.opts)
+    or utils.get_executor(terminal_data.name).has_active_job(terminal_data.opts)
 end
 
 function utils.mkdir(dir)
@@ -151,12 +154,9 @@ function utils.file_exists(path)
   return true
 end
 
-function utils.stop(opts)
-  if opts.cmake_always_use_terminal then
-    terminal.stop()
-  else
-    quickfix.stop()
-  end
+---@param executor_data executor_conf the executor
+function utils.stop(executor_data)
+  utils.get_executor(executor_data.name).stop(executor_data.opts)
 end
 
 return utils

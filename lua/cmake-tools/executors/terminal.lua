@@ -1,54 +1,12 @@
 local osys = require("cmake-tools.osys")
 local log = require("cmake-tools.log")
 
+---@class terminal:executor
 local terminal = {
   id = nil, -- id for the unified terminal
 }
 
-function terminal.has_active_job()
-  if terminal.id then
-    -- first, check if this buffer is valid
-    if not vim.api.nvim_buf_is_valid(terminal.id) then
-      return
-    end
-    local main_pid = vim.api.nvim_buf_get_var(terminal.id, "terminal_job_pid")
-    local child_procs = vim.api.nvim_get_proc_children(main_pid)
-
-    if next(child_procs) then
-      return true
-    else
-      return false
-    end
-  end
-
-  return false
-end
-
-function terminal.show(terminal_opts)
-  if not terminal.id then
-    log.info("There is no terminal instance")
-    return
-  end
-
-  local win_id = terminal.reposition(terminal_opts)
-
-  if win_id ~= -1 then
-    -- The window is alive, so we set buffer in window
-    vim.api.nvim_win_set_buf(win_id, terminal.id)
-    if terminal_opts.split_direction == "horizontal" then
-      vim.api.nvim_win_set_height(win_id, terminal_opts.split_size)
-    else
-      vim.api.nvim_win_set_width(win_id, terminal_opts.split_size)
-    end
-  elseif win_id >= -1 then
-    -- The window is not active, we need to create a new buffer
-    vim.cmd(":" .. terminal_opts.split_direction .. " " .. terminal_opts.split_size .. "sp") -- Split
-    vim.api.nvim_win_set_buf(0, terminal.id)
-  else
-    -- log.error("Invalid window Id!")
-    -- do nothing
-  end
-end
+--====== Helpers ======
 
 -- Make a new terminal named term_name
 function terminal.new_instance(term_name, opts)
@@ -438,21 +396,13 @@ function terminal.get_buffers_with_prefix(prefix)
   return filtered_buffers
 end
 
-function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_call, env)
+function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_call)
   local full_cmd = ""
   executable = vim.fn.fnamemodify(executable, ":t")
 
   -- Launch form executable's build directory by default
   launch_path = terminal.prepare_launch_path(launch_path)
   full_cmd = "cd " .. launch_path .. " &&"
-
-  if osys.iswin32 then
-    for _, v in ipairs(env) do
-      full_cmd = full_cmd .. " set " .. v .. " &&"
-    end
-  else
-    full_cmd = full_cmd .. " " .. table.concat(env, " ")
-  end
 
   -- prepend wrap_call args
   if wrap_call then
@@ -479,35 +429,30 @@ function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_ca
     end
   end
 
-  if osys.iswin32 then -- wrap in sub process to prevent env vars from being persited
-    full_cmd = 'cmd /C "' .. full_cmd .. '"'
-  end
-
   return full_cmd
 end
 
 function terminal.execute(executable, full_cmd, opts)
-  local prefix = opts.cmake_terminal_opts.prefix_name
+  local prefix = opts.prefix_name
 
   -- Get pure executable name, cause previously, it is an absolute path
   executable = vim.fn.fnamemodify(executable, ":t")
 
   -- Buffer name of executable needs to be set with a prefix
   -- so that the reposition_term() function can find it
-  local _, buffer_idx =
-    terminal.create_if_not_exists(prefix .. executable, opts.cmake_terminal_opts)
+  local _, buffer_idx = terminal.create_if_not_exists(prefix .. executable, opts)
   terminal.id = buffer_idx
 
   -- Reposition the terminal buffer, before sending commands
-  local final_win_id = terminal.reposition(opts.cmake_terminal_opts)
+  local final_win_id = terminal.reposition(opts)
 
   -- Send final cmd to terminal
   terminal.send_data_to_terminal(buffer_idx, full_cmd, {
     win_id = final_win_id,
-    split_direction = opts.cmake_terminal_opts.split_direction,
-    split_size = opts.cmake_terminal_opts.split_size,
-    start_insert = opts.cmake_terminal_opts.start_insert_in_launch_task,
-    focus_on_launch_terminal = opts.cmake_terminal_opts.focus_on_launch_terminal,
+    split_direction = opts.split_direction,
+    split_size = opts.split_size,
+    start_insert = opts.start_insert_in_launch_task,
+    focus_on_launch_terminal = opts.focus_on_launch_terminal,
   })
 end
 
@@ -527,34 +472,6 @@ function terminal.prepare_cmd_for_run(cmd, env, args)
   return full_cmd
 end
 
-function terminal.run(full_cmd, opts)
-  local prefix = opts.cmake_terminal_opts.prefix_name -- [CMakeTools]
-
-  -- prefix is added to the terminal name because the reposition_term() function needs to find it
-  local _, buffer_idx = terminal.create_if_not_exists(
-    prefix .. opts.cmake_terminal_opts.name, -- [CMakeTools]Main Terminal
-    opts.cmake_terminal_opts
-  )
-  terminal.id = buffer_idx
-
-  -- Reposition the terminal buffer, before sending commands
-  local final_win_id = terminal.reposition(opts.cmake_terminal_opts)
-
-  -- Prepare Launch path form
-  local launch_path = terminal.prepare_launch_path(opts.cmake_launch_path)
-  -- Launch form executable's build directory by default
-  full_cmd = "cd " .. launch_path .. " && " .. full_cmd
-
-  -- Send final cmd to terminal
-  terminal.send_data_to_terminal(buffer_idx, full_cmd, {
-    win_id = final_win_id,
-    split_direction = opts.cmake_terminal_opts.split_direction,
-    split_size = opts.cmake_terminal_opts.split_size,
-    start_insert = opts.cmake_terminal_opts.start_insert_in_other_tasks,
-    focus_on_main_terminal = opts.cmake_terminal_opts.focus_on_main_terminal,
-  })
-end
-
 function terminal.prepare_launch_path(path)
   if osys.iswin32 then
     path = '"' .. path .. '"' -- The path is kept in double quotes ... Windows Duh!
@@ -568,8 +485,106 @@ function terminal.prepare_launch_path(path)
 
   return path
 end
+---Checks if there is an active job
+---@param opts table options for this adapter
+---@return boolean
+function terminal.has_active_job(opts)
+  if terminal.id then
+    -- first, check if this buffer is valid
+    if not vim.api.nvim_buf_is_valid(terminal.id) then
+      return false
+    end
+    local main_pid = vim.api.nvim_buf_get_var(terminal.id, "terminal_job_pid")
+    local child_procs = vim.api.nvim_get_proc_children(main_pid)
 
-function terminal.stop()
+    if next(child_procs) then
+      return true
+    else
+      return false
+    end
+  end
+
+  return false
+end
+---Show the current executing command
+---@param opts table options for this adapter
+---@return nil
+function terminal.show(opts)
+  if not terminal.id then
+    log.info("There is no terminal instance")
+    return
+  end
+
+  local win_id = terminal.reposition(opts)
+
+  if win_id ~= -1 then
+    -- The window is alive, so we set buffer in window
+    vim.api.nvim_win_set_buf(win_id, terminal.id)
+    if opts.split_direction == "horizontal" then
+      vim.api.nvim_win_set_height(win_id, opts.split_size)
+    else
+      vim.api.nvim_win_set_width(win_id, opts.split_size)
+    end
+  elseif win_id >= -1 then
+    -- The window is not active, we need to create a new buffer
+    vim.cmd(":" .. opts.split_direction .. " " .. opts.split_size .. "sp") -- Split
+    vim.api.nvim_win_set_buf(0, terminal.id)
+  else
+    -- log.error("Invalid window Id!")
+    -- do nothing
+  end
+end
+
+---@param opts table options for this adapter
+---@return nil
+function terminal.close(opts)
+  -- TODO
+end
+
+---Run a commond
+---@param cmd string the executable to execute
+---@param env table environment variables
+---@param args table arguments to the executable
+---@param opts table options for this adapter
+---@param on_success nil|function extra arguments, f.e on_success is a callback to be called when the process finishes
+---@return nil
+function terminal.run(cmd, env, args, opts, on_success)
+  local prefix = opts.prefix_name -- [CMakeTools]
+
+  -- prefix is added to the terminal name because the reposition_term() function needs to find it
+  local _, buffer_idx = terminal.create_if_not_exists(
+    prefix .. opts.name, -- [CMakeTools]Main Terminal
+    opts
+  )
+  terminal.id = buffer_idx
+
+  -- Reposition the terminal buffer, before sending commands
+  local final_win_id = terminal.reposition(opts)
+
+  -- Prepare Launch path form
+  -- TODO prepare proper cwd
+  local launch_path = terminal.prepare_launch_path(vim.loop.cwd())
+  -- Launch form executable's build directory by default
+  cmd = "cd " .. launch_path .. " && " .. cmd
+
+  -- Send final cmd to terminal
+  terminal.send_data_to_terminal(
+    buffer_idx,
+    cmd,
+    vim.tbl_deep_extend("force", {
+      win_id = final_win_id,
+      split_direction = opts.split_direction,
+      split_size = opts.split_size,
+      start_insert = opts.start_insert_in_other_tasks,
+      focus_on_main_terminal = opts.focus_on_main_terminal,
+    }, opts)
+  )
+end
+
+---Stop the active job
+---@param opts table options for this adapter
+---@return nil
+function terminal.stop(opts)
   local main_pid = vim.api.nvim_buf_get_var(terminal.id, "terminal_job_pid")
   local child_procs = vim.api.nvim_get_proc_children(main_pid)
   for _, pid in ipairs(child_procs) do
