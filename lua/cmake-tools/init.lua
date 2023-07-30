@@ -137,7 +137,7 @@ function cmake.generate(opt, callback)
       if type(callback) == "function" then
         callback()
       else
-        utils.run(full_cmd, {}, {}, config.executor)
+        utils.run(full_cmd, {}, {}, config.executor, nil, const.cmake_notifications)
         cmake.configure_compile_commands()
         cmake.create_regenerate_on_save_autocmd()
         full_cmd = ""
@@ -150,7 +150,7 @@ function cmake.generate(opt, callback)
         end
         cmake.configure_compile_commands()
         cmake.create_regenerate_on_save_autocmd()
-      end)
+      end, const.cmake_notifications)
     end
   end
 
@@ -207,7 +207,7 @@ function cmake.generate(opt, callback)
     if type(callback) == "function" then
       callback()
     else
-      utils.run(full_cmd, {}, {}, config.executor)
+      utils.run(full_cmd, {}, {}, config.executor, nil, const.cmake_notifications)
       cmake.configure_compile_commands()
       cmake.create_regenerate_on_save_autocmd()
       full_cmd = ""
@@ -225,7 +225,8 @@ function cmake.generate(opt, callback)
         end
         cmake.configure_compile_commands()
         cmake.create_regenerate_on_save_autocmd()
-      end
+      end,
+      const.cmake_notifications
     )
   end
 end
@@ -254,7 +255,7 @@ function cmake.clean(callback)
     if type(callback) == "function" then
       return callback()
     else
-      utils.run(full_cmd, {}, {}, config.executor)
+      utils.run(full_cmd, {}, {}, config.executor, nil, const.cmake_notifications)
       full_cmd = ""
     end
   else
@@ -263,7 +264,7 @@ function cmake.clean(callback)
       if type(callback) == "function" then
         callback()
       end
-    end)
+    end, config.opts.cmake_notifications)
   end
 end
 
@@ -332,7 +333,7 @@ function cmake.build(opt, callback)
     if type(callback) == "function" then
       callback()
     else
-      utils.run(full_cmd, {}, {}, config.executor)
+      utils.run(full_cmd, {}, {}, config.executor, nil, const.cmake_notifications)
       full_cmd = ""
     end
   else
@@ -341,7 +342,7 @@ function cmake.build(opt, callback)
       if type(callback) == "function" then
         callback()
       end
-    end)
+    end, const.cmake_notifications)
   end
 end
 
@@ -402,7 +403,7 @@ function cmake.install(opt)
   local args = { "--install", config.build_directory.filename }
   vim.list_extend(args, fargs)
   --TODO notifications
-  return utils.run(const.cmake_command, {}, args, config.executor)
+  return utils.run(const.cmake_command, {}, args, config.executor, nil, const.cmake_notifications)
 end
 
 --- CMake close cmake console
