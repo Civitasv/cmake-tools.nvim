@@ -6,7 +6,56 @@ local terminal = {
   id = nil, -- id for the unified terminal
 }
 
---====== Helpers ======
+---Checks if there is an active job
+---@param opts table options for this adapter
+---@return boolean
+function terminal.has_active_job(opts)
+  if terminal.id then
+    -- first, check if this buffer is valid
+    if not vim.api.nvim_buf_is_valid(terminal.id) then
+      return false
+    end
+    local main_pid = vim.api.nvim_buf_get_var(terminal.id, "terminal_job_pid")
+    local child_procs = vim.api.nvim_get_proc_children(main_pid)
+
+    if next(child_procs) then
+      return true
+    else
+      return false
+    end
+  end
+
+  return false
+end
+
+---Show the current executing command
+---@param opts table options for this adapter
+---@return nil
+function terminal.show(opts)
+  if not terminal.id then
+    log.info("There is no terminal instance")
+    return
+  end
+
+  local win_id = terminal.reposition(opts)
+
+  if win_id ~= -1 then
+    -- The window is alive, so we set buffer in window
+    vim.api.nvim_win_set_buf(win_id, terminal.id)
+    if opts.split_direction == "horizontal" then
+      vim.api.nvim_win_set_height(win_id, opts.split_size)
+    else
+      vim.api.nvim_win_set_width(win_id, opts.split_size)
+    end
+  elseif win_id >= -1 then
+    -- The window is not active, we need to create a new buffer
+    vim.cmd(":" .. opts.split_direction .. " " .. opts.split_size .. "sp") -- Split
+    vim.api.nvim_win_set_buf(0, terminal.id)
+  else
+    -- log.error("Invalid window Id!")
+    -- do nothing
+  end
+end
 
 -- Make a new terminal named term_name
 function terminal.new_instance(term_name, opts)
@@ -396,13 +445,21 @@ function terminal.get_buffers_with_prefix(prefix)
   return filtered_buffers
 end
 
-function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_call)
+function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_call, env)
   local full_cmd = ""
   executable = vim.fn.fnamemodify(executable, ":t")
 
   -- Launch form executable's build directory by default
   launch_path = terminal.prepare_launch_path(launch_path)
   full_cmd = "cd " .. launch_path .. " &&"
+
+  if osys.iswin32 then
+    for _, v in ipairs(env) do
+      full_cmd = full_cmd .. " set " .. v .. " &&"
+    end
+  else
+    full_cmd = full_cmd .. " " .. table.concat(env, " ")
+  end
 
   -- prepend wrap_call args
   if wrap_call then
@@ -427,6 +484,10 @@ function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_ca
     for _, arg in ipairs(args) do
       full_cmd = full_cmd .. " " .. arg
     end
+  end
+
+  if osys.iswin32 then -- wrap in sub process to prevent env vars from being persited
+    full_cmd = 'cmd /C "' .. full_cmd .. '"'
   end
 
   return full_cmd
@@ -472,75 +533,6 @@ function terminal.prepare_cmd_for_run(cmd, env, args)
   return full_cmd
 end
 
-function terminal.prepare_launch_path(path)
-  if osys.iswin32 then
-    path = '"' .. path .. '"' -- The path is kept in double quotes ... Windows Duh!
-  elseif osys.islinux then
-    path = path
-  elseif osys.iswsl then
-    path = path
-  elseif osys.ismac then
-    path = path
-  end
-
-  return path
-end
----Checks if there is an active job
----@param opts table options for this adapter
----@return boolean
-function terminal.has_active_job(opts)
-  if terminal.id then
-    -- first, check if this buffer is valid
-    if not vim.api.nvim_buf_is_valid(terminal.id) then
-      return false
-    end
-    local main_pid = vim.api.nvim_buf_get_var(terminal.id, "terminal_job_pid")
-    local child_procs = vim.api.nvim_get_proc_children(main_pid)
-
-    if next(child_procs) then
-      return true
-    else
-      return false
-    end
-  end
-
-  return false
-end
----Show the current executing command
----@param opts table options for this adapter
----@return nil
-function terminal.show(opts)
-  if not terminal.id then
-    log.info("There is no terminal instance")
-    return
-  end
-
-  local win_id = terminal.reposition(opts)
-
-  if win_id ~= -1 then
-    -- The window is alive, so we set buffer in window
-    vim.api.nvim_win_set_buf(win_id, terminal.id)
-    if opts.split_direction == "horizontal" then
-      vim.api.nvim_win_set_height(win_id, opts.split_size)
-    else
-      vim.api.nvim_win_set_width(win_id, opts.split_size)
-    end
-  elseif win_id >= -1 then
-    -- The window is not active, we need to create a new buffer
-    vim.cmd(":" .. opts.split_direction .. " " .. opts.split_size .. "sp") -- Split
-    vim.api.nvim_win_set_buf(0, terminal.id)
-  else
-    -- log.error("Invalid window Id!")
-    -- do nothing
-  end
-end
-
----@param opts table options for this adapter
----@return nil
-function terminal.close(opts)
-  -- TODO
-end
-
 ---Run a commond
 ---@param cmd string the executable to execute
 ---@param env table environment variables
@@ -580,6 +572,27 @@ function terminal.run(cmd, env, args, opts, on_success)
     }, opts)
   )
 end
+
+function terminal.prepare_launch_path(path)
+  if osys.iswin32 then
+    path = '"' .. path .. '"' -- The path is kept in double quotes ... Windows Duh!
+  elseif osys.islinux then
+    path = path
+  elseif osys.iswsl then
+    path = path
+  elseif osys.ismac then
+    path = path
+  end
+
+  return path
+end
+
+---@param opts table options for this adapter
+---@return nil
+function terminal.close(opts)
+  -- TODO
+end
+
 
 ---Stop the active job
 ---@param opts table options for this adapter
