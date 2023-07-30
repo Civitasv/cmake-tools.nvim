@@ -547,17 +547,13 @@ function terminal.run(cmd, env, args, opts)
   cmd = "cd " .. launch_path .. " && " .. cmd
 
   -- Send final cmd to terminal
-  terminal.send_data_to_terminal(
-    buffer_idx,
-    cmd,
-    vim.tbl_deep_extend("force", {
-      win_id = final_win_id,
-      split_direction = opts.split_direction,
-      split_size = opts.split_size,
-      start_insert = opts.start_insert_in_other_tasks,
-      focus_on_main_terminal = opts.focus_on_main_terminal,
-    }, opts)
-  )
+  terminal.send_data_to_terminal(buffer_idx, cmd, {
+    win_id = final_win_id,
+    split_direction = opts.split_direction,
+    split_size = opts.split_size,
+    start_insert = opts.start_insert_in_other_tasks,
+    focus_on_main_terminal = opts.focus_on_main_terminal,
+  })
 end
 
 function terminal.prepare_launch_path(path)
