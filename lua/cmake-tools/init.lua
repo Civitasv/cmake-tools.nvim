@@ -47,9 +47,6 @@ function cmake.setup(values)
     local old_config = _session.load()
     if next(old_config) ~= nil then
       config:update_build_dir(old_config.build_directory)
-      config.generate_options = old_config.generate_options
-      config.build_options = old_config.build_options
-
       config.build_type = old_config.build_type
       config.build_target = old_config.build_target
       config.launch_target = old_config.launch_target
@@ -1061,6 +1058,9 @@ function cmake.target_settings(opt)
   end
 
   if not window.is_open() then
+    if not config.target_settings then
+      config.target_settings = {}
+    end
     if not config.target_settings[target] then
       config.target_settings[target] = {}
     end

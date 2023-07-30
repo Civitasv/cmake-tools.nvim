@@ -68,8 +68,6 @@ function session.save(config)
     build_directory = config.build_directory and config.build_directory.filename or "",
     query_directory = config.build_directory and config.query_directory.filename or "",
     reply_directory = config.build_directory and config.reply_directory.filename or "",
-    generate_options = config.generate_options,
-    build_options = config.build_options,
     build_type = config.build_type,
     build_target = config.build_target,
     launch_target = config.launch_target,
