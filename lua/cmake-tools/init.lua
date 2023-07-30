@@ -50,7 +50,7 @@ function cmake.setup(values)
       config.kit = old_config.kit
       config.configure_preset = old_config.configure_preset
       config.build_preset = old_config.build_preset
-      config.base_settings = old_config.base_settings
+      config.base_settings = old_config.base_settings or {}
       config.target_settings = old_config.target_settings or {}
 
       -- migrate old launch args to new config
