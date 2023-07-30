@@ -666,9 +666,14 @@ if has_nvim_dap then
       config,
       opt.target and opt.target or config.launch_target
     )
+
     -- nvim.dap expects all env vars as string
     for index, value in pairs(env) do
       env[index] = tostring(value)
+    end
+
+    if next(env) == nil then -- dap complains on empty list (env = {})
+      env = nil
     end
 
     local can_debug_result = config:validate_for_debugging()
