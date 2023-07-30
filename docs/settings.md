@@ -17,7 +17,8 @@ Example for `CMakeSettings`
 return {
   env = {
     VERBOSE = 1,
-  }
+  },
+  working_dir = "${dir.binary}"
 }
 ```
 
@@ -33,9 +34,25 @@ return {
 }
 ```
 
+## variables
+
+The popup window will show available variables and their values.
+
+```lua
+local vars = {
+  dir = {
+    binary = "",
+    build = ""
+  }
+```
+
+These can be used for substitution (see [working_directory](#working_directory)) or directly as lua variables.
+
+## Settings
+
 Following settings are available:
 
-## `env`
+### `env`
 
 Specify environment variables for various tasks.
 Strings and numbers are supported.
@@ -52,7 +69,7 @@ env = {
 | `CMakeSettings`       | :white_check_mark: | environment varaibles for executing cmake commands. These are per default inherit to targets.  |
 | `CMakeTargetSettings` | :white_check_mark: | environment variables for running and debugging targets.    |
 
-## `inherit_base_environment`
+### `inherit_base_environment`
 
 ```lua
   inherit_base_environment = true -- true|false
@@ -63,7 +80,7 @@ env = {
 | `CMakeSettings`       | :x:                | |
 | `CMakeTargetSettings` | :white_check_mark: | Will inherit env various from base settings if set to `true` |
 
-## `args`
+### `args`
 
 Specify additional command line arguments.
 
@@ -75,3 +92,16 @@ Specify additional command line arguments.
 |--------------         | --------------     |  --------------         |
 | `CMakeSettings`       | :x:                | |
 | `CMakeTargetSettings` | :white_check_mark: | command line arguments passed to executable when running or debugging |
+
+### `working_directory`
+
+Specify the working directory in which run and debug commands are executed. Supports substitution commands (`${}`).
+
+```lua
+  working_directory = "${dir.binary}"
+```
+
+| Command               | Supported          | Details                 |
+|--------------         | --------------     |  --------------         |
+| `CMakeSettings`       | :white_check_mark: | Defines the working directory for all targets unless overwritten. |
+| `CMakeTargetSettings` | :white_check_mark: | Sets the working directory just for this target. No default value - Has to be added manually. |
