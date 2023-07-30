@@ -144,9 +144,24 @@ function utils.run(cmd, env, args, executor_data, on_success, cmake_notification
     notification.update_spinner()
   end
 
-  utils
-    .get_executor(executor_data.name)
-    .run(cmd, env, args, executor_data.opts, on_success, notify_update_line)
+  utils.get_executor(executor_data.name).run(cmd, env, args, executor_data.opts, function(code)
+    local msg = "Exited with code " .. code
+    local level = cmake_notifications.level
+    local icon = ""
+    if code ~= 0 then
+      level = "error"
+      icon = ""
+    end
+    notification.notify(
+      msg,
+      level,
+      { icon = icon, replace = notification.notification.id, timeout = 3000 }
+    )
+    notification.notification = {} -- reset and stop update_spinner
+    if code == 0 and on_success then
+      on_success()
+    end
+  end, notify_update_line)
 end
 
 --- Check if exists active job.

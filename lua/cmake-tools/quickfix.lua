@@ -24,45 +24,20 @@ local function append_to_quickfix(error, data)
   end
 end
 
----Show the current executing command
----@param opts quickfix_opts_type options for this adapter
----@return nil
 function quickfix.show(opts)
   vim.api.nvim_command(opts.position .. " copen " .. opts.size)
   vim.api.nvim_command("wincmd p")
 end
 
----Close the current executing command
----@param opts quickfix_opts_type options for this adapter
----@return nil
 function quickfix.close(opts)
   vim.api.nvim_command("cclose")
 end
 
----Run a commond
----@param cmd string the executable to execute
----@param env table environment variables
----@param args table arguments to the executable
----@param opts quickfix_opts_type options for this adapter
----@param on_success nil|function extra arguments, f.e on_success is a callback to be called when the process finishes
----@return nil
-function quickfix.run(cmd, env, args, opts, on_success, on_output)
+function quickfix.run(cmd, env, args, opts, on_exit, on_output)
   vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
   if opts.show == "always" then
     quickfix.show(opts)
   end
-  --TODO
-  --[[quickfix.notification = opts.cmake_notifications
-
-  if quickfix.notification.enabled then
-    quickfix.notification.spinner_idx = 1
-    quickfix.notification.level = "info"
-
-    quickfix.notification.id =
-      quickfix.notify(cmd, quickfix.notification.level, { title = "CMakeTools" })
-    quickfix.update_spinner()
-  end]]
-  --
 
   local job_args = {}
 
@@ -98,35 +73,13 @@ function quickfix.run(cmd, env, args, opts, on_success, on_output)
       local msg = "Exited with code " .. code
 
       append_to_quickfix(msg)
-      if code == 0 then
-        if on_success then
-          on_success()
-        end
-      elseif opts.show == "only_on_error" then
+      if code == 0 and opts.show == "only_on_error" then
         quickfix.show(opts)
         quickfix.scroll_to_bottom()
       end
-      --if on_exit ~=nil then
-      --	      on_exit(code)
-      --    end
-      --[[local level = "error"
-      local msg = "Exited with code " .. (signal == 0 and code or 128 + signal)
-      local icon = ""
-      quickfix.notify(
-        msg,
-        level,
-        { icon = icon, replace = quickfix.notification.id, timeout = 3000 }
-      )
-
-      quickfix.notification = {} -- reset and stop update_spinner
-      end]]
-      --
-
-      --[[if code == 0 and opts.show == "only_on_error" then
-        quickfix.show(opts)
-        quickfix.scroll_to_bottom()
-      end]]
-      --
+      if on_exit then
+        on_exit(code)
+      end
     end),
   })
 
