@@ -132,7 +132,7 @@ function cmake.generate(opt, callback)
     vim.list_extend(args, config.generate_options)
     vim.list_extend(args, fargs)
 
-    local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
+    local env = environment.get_build_environment(config, config.executor.name == "terminal")
 
     if config.executor.name == "terminal" then
       if full_cmd ~= "" then
@@ -203,7 +203,7 @@ function cmake.generate(opt, callback)
   vim.list_extend(args, config.generate_options)
   vim.list_extend(args, fargs)
 
-  local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
+  local env = environment.get_build_environment(config, config.executor.name == "terminal")
 
   if config.executor.name == "terminal" then
     if full_cmd ~= "" then
@@ -244,7 +244,7 @@ function cmake.clean(callback)
 
   local args = { "--build", config.build_directory.filename, "--target", "clean" }
 
-  local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
+  local env = environment.get_build_environment(config, config.executor.name == "terminal")
 
   if config.executor.name == "terminal" then
     if full_cmd ~= "" then
@@ -310,7 +310,7 @@ function cmake.build(opt, callback)
   end
 
   vim.list_extend(args, config.build_options)
-  local env = environment.get_build_environment(config, const.cmake_always_use_terminal)
+  local env = environment.get_build_environment(config, config.executor.name == "terminal")
 
   if opt.target ~= nil then
     vim.list_extend(args, { "--target", opt.target })
