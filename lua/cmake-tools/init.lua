@@ -22,10 +22,12 @@ local cmake = {}
 local full_cmd = ""
 
 local base_settings_default = {
+  args = {},
   env = {},
 }
 
 local target_settings_default = {
+  args = {},
   inherit_base_environment = true,
   env = {},
 }
