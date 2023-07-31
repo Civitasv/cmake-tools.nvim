@@ -1109,7 +1109,9 @@ local function convert_to_table(str)
     return false
   end
 
-  if pcall(function() vim.inspect(fn()) end) then
+  if pcall(function()
+    vim.inspect(fn())
+  end) then
     str = "return " .. vim.inspect(fn())
     fn = loadstring(str)
     if not fn then
