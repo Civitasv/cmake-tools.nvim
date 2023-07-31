@@ -23,20 +23,20 @@ The goal of this plugin is to offer a comprehensive, convenient, and powerful wo
 
 ```lua
 require("cmake-tools").setup {
-  cmake_command = "cmake", -- cmake command path
-  cmake_regenerate_on_save = true,
-  cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" }, -- it will be activated when invoke `cmake.generate`
-  cmake_build_options = {}, -- it will be activated when invoke `cmake.build`
-  cmake_build_directory = "", -- cmake generate directory
-  cmake_build_directory_prefix = "cmake_build_", -- when cmake_build_directory is "", this option will be activated
-  cmake_soft_link_compile_commands = true, -- soft compile commands file to project root dir
-  cmake_compile_commands_from_lsp = false, -- automatically set compile commands location using lsp
-  cmake_kits_path = nil,
+  cmake_command = "cmake", -- this is used to specify cmake command path
+  cmake_regenerate_on_save = true, -- auto generate when save CMakeLists.txt
+  cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" }, -- this will be passed when invoke `CMakeGenerate`
+  cmake_build_options = {}, -- this will be passed when invoke `CMakeBuild`
+  cmake_build_directory = "", -- this is used to specify generate directory for cmake
+  cmake_build_directory_prefix = "cmake_build_", -- when cmake_build_directory is set to "", this option will be activated
+  cmake_soft_link_compile_commands = true, -- this will automatically make a soft link from compile commands file to project root dir
+  cmake_compile_commands_from_lsp = false, -- this will automatically set compile commands file location using lsp, to use it, please set `cmake_soft_link_compile_commands` to false
+  cmake_kits_path = nil,  -- this is used to specify global cmake kits path, see CMakeKits for detailed usage
   cmake_variants_message = {
-    short = { show = true },
-    long = { show = true, max_length = 40 },
+    short = { show = true },  -- whether to show short message
+    long = { show = true, max_length = 40 },  -- whether to show long message
   },
-  cmake_dap_configuration = {
+  cmake_dap_configuration = {  -- debug settings for cmake
     name = "cpp",
     type = "codelldb",
     request = "launch",
@@ -54,8 +54,8 @@ require("cmake-tools").setup {
         size = 10,
       },
       overseer = {
-	    new_task_opts={}, -- options to pass into the `overseer.new_task` command
-	    on_new_task=function(task) end -- a function that gets overseer.Task when it is created, before calling `task:start`
+        new_task_opts = {}, -- options to pass into the `overseer.new_task` command
+        on_new_task = function(task) end, -- a function that gets overseer.Task when it is created, before calling `task:start`
       },
       terminal = {}, -- terminal executor uses the values in cmake_terminal
     },
