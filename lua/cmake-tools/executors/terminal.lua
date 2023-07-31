@@ -181,7 +181,12 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
 
   -- Focus on the last line in the buffer to keep the scrolling output
   vim.api.nvim_buf_call(buffer_idx, function()
-    vim.cmd("normal! G")
+    local type = vim.api.nvim_get_option_value("buftype", {
+      buf = buffer_idx,
+    })
+    if type ~= "terminal" then
+      vim.cmd("normal! G")
+    end
   end)
 
   local chan = vim.api.nvim_buf_get_var(buffer_idx, "terminal_job_id")
