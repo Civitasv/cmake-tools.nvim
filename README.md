@@ -44,6 +44,9 @@ require("cmake-tools").setup {
     runInTerminal = true,
     console = "integratedTerminal",
   },
+  cmake_overseer:
+    on_new_task - function that gets overseer task
+    new_task_opts - new task options
   cmake_always_use_terminal = false, -- if true, use terminal for generate, build, clean, install, run, etc, except for debug, else only use terminal for run, use quickfix for others
   cmake_quickfix_opts = { -- quickfix settings for cmake, quickfix will be used when `cmake_always_use_terminal` is false
     show = "always", -- "always", "only_on_error"

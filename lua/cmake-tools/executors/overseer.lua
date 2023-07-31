@@ -15,13 +15,12 @@ function overseer_executor.close(opts)
 end
 
 function overseer_executor.run(cmd, env, args, opts, on_exit, on_output)
-  opts = {
+  opts = vim.tbl_extend("keep", {
     cmd = cmd,
     args = args,
     env = env,
     cwd = vim.fn.getcwd(),
-    strategy = opts.strategy,
-  }
+  }, opts.new_task_opts)
   overseer_executor.job = overseer.new_task(opts)
   if on_exit ~= nil then
     overseer_executor.job:subscribe("on_exit", function(out)
@@ -34,6 +33,9 @@ function overseer_executor.run(cmd, env, args, opts, on_exit, on_output)
       local stderr = data[1]
       on_output(stdout, stderr)
     end)
+  end
+  if opts.on_new_task ~= nil then
+    opts.on_new_task(overseer_executor.job)
   end
   overseer_executor.job:start()
 end
