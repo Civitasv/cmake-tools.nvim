@@ -1109,14 +1109,17 @@ local function convert_to_table(str)
     return false
   end
 
-  str = "return " .. vim.inspect(fn())
+  if pcall(function() vim.inspect(fn()) end) then
+    str = "return " .. vim.inspect(fn())
+    fn = loadstring(str)
+    if not fn then
+      return false
+    end
 
-  fn = loadstring(str)
-  if not fn then
+    return true, fn()
+  else
     return false
   end
-
-  return true, fn()
 end
 
 function cmake.get_target_vars(target)
