@@ -23,6 +23,7 @@ local full_cmd = ""
 
 local base_settings_default = {
   env = {},
+  working_dir = "${dir.binary}",
 }
 
 local target_settings_default = {
@@ -457,6 +458,49 @@ function cmake.open()
   )
 end
 
+function cmake.substitute_path(path, vars)
+  for key, value in pairs(vars) do
+    if type(value) == "string" or type(value) == "number" then
+      path = path:gsub("${" .. key .. "}", value)
+    else
+      if next(value) then
+        local prefix = key .. "."
+        for innerkey, innervalue in pairs(value) do
+          if type(innervalue) == "string" or type(innervalue) == "number" then
+            path = path:gsub("${" .. prefix .. innerkey .. "}", innervalue)
+          end
+        end
+      end
+    end
+  end
+
+  return path
+end
+
+function cmake.get_launch_path(target)
+  local model = config:get_code_model_info()[target]
+  local result = config:get_launch_target_from_info(model)
+  local target_path = result.data
+
+  local launch_path = vim.fn.fnamemodify(target_path, ":h")
+
+  if config.base_settings.working_dir and type(config.base_settings.working_dir) == "string" then
+    launch_path =
+      cmake.substitute_path(config.base_settings.working_dir, cmake.get_target_vars(target))
+  end
+
+  if
+    config.target_settings[target]
+    and config.target_settings[target].working_dir
+    and type(config.target_settings[target].working_dir) == "string"
+  then
+    launch_path = config.target_settings[target].working_dir
+    launch_path = cmake.substitute_path(launch_path, cmake.get_target_vars(target))
+  end
+
+  return launch_path
+end
+
 -- Run executable targets
 function cmake.run(opt)
   if utils.has_active_job(const.cmake_always_use_terminal) then
@@ -470,7 +514,7 @@ function cmake.run(opt)
       local result = config:get_launch_target_from_info(model)
       local target_path = result.data
 
-      local launch_path = vim.fn.fnamemodify(target_path, ":h")
+      local launch_path = cmake.get_launch_path(opt.target)
 
       if full_cmd ~= "" then
         full_cmd = 'cd "'
@@ -529,7 +573,8 @@ function cmake.run(opt)
       return cmake.build({ fargs = utils.deepcopy(opt.fargs) }, function()
         result = config:get_launch_target()
         local target_path = result.data
-        local launch_path = vim.fn.fnamemodify(target_path, ":h")
+
+        local launch_path = cmake.get_launch_path(cmake.get_launch_target())
 
         if full_cmd ~= "" then
           -- This jumps to the working directory, builds the target and then launches it inside the launch terminal
@@ -692,7 +737,7 @@ if has_nvim_dap then
         local dap_config = {
           name = opt.target,
           program = result.data,
-          cwd = utils.get_path(result.data, "/"),
+          cwd = cmake.get_launch_path(opt.target),
           args = opt.args,
           env = env,
         }
@@ -734,7 +779,7 @@ if has_nvim_dap then
           local dap_config = {
             name = config.launch_target,
             program = target_path,
-            cwd = utils.get_path(result.data, "/"),
+            cwd = cmake.get_launch_path(cmake.get_launch_target()),
             args = cmake:get_launch_args(),
             env = env,
           }
@@ -1049,6 +1094,40 @@ function cmake.select_launch_target(callback, regenerate)
   )
 end
 
+function cmake.get_base_vars()
+  local vars = { dir = {} }
+
+  vars.dir.build = config.build_directory.filename .. "/"
+  vars.dir.binary = "${dir.binary}"
+  return vars
+end
+
+local function convert_to_table(str)
+  -- do a roundtrip. this should remove unsupported stuff like function() which vim.inspect cannot convert
+  local fn = loadstring(str)
+  if not fn then
+    return false
+  end
+
+  str = "return " .. vim.inspect(fn())
+
+  fn = loadstring(str)
+  if not fn then
+    return false
+  end
+
+  return true, fn()
+end
+
+function cmake.get_target_vars(target)
+  local vars = cmake.get_base_vars()
+
+  local model = config:get_code_model_info()[target]
+  local result = config:get_launch_target_from_info(model)
+  vars.dir.binary = utils.get_path(result.data, "/") .. "/"
+  return vars
+end
+
 function cmake.settings()
   if not window.is_open() then
     if not config.base_settings then
@@ -1058,12 +1137,15 @@ function cmake.settings()
     -- insert missing fields
     config.base_settings = vim.tbl_deep_extend("keep", config.base_settings, base_settings_default)
 
-    window.set_content("return " .. vim.inspect(config.base_settings))
+    local content = "local vars = " .. vim.inspect(cmake.get_base_vars())
+    content = content .. "\nreturn " .. vim.inspect(config.base_settings)
+
+    window.set_content(content)
     window.title = "CMake-Tools base settings"
     window.on_save = function(str)
-      local fn = loadstring(str)
-      if fn then
-        config.base_settings = fn()
+      local ok, val = convert_to_table(str)
+      if ok then
+        config.base_settings = val
       end
     end
     window.open()
@@ -1090,12 +1172,15 @@ function cmake.target_settings(opt)
     config.target_settings[target] =
       vim.tbl_deep_extend("keep", config.target_settings[target], target_settings_default)
 
-    window.set_content("return " .. vim.inspect(config.target_settings[target]))
+    local content = "local vars = " .. vim.inspect(cmake.get_target_vars(target))
+    content = content .. "\nreturn " .. vim.inspect(config.target_settings[target])
+
+    window.set_content(content)
     window.title = "CMake-Tools settings for " .. target
     window.on_save = function(str)
-      local fn = loadstring(str)
-      if fn then
-        config.target_settings[target] = fn()
+      local ok, val = convert_to_table(str)
+      if ok then
+        config.target_settings[target] = val
       end
     end
     window.open()
