@@ -31,12 +31,12 @@ require("cmake-tools").setup {
   cmake_build_directory_prefix = "cmake_build_", -- when cmake_build_directory is set to "", this option will be activated
   cmake_soft_link_compile_commands = true, -- this will automatically make a soft link from compile commands file to project root dir
   cmake_compile_commands_from_lsp = false, -- this will automatically set compile commands file location using lsp, to use it, please set `cmake_soft_link_compile_commands` to false
-  cmake_kits_path = nil,  -- this is used to specify global cmake kits path, see CMakeKits for detailed usage
+  cmake_kits_path = nil, -- this is used to specify global cmake kits path, see CMakeKits for detailed usage
   cmake_variants_message = {
-    short = { show = true },  -- whether to show short message
-    long = { show = true, max_length = 40 },  -- whether to show long message
+    short = { show = true }, -- whether to show short message
+    long = { show = true, max_length = 40 }, -- whether to show long message
   },
-  cmake_dap_configuration = {  -- debug settings for cmake
+  cmake_dap_configuration = { -- debug settings for cmake
     name = "cpp",
     type = "codelldb",
     request = "launch",
@@ -76,7 +76,7 @@ require("cmake-tools").setup {
       -- Running Tasks
       start_insert_in_launch_task = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
       start_insert_in_other_tasks = false, -- If you want to enter terminal with :startinsert upon launching all other cmake tasks in the terminal. Generally set as false
-      focus_on_main_terminal = false, -- Focus on cmake terminal when cmake task is launched. Only used if cmake_always_use_terminal is true.
+      focus_on_main_terminal = false, -- Focus on cmake terminal when cmake task is launched. Only used if executor is terminal.
       focus_on_launch_terminal = false, -- Focus on cmake launch terminal when executable target in launched.
     },
   },
