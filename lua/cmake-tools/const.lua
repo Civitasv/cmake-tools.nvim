@@ -20,16 +20,20 @@ local const = {
     runInTerminal = true,
     console = "integratedTerminal",
   },
-  cmake_executor = {
-    name = "quickfix",
-    default_opts = {
+  cmake_executor = { -- executor to use
+    name = "quickfix", -- name of the executor
+    opts = {}, -- the options the executor will get, possible values depend on the executor type. See `default_opts` for possible values.
+    default_opts = { -- a list of default and possible values for executors
       quickfix = {
         show = "always", -- "always", "only_on_error"
         position = "belowright", -- "bottom", "top"
         size = 10,
       },
-      overseer = {},
-      terminal = {},
+      overseer = {
+        new_task_opts = {}, -- options to pass into the `overseer.new_task` command
+        on_new_task = function(task) end, -- a function that gets overseer.Task when it is created, before calling `task:start`
+      },
+      terminal = {}, -- terminal executor uses the values in cmake_terminal
     },
   },
   cmake_terminal = {
