@@ -44,13 +44,12 @@ function cmake.setup(values)
       log.info("Cannot use cmake-tools notifications in terminal mode")
       const.cmake_notifications.enabled = false
     end
-  else
-    const.cmake_executor.opts = vim.tbl_deep_extend(
-      "force",
-      const.cmake_executor.default_opts[const.cmake_executor.name],
-      const.cmake_executor.opts or {}
-    )
   end
+  const.cmake_executor.opts = vim.tbl_deep_extend(
+    "force",
+    const.cmake_executor.default_opts[const.cmake_executor.name],
+    const.cmake_executor.opts or {}
+  )
   config = Config:new(const)
 
   -- auto reload previous session
