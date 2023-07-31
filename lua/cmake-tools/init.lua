@@ -40,8 +40,10 @@ function cmake.setup(values)
   const = vim.tbl_deep_extend("force", const, values)
   if const.cmake_executor.name == "terminal" then
     const.cmake_executor = const.cmake_terminal
-    log.info("Cannot use cmake-tools notifications in terminal mode")
-    const.cmake_notifications.enabled = false
+    if const.cmake_notifications.enabled then
+      log.info("Cannot use cmake-tools notifications in terminal mode")
+      const.cmake_notifications.enabled = false
+    end
   else
     const.cmake_executor.opts = vim.tbl_deep_extend(
       "force",
@@ -401,7 +403,6 @@ function cmake.install(opt)
 
   local args = { "--install", config.build_directory.filename }
   vim.list_extend(args, fargs)
-  --TODO notifications
   return utils.run(const.cmake_command, {}, args, config.executor, nil, const.cmake_notifications)
 end
 

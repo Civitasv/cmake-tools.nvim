@@ -76,7 +76,7 @@ function quickfix.run(cmd, env, args, opts, on_exit, on_output)
         quickfix.show(opts)
         quickfix.scroll_to_bottom()
       end
-      if on_exit then
+      if on_exit ~= nil then
         on_exit(code)
       end
     end),
