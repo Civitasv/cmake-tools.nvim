@@ -1345,7 +1345,7 @@ function cmake.create_regenerate_on_save_autocmd()
 
   local pattern = {}
   for _, item in ipairs(cmake_files) do
-    table.insert(pattern, vim.loop.cwd() .. "/" .. item)
+    table.insert(pattern, item)
   end
 
   local presets_file = presets.check()
