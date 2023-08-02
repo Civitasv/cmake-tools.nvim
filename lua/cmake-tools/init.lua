@@ -1345,7 +1345,12 @@ function cmake.create_regenerate_on_save_autocmd()
 
   local pattern = {}
   for _, item in ipairs(cmake_files) do
-    table.insert(pattern, item)
+    local ss = tostring(item)
+    ss = ss:gsub("{", "\\{")
+    ss = ss:gsub("}", "\\}")
+    ss = ss:gsub("?", "\\?")
+    ss = ss:gsub(",", "\\,")
+    table.insert(pattern, ss)
   end
 
   local presets_file = presets.check()
