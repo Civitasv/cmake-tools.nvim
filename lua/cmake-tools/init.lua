@@ -64,7 +64,7 @@ function cmake.setup(values)
   end
 
   -- preload the autocmd if the following option is true. only saves cmakelists.txt files
-  if cmake.is_cmake_project then
+  if cmake.is_cmake_project() then
     cmake.create_regenerate_on_save_autocmd()
   end
 end
