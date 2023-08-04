@@ -30,3 +30,7 @@ function executor.has_active_job(opts) end
 ---@param opts table options for this adapter
 ---@return nil
 function executor.stop(opts) end
+
+---Check if the executor is installed and can be used
+---@return string|nil
+function executor.is_installed() end

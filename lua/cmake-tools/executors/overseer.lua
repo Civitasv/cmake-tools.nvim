@@ -1,4 +1,4 @@
-local overseer = require("overseer")
+local has_overseer, overseer = pcall(require, "overseer")
 local log = require("cmake-tools.log")
 
 ---@class overseer_exec : executor
@@ -54,6 +54,15 @@ end
 
 function overseer_executor.stop(opts)
   overseer_executor.job:stop()
+end
+
+---Check if the executor is installed and can be used
+---@return string|nil
+function overseer_executor.is_installed()
+  if not has_overseer then
+    return "Overseer plugin is missing, please install it"
+  end
+  return nil
 end
 
 return overseer_executor

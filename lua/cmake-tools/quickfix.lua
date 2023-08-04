@@ -1,6 +1,5 @@
 local log = require("cmake-tools.log")
 local Job = require("plenary.job")
-local notification = require("cmake-tools.notification")
 
 ---@alias quickfix_show '"always"'|'"only_on_error"'
 ---@alias quickfix_position '"belowright"'|'"bottom"'|'"top"'
@@ -72,7 +71,7 @@ function quickfix.run(cmd, env, args, opts, on_exit, on_output)
       local msg = "Exited with code " .. code
 
       append_to_quickfix(msg)
-      if code == 0 and opts.show == "only_on_error" then
+      if code ~= 0 and opts.show == "only_on_error" then
         quickfix.show(opts)
         quickfix.scroll_to_bottom()
       end
@@ -127,6 +126,10 @@ function quickfix.check_scroll()
   end
 
   return true
+end
+
+function quickfix.is_installed()
+  return nil
 end
 
 return quickfix

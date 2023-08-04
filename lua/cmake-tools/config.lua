@@ -21,6 +21,7 @@ local Config = {
   target_settings = {}, -- target specific config
   executor = nil,
   terminal = nil,
+  always_use_terminal = false,
 }
 
 function Config:new(const)
@@ -31,6 +32,7 @@ function Config:new(const)
   self.build_options = const.cmake_build_options
   self.executor = const.cmake_executor
   self.terminal = const.cmake_terminal
+  self.always_use_terminal = self.executor.name == "terminal"
 
   return self
 end

@@ -41,7 +41,7 @@ function cmake.setup(values)
   if const.cmake_executor.name == "terminal" then
     const.cmake_executor = const.cmake_terminal
     if const.cmake_notifications.enabled then
-      log.info("Cannot use cmake-tools notifications in terminal mode")
+      log.info("Currently we don't support using cmake-tools notifications in terminal mode")
       const.cmake_notifications.enabled = false
     end
   end
@@ -73,6 +73,11 @@ function cmake.setup(values)
         end
       end
     end
+  end
+
+  local is_installed = utils.get_executor(config.executor.name).is_installed()
+  if is_installed ~= nil then
+    error(is_installed)
   end
 
   -- preload the autocmd if the following option is true. only saves cmakelists.txt files
@@ -134,9 +139,9 @@ function cmake.generate(opt, callback)
     vim.list_extend(args, config.generate_options)
     vim.list_extend(args, fargs)
 
-    local env = environment.get_build_environment(config, config.executor.name == "terminal")
+    local env = environment.get_build_environment(config, config.always_use_terminal)
 
-    if config.executor.name == "terminal" then
+    if config.always_use_terminal then
       if full_cmd ~= "" then
         full_cmd = full_cmd
           .. " && "
@@ -183,7 +188,7 @@ function cmake.generate(opt, callback)
 
   -- cmake kits, if cmake-kits.json doesn't exist, kit_option will
   -- be {env={}, args={}}, so it's okay.
-  local kit_option = kits.build_env_and_args(config.kit, config.executor.name == "terminal")
+  local kit_option = kits.build_env_and_args(config.kit, config.always_use_terminal)
 
   if const.cmake_build_directory ~= "" then
     config:update_build_dir(const.cmake_build_directory)
@@ -205,9 +210,9 @@ function cmake.generate(opt, callback)
   vim.list_extend(args, config.generate_options)
   vim.list_extend(args, fargs)
 
-  local env = environment.get_build_environment(config, config.executor.name == "terminal")
+  local env = environment.get_build_environment(config, config.always_use_terminal)
 
-  if config.executor.name == "terminal" then
+  if config.always_use_terminal then
     if full_cmd ~= "" then
       full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     else
@@ -246,9 +251,9 @@ function cmake.clean(callback)
 
   local args = { "--build", config.build_directory.filename, "--target", "clean" }
 
-  local env = environment.get_build_environment(config, config.executor.name == "terminal")
+  local env = environment.get_build_environment(config, config.always_use_terminal)
 
-  if config.executor.name == "terminal" then
+  if config.always_use_terminal then
     if full_cmd ~= "" then
       full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     else
@@ -312,7 +317,7 @@ function cmake.build(opt, callback)
   end
 
   vim.list_extend(args, config.build_options)
-  local env = environment.get_build_environment(config, config.executor.name == "terminal")
+  local env = environment.get_build_environment(config, config.always_use_terminal)
 
   if opt.target ~= nil then
     vim.list_extend(args, { "--target", opt.target })
@@ -325,7 +330,7 @@ function cmake.build(opt, callback)
     vim.list_extend(args, fargs)
   end
 
-  if config.executor.name == "terminal" then
+  if config.always_use_terminal then
     if full_cmd ~= "" then
       full_cmd = full_cmd .. " && " .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
     else
@@ -502,7 +507,7 @@ function cmake.run(opt)
     local result = config:get_launch_target()
     local result_code = result.code
     if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
-      if config.executor.name == "terminal" then
+      if config.always_use_terminal then
         log.error("For terminal mode, you need to firstly invoke CMakeGenerate.")
         full_cmd = ""
         return
@@ -700,7 +705,7 @@ if has_nvim_dap then
       local result_code = result.code
 
       if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
-        if config.executor.name == "terminal" then
+        if config.always_use_terminal then
           log.error("For terminal mode, you need to firstly invoke CMakeGenerate.")
           full_cmd = ""
           return
@@ -959,7 +964,7 @@ function cmake.select_build_target(callback, regenerate)
   if targets_res.code ~= Types.SUCCESS then
     -- try again
     if not regenerate then
-      if config.executor.name == "terminal" then
+      if config.always_use_terminal then
         log.error("For terminal mode, you need to firstly invoke CMakeGenerate.")
         full_cmd = ""
         return
@@ -1014,7 +1019,7 @@ function cmake.select_launch_target(callback, regenerate)
   if targets_res.code ~= Types.SUCCESS then
     -- try again
     if not regenerate then
-      if config.executor.name == "terminal" then
+      if config.always_use_terminal then
         log.error("For terminal mode, you need to firstly invoke CMakeGenerate.")
         full_cmd = ""
         return
@@ -1231,8 +1236,8 @@ function cmake.compile_commands_from_soft_link()
     .. config.build_directory.filename
     .. "/compile_commands.json"
   local destination = vim.loop.cwd() .. "/compile_commands.json"
-  if config.executor.name == "terminal" or utils.file_exists(source) then
-    utils.softlink(source, destination, config.executor.name == "terminal", config.terminal.opts)
+  if config.always_use_terminal or utils.file_exists(source) then
+    utils.softlink(source, destination, config.always_use_terminal, config.terminal.opts)
   end
 end
 
