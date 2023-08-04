@@ -57,7 +57,7 @@ local function decode(file)
   end
   local includes = data["include"] or {}
   local isUserPreset = string.find(file:lower(), "user")
-  if not includes and isUserPreset then
+  if #includes == 0 and isUserPreset then
     local parentDir = vim.fs.dirname(file)
     local parentPreset = parentDir .. "/CMakePresets.json"
     local parentPresetKebapCase = parentDir .. "/cmake-presets.json"
@@ -67,7 +67,8 @@ local function decode(file)
       includes[#includes + 1] = parentPresetKebapCase
     end
   end
-  if not includes then
+
+  if #includes == 0 then
     return data
   end
 
