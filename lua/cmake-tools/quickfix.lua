@@ -1,36 +1,14 @@
 local log = require("cmake-tools.log")
 local Job = require("plenary.job")
-local has_notify, notify = pcall(require, "notify")
 
+---@alias quickfix_show '"always"'|'"only_on_error"'
+---@alias quickfix_position '"belowright"'|'"bottom"'|'"top"'
+---@alias quickfix_opts_type {show:quickfix_show, position:quickfix_position, size:number}
+--
+---@class quickfix : executor
 local quickfix = {
   job = nil,
-  notification = {},
 }
-
-function quickfix.update_spinner() -- update spinner helper function to defer
-  if quickfix.notification.spinner_idx then
-    local new_spinner = (quickfix.notification.spinner_idx + 1) % #quickfix.notification.spinner
-    quickfix.notification.spinner_idx = new_spinner
-
-    quickfix.notification.id = quickfix.notify(nil, quickfix.notification.level, {
-      title = "CMakeTools",
-      hide_from_history = true,
-      icon = quickfix.notification.spinner[new_spinner],
-      replace = quickfix.notification.id,
-    })
-
-    vim.defer_fn(function()
-      quickfix.update_spinner()
-    end, quickfix.notification.refresh_rate_ms)
-  end
-end
-
-function quickfix.notify(msg, lvl, opts)
-  if quickfix.notification.enabled and has_notify then
-    opts.hide_from_history = true
-    return notify(msg, lvl, opts)
-  end
-end
 
 function quickfix.scroll_to_bottom()
   vim.api.nvim_command("cbottom")
@@ -43,40 +21,21 @@ local function append_to_quickfix(error, data)
   if quickfix.check_scroll() then
     quickfix.scroll_to_bottom()
   end
-
-  if line and line:match("^%[%s*(%d+)%s*%%%]") then -- only show lines containing build progress e.g [ 12%]
-    quickfix.notification.id = quickfix.notify( -- notify with percentage and message
-      line,
-      quickfix.notification.level,
-      { replace = quickfix.notification.id, title = "CMakeTools" }
-    )
-  end
 end
 
-function quickfix.show(quickfix_opts)
-  vim.api.nvim_command(quickfix_opts.position .. " copen " .. quickfix_opts.size)
+function quickfix.show(opts)
+  vim.api.nvim_command(opts.position .. " copen " .. opts.size)
   vim.api.nvim_command("wincmd p")
 end
 
-function quickfix.close()
+function quickfix.close(opts)
   vim.api.nvim_command("cclose")
 end
 
-function quickfix.run(cmd, env, args, opts)
+function quickfix.run(cmd, env, args, opts, on_exit, on_output)
   vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
-  if opts.cmake_quickfix_opts.show == "always" then
-    quickfix.show(opts.cmake_quickfix_opts)
-  end
-
-  quickfix.notification = opts.cmake_notifications
-
-  if quickfix.notification.enabled then
-    quickfix.notification.spinner_idx = 1
-    quickfix.notification.level = "info"
-
-    quickfix.notification.id =
-      quickfix.notify(cmd, quickfix.notification.level, { title = "CMakeTools" })
-    quickfix.update_spinner()
+  if opts.show == "always" then
+    quickfix.show(opts)
   end
 
   local job_args = {}
@@ -99,44 +58,36 @@ function quickfix.run(cmd, env, args, opts)
     command = cmd,
     args = job_args,
     cwd = vim.loop.cwd(),
-    on_stdout = vim.schedule_wrap(append_to_quickfix),
-    on_stderr = vim.schedule_wrap(function(err, data)
-      quickfix.notification.level = "warn"
+    on_stdout = vim.schedule_wrap(function(err, data)
       append_to_quickfix(err, data)
+      on_output(data, err)
+    end),
+    on_stderr = vim.schedule_wrap(function(err, data)
+      append_to_quickfix(err, data)
+      on_output(data, err)
     end),
     on_exit = vim.schedule_wrap(function(_, code, signal)
-      local msg = "Exited with code " .. (signal == 0 and code or 128 + signal)
-      local level = "error"
-      local icon = ""
+      code = signal == 0 and code or 128 + signal
+      local msg = "Exited with code " .. code
 
       append_to_quickfix(msg)
-
-      if code == 0 and signal == 0 then
-        level = quickfix.notification.level -- either info or warn
-        icon = ""
-        if opts.on_success then
-          opts.on_success()
-        end
-      elseif opts.cmake_quickfix_opts.show == "only_on_error" then
-        quickfix.show(opts.cmake_quickfix_opts)
+      if code ~= 0 and opts.show == "only_on_error" then
+        quickfix.show(opts)
         quickfix.scroll_to_bottom()
       end
-
-      quickfix.notify(
-        msg,
-        level,
-        { icon = icon, replace = quickfix.notification.id, timeout = 3000 }
-      )
-
-      quickfix.notification = {} -- reset and stop update_spinner
+      if on_exit ~= nil then
+        on_exit(code)
+      end
     end),
   })
 
   quickfix.job:start()
-  return quickfix.job
 end
 
-function quickfix.has_active_job()
+---Checks if there is an active job
+---@param opts quickfix_opts_type options for this adapter
+---@return boolean
+function quickfix.has_active_job(opts)
   if not quickfix.job or quickfix.job.is_shutdown then
     return false
   end
@@ -148,7 +99,10 @@ function quickfix.has_active_job()
   return true
 end
 
-function quickfix.stop()
+---Stop the active job
+---@param opts quickfix_opts_type options for this adapter
+---@return nil
+function quickfix.stop(opts)
   quickfix.job:shutdown(1, 9)
 
   for _, pid in ipairs(vim.api.nvim_get_proc_children(quickfix.job.pid)) do
@@ -172,6 +126,10 @@ function quickfix.check_scroll()
   end
 
   return true
+end
+
+function quickfix.is_installed()
+  return nil
 end
 
 return quickfix

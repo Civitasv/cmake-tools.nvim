@@ -476,11 +476,18 @@ vim.opt.errorformat:append([[\ %#%f(%l\,%c):\ %m]])
 vim.opt.errorformat:append([[\ %#%f(%l)\ :\ %#%t%[A-z]%#\ %m]])
 ```
 
-## Experimental: Always use terminal
+## Experimental: Additional command runners (executors)
 
 By default, this plugin uses quickfix console for generate, build, clean, install, and others about cmake, and only uses terminal for run specific target.
+But if you want you can use specific executors.
 
-But if you want to always use terminal(for example, you want to record all commands and corresponding output), there is a way. You need set `cmake_always_use_terminal` to true, then, all commands will be executed in the terminal.
+### Use overseer
+
+If you want to use overseer to run cmake operations, set `cmake_executor={name="overseer", opts={}}` where opts is the overseer specific arguments as presented in the readme.
+
+### Always use terminal
+
+If you want to always use terminal(for example, you want to record all commands and corresponding output), there is a way. You need set `cmake_executor` to `{name="terminal"}`, then, all commands will be executed in the terminal.
 
 ---
 
