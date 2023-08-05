@@ -57,12 +57,12 @@ function overseer_executor.stop(opts)
 end
 
 ---Check if the executor is installed and can be used
----@return string|nil
+---@return string|boolean
 function overseer_executor.is_installed()
   if not has_overseer then
     return "Overseer plugin is missing, please install it"
   end
-  return nil
+  return true
 end
 
 return overseer_executor

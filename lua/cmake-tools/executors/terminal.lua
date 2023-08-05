@@ -597,7 +597,7 @@ function terminal.stop(opts)
 end
 
 function terminal.is_installed()
-  return nil
+  return true
 end
 
 return terminal

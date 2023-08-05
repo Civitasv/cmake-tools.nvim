@@ -129,7 +129,7 @@ function quickfix.check_scroll()
 end
 
 function quickfix.is_installed()
-  return nil
+  return true
 end
 
 return quickfix

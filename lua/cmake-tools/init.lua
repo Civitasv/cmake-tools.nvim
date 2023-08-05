@@ -76,7 +76,7 @@ function cmake.setup(values)
   end
 
   local is_installed = utils.get_executor(config.executor.name).is_installed()
-  if is_installed ~= nil then
+  if not is_installed then
     error(is_installed)
   end
 

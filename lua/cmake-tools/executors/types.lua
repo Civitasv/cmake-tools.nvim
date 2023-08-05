@@ -32,5 +32,5 @@ function executor.has_active_job(opts) end
 function executor.stop(opts) end
 
 ---Check if the executor is installed and can be used
----@return string|nil
+---@return string|boolean
 function executor.is_installed() end
