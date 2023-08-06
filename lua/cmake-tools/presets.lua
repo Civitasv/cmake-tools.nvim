@@ -20,7 +20,7 @@ function presets.check(cwd)
         or f == "cmake-presets.json"
         or f == "cmake-user-presets.json"
       then -- if a preset file is found
-        presetFiles[#presetFiles + 1] = vim.fn.resolve(cwd .. "/" .. f)
+        presetFiles[#presetFiles + 1] = tostring(Path:new(cwd, f))
       end
     end
     table.sort(presetFiles, function(a, b)
@@ -142,14 +142,10 @@ end
 -- @param type: `buildPresets` or `configurePresets`
 function presets.get_preset_by_name(name, type, cwd)
   local file = presets.check(cwd)
-  vim.print("file")
-  vim.print(file)
   if not file then
     return nil
   end
   local data = decode(file)
-  vim.print("data")
-  vim.print(data)
   for _, v in pairs(data[type]) do
     if v.name == name then
       return v
@@ -167,7 +163,7 @@ function presets.get_build_type(preset)
 end
 
 -- Retrieve build directory from preset
-function presets.get_build_dir(preset, cwd)
+function presets.get_build_dir(preset)
   -- check if this preset is extended
   local function helper(p_preset)
     local build_dir = ""
@@ -179,7 +175,7 @@ function presets.get_build_dir(preset, cwd)
     if p_preset.inherits then
       local inherits = p_preset.inherits
       local set_dir_by_parent = function(parent)
-        local ppreset = presets.get_preset_by_name(parent, "configurePresets")
+        local ppreset = presets.get_preset_by_name(parent, "configurePresets", cwd)
         local ppreset_build_dir = helper(ppreset)
         if ppreset_build_dir ~= "" then
           build_dir = ppreset_build_dir
@@ -215,12 +211,13 @@ function presets.get_build_dir(preset, cwd)
   local build_dir = helper(preset)
 
   -- macro expansion
-  local source_path = Path:new(cwd)
-  local source_relative = vim.fn.fnamemodify(cwd, ":t")
-
+  local cwd = vim.loop.cwd()
   if not cwd then
     cwd = "."
   end
+  local source_path = Path:new(cwd)
+  local source_relative = vim.fn.fnamemodify(cwd, ":t")
+
   build_dir = build_dir:gsub("${sourceDir}", cwd)
   build_dir = build_dir:gsub("${sourceParentDir}", source_path:parent().filename)
   build_dir = build_dir:gsub("${sourceDirName}", source_relative)
@@ -234,7 +231,6 @@ function presets.get_build_dir(preset, cwd)
   build_dir = build_dir:gsub("${pathListSep}", "/")
 
   build_dir = vim.fn.fnamemodify(build_dir, ":.")
-
   return build_dir
 end
 
