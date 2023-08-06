@@ -9,7 +9,7 @@ local presets = {}
 function presets.check(cwd)
   -- helper function to find the config file
   -- returns file path if found, nil otherwise
-  local function findcfg(cwd)
+  local function findcfg()
     local files = vim.fn.readdir(cwd)
     local file = nil
     local presetFiles = {}
@@ -32,7 +32,7 @@ function presets.check(cwd)
     return file
   end
 
-  local file = findcfg(cwd) -- check for config file
+  local file = findcfg() -- check for config file
   return file
 end
 
