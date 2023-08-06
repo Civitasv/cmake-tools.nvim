@@ -188,6 +188,12 @@ function utils.rmdir(dir)
   end
 end
 
+function utils.rmfile(file)
+  if file:exists() then
+    file:rm()
+  end
+end
+
 function utils.file_exists(path)
   local file = Path:new(path)
   if not file:exists() then

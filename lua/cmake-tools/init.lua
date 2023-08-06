@@ -106,6 +106,10 @@ function cmake.generate(opt, callback)
   local fargs = opt.fargs or {}
   if clean then
     return cmake.clean(function()
+      -- Clear CMakeCache.txt
+      if config.build_directory then
+        utils.rmfile(config.build_directory / "CMakeCache.txt")
+      end
       cmake.generate({ fargs = fargs }, callback)
     end)
   end
@@ -1089,6 +1093,15 @@ function cmake.get_target_vars(target)
 end
 
 function cmake.settings()
+  if utils.has_active_job(config.terminal, config.executor) then
+    return
+  end
+
+  local result = utils.get_cmake_configuration()
+  if result.code ~= Types.SUCCESS then
+    return log.error(result.message)
+  end
+
   if not window.is_open() then
     if not config.base_settings then
       config.base_settings = {}
@@ -1113,6 +1126,15 @@ function cmake.settings()
 end
 
 function cmake.target_settings(opt)
+  if utils.has_active_job(config.terminal, config.executor) then
+    return
+  end
+
+  local result = utils.get_cmake_configuration()
+  if result.code ~= Types.SUCCESS then
+    return log.error(result.message)
+  end
+
   local target = opt.fargs[1] or cmake.get_launch_target()
 
   if target == nil then
