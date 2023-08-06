@@ -54,7 +54,7 @@ function cmake.setup(values)
       config.kit = old_config.kit
       config.configure_preset = old_config.configure_preset
       config.build_preset = old_config.build_preset
-      config.working_dir = old_config.working_dir
+      config.working_dir = old_config.working_dir or vim.loop.cwd()
 
       config.base_settings =
         vim.tbl_deep_extend("keep", old_config.base_settings, config.base_settings)
