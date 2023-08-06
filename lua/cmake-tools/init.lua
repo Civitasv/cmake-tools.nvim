@@ -21,17 +21,6 @@ local cmake = {}
 
 local full_cmd = ""
 
-local base_settings_default = {
-  env = {},
-  working_dir = "${dir.binary}",
-}
-
-local target_settings_default = {
-  args = {},
-  inherit_base_environment = true,
-  env = {},
-}
-
 --- Setup cmake-tools
 function cmake.setup(values)
   if has_telescope then
@@ -50,6 +39,7 @@ function cmake.setup(values)
     const.cmake_executor.default_opts[const.cmake_executor.name],
     const.cmake_executor.opts or {}
   )
+
   config = Config:new(const)
 
   -- auto reload previous session
@@ -63,7 +53,9 @@ function cmake.setup(values)
       config.kit = old_config.kit
       config.configure_preset = old_config.configure_preset
       config.build_preset = old_config.build_preset
-      config.base_settings = old_config.base_settings or {}
+
+      config.base_settings =
+        vim.tbl_deep_extend("keep", old_config.base_settings, config.base_settings)
       config.target_settings = old_config.target_settings or {}
 
       -- migrate old launch args to new config
@@ -84,10 +76,6 @@ function cmake.setup(values)
   if cmake.is_cmake_project() then
     cmake.create_regenerate_on_save_autocmd()
   end
-end
-
-function cmake.get_config()
-  return config
 end
 
 --- Generate build system for this project.
@@ -140,7 +128,7 @@ function cmake.generate(opt, callback)
       "--preset",
       config.configure_preset,
     }
-    vim.list_extend(args, config.generate_options)
+    vim.list_extend(args, config:generate_options())
     vim.list_extend(args, fargs)
 
     local env = environment.get_build_environment(config, config.always_use_terminal)
@@ -211,7 +199,7 @@ function cmake.generate(opt, callback)
   }
   vim.list_extend(args, variants.build_arglist(config.build_type))
   vim.list_extend(args, kit_option.args)
-  vim.list_extend(args, config.generate_options)
+  vim.list_extend(args, config:generate_options())
   vim.list_extend(args, fargs)
 
   local env = environment.get_build_environment(config, config.always_use_terminal)
@@ -320,7 +308,7 @@ function cmake.build(opt, callback)
     args = { "--build", config.build_directory.filename }
   end
 
-  vim.list_extend(args, config.build_options)
+  vim.list_extend(args, config:build_options())
   local env = environment.get_build_environment(config, config.always_use_terminal)
 
   if opt.target ~= nil then
@@ -1103,13 +1091,6 @@ function cmake.settings()
   end
 
   if not window.is_open() then
-    if not config.base_settings then
-      config.base_settings = {}
-    end
-
-    -- insert missing fields
-    config.base_settings = vim.tbl_deep_extend("keep", config.base_settings, base_settings_default)
-
     local content = "local vars = " .. vim.inspect(cmake.get_base_vars())
     content = content .. "\nreturn " .. vim.inspect(config.base_settings)
 
@@ -1143,16 +1124,16 @@ function cmake.target_settings(opt)
   end
 
   if not window.is_open() then
-    if not config.target_settings then
-      config.target_settings = {}
-    end
     if not config.target_settings[target] then
       config.target_settings[target] = {}
     end
 
     -- insert missing fields
-    config.target_settings[target] =
-      vim.tbl_deep_extend("keep", config.target_settings[target], target_settings_default)
+    config.target_settings[target] = vim.tbl_deep_extend("keep", config.target_settings[target], {
+      args = {},
+      inherit_base_environment = true,
+      env = {},
+    })
 
     local content = "local vars = " .. vim.inspect(cmake.get_target_vars(target))
     content = content .. "\nreturn " .. vim.inspect(config.target_settings[target])
@@ -1170,6 +1151,9 @@ function cmake.target_settings(opt)
 end
 
 --[[ Getters ]]
+function cmake.get_config()
+  return config
+end
 
 function cmake.get_build_target()
   return config.build_target

@@ -9,15 +9,18 @@ local Config = {
   build_directory = nil,
   query_directory = nil,
   reply_directory = nil,
-  generate_options = {},
-  build_options = {},
   build_type = nil,
   build_target = nil,
   launch_target = nil,
   kit = nil,
   configure_preset = nil,
   build_preset = nil,
-  base_settings = nil, -- general config
+  base_settings = {
+    env = {},
+    working_dir = "${dir.binary}",
+    generate_options = {},
+    build_options = {},
+  }, -- general config
   target_settings = {}, -- target specific config
   executor = nil,
   terminal = nil,
@@ -28,8 +31,9 @@ function Config:new(const)
   local obj = {}
   setmetatable(obj, self)
   self.__index = self
-  self.generate_options = const.cmake_generate_options
-  self.build_options = const.cmake_build_options
+
+  self.base_settings.generate_options = const.cmake_generate_options
+  self.base_settings.build_options = const.cmake_build_options
   self.executor = const.cmake_executor
   self.terminal = const.cmake_terminal
   self.always_use_terminal = self.executor.name == "terminal"
@@ -41,6 +45,14 @@ function Config:update_build_dir(build_dir)
   self.build_directory = Path:new(build_dir)
   self.query_directory = Path:new(build_dir, ".cmake", "api", "v1", "query")
   self.reply_directory = Path:new(build_dir, ".cmake", "api", "v1", "reply")
+end
+
+function Config:generate_options()
+  return self.base_settings.generate_options and self.base_settings.generate_options or {}
+end
+
+function Config:build_options()
+  return self.base_settings.build_options and self.base_settings.build_options or {}
 end
 
 function Config:generate_build_directory()
