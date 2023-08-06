@@ -163,7 +163,7 @@ function presets.get_build_type(preset)
 end
 
 -- Retrieve build directory from preset
-function presets.get_build_dir(preset)
+function presets.get_build_dir(preset, working_dir)
   -- check if this preset is extended
   local function helper(p_preset)
     local build_dir = ""
@@ -175,7 +175,7 @@ function presets.get_build_dir(preset)
     if p_preset.inherits then
       local inherits = p_preset.inherits
       local set_dir_by_parent = function(parent)
-        local ppreset = presets.get_preset_by_name(parent, "configurePresets", cwd)
+        local ppreset = presets.get_preset_by_name(parent, "configurePresets", working_dir)
         local ppreset_build_dir = helper(ppreset)
         if ppreset_build_dir ~= "" then
           build_dir = ppreset_build_dir
