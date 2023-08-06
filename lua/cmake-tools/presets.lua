@@ -33,6 +33,7 @@ function presets.check(cwd)
   end
 
   local file = findcfg() -- check for config file
+
   return file
 end
 
@@ -211,13 +212,13 @@ function presets.get_build_dir(preset, working_dir)
   local build_dir = helper(preset)
 
   -- macro expansion
+  local source_path = Path:new(vim.loop.cwd())
+  local source_relative = vim.fn.fnamemodify(vim.loop.cwd(), ":t")
+
   local cwd = vim.loop.cwd()
   if not cwd then
     cwd = "."
   end
-  local source_path = Path:new(cwd)
-  local source_relative = vim.fn.fnamemodify(cwd, ":t")
-
   build_dir = build_dir:gsub("${sourceDir}", cwd)
   build_dir = build_dir:gsub("${sourceParentDir}", source_path:parent().filename)
   build_dir = build_dir:gsub("${sourceDirName}", source_relative)
@@ -231,6 +232,7 @@ function presets.get_build_dir(preset, working_dir)
   build_dir = build_dir:gsub("${pathListSep}", "/")
 
   build_dir = vim.fn.fnamemodify(build_dir, ":.")
+
   return build_dir
 end
 

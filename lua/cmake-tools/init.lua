@@ -1282,19 +1282,22 @@ end
 
 function cmake.configure_compile_commands()
   if const.cmake_soft_link_compile_commands then
-    cmake.compile_commands_from_soft_link(config.working_dir)
+    cmake.compile_commands_from_soft_link()
   elseif const.cmake_compile_commands_from_lsp then
     cmake.compile_commands_from_lsp()
   end
 end
 
-function cmake.compile_commands_from_soft_link(cwd)
+function cmake.compile_commands_from_soft_link()
   if config.build_directory == nil then
     return
   end
 
-  local source = cwd .. "/" .. config.build_directory.filename .. "/compile_commands.json"
-  local destination = cwd .. "/compile_commands.json"
+  local source = config.working_dir
+    .. "/"
+    .. config.build_directory.filename
+    .. "/compile_commands.json"
+  local destination = vim.loop.cwd() .. "/compile_commands.json"
   if config.always_use_terminal or utils.file_exists(source) then
     utils.softlink(source, destination, config.always_use_terminal, config.terminal.opts)
   end
