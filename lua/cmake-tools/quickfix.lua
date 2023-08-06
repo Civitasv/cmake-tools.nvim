@@ -32,7 +32,7 @@ function quickfix.close(opts)
   vim.api.nvim_command("cclose")
 end
 
-function quickfix.run(cmd, env, args, opts, on_exit, on_output)
+function quickfix.run(cmd, env, args, cwd, opts, on_exit, on_output)
   vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
   if opts.show == "always" then
     quickfix.show(opts)
@@ -57,7 +57,7 @@ function quickfix.run(cmd, env, args, opts, on_exit, on_output)
   quickfix.job = Job:new({
     command = cmd,
     args = job_args,
-    cwd = vim.loop.cwd(),
+    cwd = cwd,
     on_stdout = vim.schedule_wrap(function(err, data)
       append_to_quickfix(err, data)
       on_output(data, err)

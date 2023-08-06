@@ -74,6 +74,7 @@ function session.save(config)
     build_preset = config.build_preset,
     base_settings = config.base_settings,
     target_settings = config.target_settings,
+    working_dir = config.working_dir,
   }
 
   if file then
