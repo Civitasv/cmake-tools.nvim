@@ -78,50 +78,48 @@ function simpleyaml.parse_file(path)
   for line in file:lines() do -- for all lines in the file
     -- goto next line if current line is empty, a comment, the document start, or a directive
     if
-      line:gsub("%s*", "") == ""
-      or line:find("^#") ~= nil
-      or line:find("^---") ~= nil
-      or line:find("^%%") ~= nil
+      not (
+        line:gsub("%s*", "") == ""
+        or line:find("^#") ~= nil
+        or line:find("^---") ~= nil
+        or line:find("^%%") ~= nil
+      )
     then
-      goto cont_processing_lines
-    end
+      local indent = line:match("(%s*)%S.*"):len() -- get indent of current line
+      if #indents > 0 then -- if stack of indents not empty
+        local prevIndent = indents[#indents]
 
-    local indent = line:match("(%s*)%S.*"):len() -- get indent of current line
-    if #indents > 0 then -- if stack of indents not empty
-      local prevIndent = indents[#indents]
-
-      -- compare with indent of previous line
-      if indent > prevIndent then -- if current indent larger, increase nesting level
-        nestingLevel = nestingLevel + 1
-      elseif indent < prevIndent then -- of current indent smaller, decrease nesting level and ...
-        nestingLevel = nestingLevel - 1
-        while indents[#indents] > indent do -- ... clean up the stack of indents, tracking the nesting level
-          if prevIndent < indents[#indents] then
-            nestingLevel = nestingLevel + 1
-          elseif prevIndent > indents[#indents] then
-            nestingLevel = nestingLevel - 1
+        -- compare with indent of previous line
+        if indent > prevIndent then -- if current indent larger, increase nesting level
+          nestingLevel = nestingLevel + 1
+        elseif indent < prevIndent then -- of current indent smaller, decrease nesting level and ...
+          nestingLevel = nestingLevel - 1
+          while indents[#indents] > indent do -- ... clean up the stack of indents, tracking the nesting level
+            if prevIndent < indents[#indents] then
+              nestingLevel = nestingLevel + 1
+            elseif prevIndent > indents[#indents] then
+              nestingLevel = nestingLevel - 1
+            end
+            prevIndent = indents[#indents]
+            table.remove(indents)
           end
-          prevIndent = indents[#indents]
-          table.remove(indents)
         end
       end
-    end
-    table.insert(indents, indent) -- insert current indent into stack
+      table.insert(indents, indent) -- insert current indent into stack
 
-    local key = line:match("%s*(.*):") -- read the key from the line (everything before ':')
-    if key == "" then -- no key found, error
-      return nil
-    end
-    insertKey(key, nestingLevel, parsed) -- insert the key
+      local key = line:match("%s*(.*):") -- read the key from the line (everything before ':')
+      if key == "" then -- no key found, error
+        return nil
+      end
+      insertKey(key, nestingLevel, parsed) -- insert the key
 
-    line = line:match(":%s*(.*)%s*") -- read rest of the line (everything after ':')
-    -- if there is something, insert the rest of the line as a string value
-    -- otherwise, the value is an object, so go ahead to read next line
-    if line:len() > 0 then
-      insertString(line, nestingLevel, parsed)
+      line = line:match(":%s*(.*)%s*") -- read rest of the line (everything after ':')
+      -- if there is something, insert the rest of the line as a string value
+      -- otherwise, the value is an object, so go ahead to read next line
+      if line:len() > 0 then
+        insertString(line, nestingLevel, parsed)
+      end
     end
-
-    ::cont_processing_lines::
   end
 
   file:close()

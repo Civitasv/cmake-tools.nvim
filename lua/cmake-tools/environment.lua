@@ -36,9 +36,7 @@ local function unroll(env, escape)
       table.insert(res, var)
     else
       -- unsupported type
-      goto ignore
     end
-    ::ignore::
   end
 
   return res

@@ -18,22 +18,11 @@ function M.get_files_from_target(target)
   if info.sourceGroups then
     for _, v in ipairs(info.sourceGroups) do
       -- ignore cerain files such as .o/.obj files and cmake rules
-
-      if v.name == "CMake Rules" then
-        goto skip
-      end
-
-      if v.name == "Object Libraries" then
-        goto skip
-      end
-
-      if v.sourceIndexes then
+      if not (v.name == "CMake Rules" or v.name == "Object Libraries") and v.sourceIndexes then
         for _, srcIdx in ipairs(v.sourceIndexes) do
           table.insert(files, info.sources[srcIdx + 1].path) -- +1 because lua is 1 indexed
         end
       end
-
-      ::skip::
     end
   end
 
@@ -77,22 +66,15 @@ function M.get_cmake_files()
   end
 
   for _, v in pairs(cmakeFiles.data) do
-    if v.isCMake and v.isCMake == true then
-      -- ignore standard cmake files such as "CMakeCommonLanguageInclude"
-      goto skip
-    end
-
-    if v.isGenerated and v.isGenerated == true then
-      -- ignore generated files such as "CMakeCXXCompiler"
-      goto skip
-    end
-
-    if v.path then
+    -- ignore standard cmake files such as "CMakeCommonLanguageInclude"
+    -- ignore generated files such as "CMakeCXXCompiler"
+    if
+      not ((v.isCMake and v.isCMake == true) or (v.isGenerated and v.isGenerated == true))
+      and v.path
+    then
       -- use files as keys to prevent duplicates (there can be quite a few when using package managers)
       files[v.path] = 1
     end
-
-    ::skip::
   end
 
   -- convert set to list
