@@ -182,7 +182,7 @@ function cmake.generate(opt, callback)
 
   -- if exists cmake-kits.json, kit is used to set
   -- environmental variables and args.
-  local kits_config = kits.parse(const.cmake_kits_path)
+  local kits_config = kits.parse(const.cmake_kits_path, config.working_dir)
   if kits_config and not config.kit then
     return cmake.select_kit(function()
       cmake.generate(opt, callback)
@@ -200,7 +200,8 @@ function cmake.generate(opt, callback)
 
   -- cmake kits, if cmake-kits.json doesn't exist, kit_option will
   -- be {env={}, args={}}, so it's okay.
-  local kit_option = kits.build_env_and_args(config.kit, config.always_use_terminal)
+  local kit_option =
+    kits.build_env_and_args(config.kit, config.always_use_terminal, config.working_dir)
 
   if const.cmake_build_directory ~= "" then
     config:update_build_dir(const.cmake_build_directory)
@@ -877,7 +878,7 @@ function cmake.select_kit(callback)
     return log.error(result.message)
   end
 
-  local cmake_kits = kits.get(const.cmake_kits_path)
+  local cmake_kits = kits.get(const.cmake_kits_path, config.working_dir)
   if cmake_kits then
     -- Put selected kit first
     for idx, kit in ipairs(cmake_kits) do
@@ -905,7 +906,7 @@ function cmake.select_kit(callback)
       end)
     )
   else
-    log.error("Cannot find CMakeKits.[json|yaml] at Root!!")
+    log.error("Cannot find CMakeKits.[json|yaml] at Root (" .. config.working_dir .. ")!!")
   end
 end
 
