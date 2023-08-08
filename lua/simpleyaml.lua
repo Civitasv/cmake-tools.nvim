@@ -83,8 +83,8 @@ function simpleyaml.parse_file(path)
         or line:find("^#") ~= nil
         or line:find("^---") ~= nil
         or line:find("^%%") ~= nil
-      ) then
-    
+      )
+    then
       local indent = line:match("(%s*)%S.*"):len() -- get indent of current line
       if #indents > 0 then -- if stack of indents not empty
         local prevIndent = indents[#indents]

@@ -68,10 +68,10 @@ function M.get_cmake_files()
   for _, v in pairs(cmakeFiles.data) do
     -- ignore standard cmake files such as "CMakeCommonLanguageInclude"
     -- ignore generated files such as "CMakeCXXCompiler"
-    if not ( 
-        (v.isCMake and v.isCMake == true) 
-        or (v.isGenerated and v.isGenerated == true) 
-      ) and v.path then
+    if
+      not ((v.isCMake and v.isCMake == true) or (v.isGenerated and v.isGenerated == true))
+      and v.path
+    then
       -- use files as keys to prevent duplicates (there can be quite a few when using package managers)
       files[v.path] = 1
     end
