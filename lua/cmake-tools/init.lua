@@ -218,7 +218,7 @@ function cmake.generate(opt, callback)
     "-S",
     ".",
   }
-  vim.list_extend(args, variants.build_arglist(config.build_type))
+  vim.list_extend(args, variants.build_arglist(config.build_type, config.working_dir))
   vim.list_extend(args, kit_option.args)
   vim.list_extend(args, config:generate_options())
   vim.list_extend(args, fargs)
@@ -835,7 +835,7 @@ function cmake.select_build_type(callback)
     return log.error(result.message)
   end
 
-  local types = variants.get(const.cmake_variants_message)
+  local types = variants.get(const.cmake_variants_message, config.working_dir)
   -- Put selected build type first
   for idx, type in ipairs(types) do
     if type == config.build_type then

@@ -271,7 +271,7 @@ end
 function Config:validate_for_debugging()
   local build_type = self.build_type
 
-  if not build_type or not variants.debuggable(build_type) then
+  if not build_type or not variants.debuggable(build_type, self.working_dir) then
     return Result:new(Types.CANNOT_DEBUG_LAUNCH_TARGET, false, "cannot debug it")
   end
   return Result:new(Types.SUCCESS, true, "Yeah, it may be")
