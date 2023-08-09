@@ -182,13 +182,6 @@ function utils.mkdir(dir)
   _dir:mkdir({ parents = true, exists_ok = true })
 end
 
-function utils.rmdir(dir)
-  local _dir = Path:new(vim.loop.cwd(), dir)
-  if _dir:exists() then
-    _dir:rm({ recursive = true })
-  end
-end
-
 function utils.rmfile(file)
   if file:exists() then
     file:rm()

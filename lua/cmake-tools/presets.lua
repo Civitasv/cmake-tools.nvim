@@ -212,10 +212,10 @@ function presets.get_build_dir(preset, working_dir)
   local build_dir = helper(preset)
 
   -- macro expansion
-  local source_path = Path:new(vim.loop.cwd())
-  local source_relative = vim.fn.fnamemodify(vim.loop.cwd(), ":t")
+  local source_path = Path:new(working_dir)
+  local source_relative = vim.fn.fnamemodify(working_dir, ":t")
 
-  local cwd = vim.loop.cwd()
+  local cwd = working_dir
   if not cwd then
     cwd = "."
   end
