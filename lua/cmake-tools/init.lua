@@ -54,6 +54,7 @@ function cmake.setup(values)
       config.kit = old_config.kit
       config.configure_preset = old_config.configure_preset
       config.build_preset = old_config.build_preset
+      config.working_dir = old_config.working_dir or vim.loop.cwd()
 
       config.base_settings =
         vim.tbl_deep_extend("keep", old_config.base_settings, config.base_settings)
@@ -86,7 +87,7 @@ function cmake.generate(opt, callback)
     return
   end
 
-  local result = utils.get_cmake_configuration()
+  local result = utils.get_cmake_configuration(config.working_dir)
   if result.code ~= Types.SUCCESS then
     return log.error(result.message)
   end
@@ -106,7 +107,7 @@ function cmake.generate(opt, callback)
   -- if exists presets, preset include all info that cmake
   -- needed to execute, so we don't use cmake-kits.json and
   -- cmake-variants.[json|yaml] event they exist.
-  local presets_file = presets.check()
+  local presets_file = presets.check(config.working_dir)
   if presets_file and not config.configure_preset then
     -- this will also set value for build type from preset.
     -- default to be "Debug"
@@ -118,8 +119,10 @@ function cmake.generate(opt, callback)
   if presets_file and config.configure_preset then
     -- if exsist preset file and set configure preset, then
     -- set build directory to the `binaryDir` option of `configurePresets`
-    local build_directory =
-      presets.get_build_dir(presets.get_preset_by_name(config.configure_preset, "configurePresets"))
+    local build_directory = presets.get_build_dir(
+      presets.get_preset_by_name(config.configure_preset, "configurePresets", config.working_dir),
+      config.working_dir
+    )
     if build_directory ~= "" then
       config:update_build_dir(build_directory)
     end
@@ -145,25 +148,41 @@ function cmake.generate(opt, callback)
       if type(callback) == "function" then
         callback()
       else
-        utils.run(full_cmd, {}, {}, config.executor, nil, const.cmake_notifications)
+        utils.run(
+          full_cmd,
+          {},
+          {},
+          config.working_dir,
+          config.executor,
+          nil,
+          const.cmake_notifications
+        )
         cmake.configure_compile_commands()
         cmake.create_regenerate_on_save_autocmd()
         full_cmd = ""
       end
     else
-      return utils.run(const.cmake_command, env, args, config.executor, function()
-        if type(callback) == "function" then
-          callback()
-        end
-        cmake.configure_compile_commands()
-        cmake.create_regenerate_on_save_autocmd()
-      end, const.cmake_notifications)
+      return utils.run(
+        const.cmake_command,
+        env,
+        args,
+        config.working_dir,
+        config.executor,
+        function()
+          if type(callback) == "function" then
+            callback()
+          end
+          cmake.configure_compile_commands()
+          cmake.create_regenerate_on_save_autocmd()
+        end,
+        const.cmake_notifications
+      )
     end
   end
 
   -- if exists cmake-kits.json, kit is used to set
   -- environmental variables and args.
-  local kits_config = kits.parse(const.cmake_kits_path)
+  local kits_config = kits.parse(const.cmake_kits_path, config.working_dir)
   if kits_config and not config.kit then
     return cmake.select_kit(function()
       cmake.generate(opt, callback)
@@ -181,7 +200,8 @@ function cmake.generate(opt, callback)
 
   -- cmake kits, if cmake-kits.json doesn't exist, kit_option will
   -- be {env={}, args={}}, so it's okay.
-  local kit_option = kits.build_env_and_args(config.kit, config.always_use_terminal)
+  local kit_option =
+    kits.build_env_and_args(config.kit, config.always_use_terminal, config.working_dir)
 
   if const.cmake_build_directory ~= "" then
     config:update_build_dir(const.cmake_build_directory)
@@ -198,7 +218,7 @@ function cmake.generate(opt, callback)
     "-S",
     ".",
   }
-  vim.list_extend(args, variants.build_arglist(config.build_type))
+  vim.list_extend(args, variants.build_arglist(config.build_type, config.working_dir))
   vim.list_extend(args, kit_option.args)
   vim.list_extend(args, config:generate_options())
   vim.list_extend(args, fargs)
@@ -214,14 +234,22 @@ function cmake.generate(opt, callback)
     if type(callback) == "function" then
       callback()
     else
-      utils.run(full_cmd, {}, {}, config.executor, nil, const.cmake_notifications)
+      utils.run(
+        full_cmd,
+        {},
+        {},
+        config.working_dir,
+        config.executor,
+        nil,
+        const.cmake_notifications
+      )
       cmake.configure_compile_commands()
       cmake.create_regenerate_on_save_autocmd()
       full_cmd = ""
     end
   else
     env = vim.tbl_extend("keep", env, kit_option.env)
-    utils.run(const.cmake_command, env, args, config.executor, function()
+    utils.run(const.cmake_command, env, args, config.working_dir, config.executor, function()
       if type(callback) == "function" then
         callback()
       end
@@ -237,7 +265,7 @@ function cmake.clean(callback)
     return
   end
 
-  local result = utils.get_cmake_configuration()
+  local result = utils.get_cmake_configuration(config.working_dir)
   if result.code ~= Types.SUCCESS then
     return log.error(result.message)
   end
@@ -255,11 +283,19 @@ function cmake.clean(callback)
     if type(callback) == "function" then
       return callback()
     else
-      utils.run(full_cmd, {}, {}, config.executor, nil, const.cmake_notifications)
+      utils.run(
+        full_cmd,
+        {},
+        {},
+        config.working_dir,
+        config.executor,
+        nil,
+        const.cmake_notifications
+      )
       full_cmd = ""
     end
   else
-    return utils.run(const.cmake_command, env, args, config.executor, function()
+    return utils.run(const.cmake_command, env, args, config.working_dir, config.executor, function()
       if type(callback) == "function" then
         callback()
       end
@@ -274,7 +310,7 @@ function cmake.build(opt, callback)
     return
   end
 
-  local result = utils.get_cmake_configuration()
+  local result = utils.get_cmake_configuration(config.working_dir)
   if result.code ~= Types.SUCCESS then
     return log.error(result.message)
   end
@@ -301,7 +337,7 @@ function cmake.build(opt, callback)
   end
 
   local args
-  local presets_file = presets.check()
+  local presets_file = presets.check(config.working_dir)
 
   if presets_file and config.build_preset then
     args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
@@ -332,11 +368,19 @@ function cmake.build(opt, callback)
     if type(callback) == "function" then
       callback()
     else
-      utils.run(full_cmd, {}, {}, config.executor, nil, const.cmake_notifications)
+      utils.run(
+        full_cmd,
+        {},
+        {},
+        config.working_dir,
+        config.executor,
+        nil,
+        const.cmake_notifications
+      )
       full_cmd = ""
     end
   else
-    utils.run(const.cmake_command, env, args, config.executor, function()
+    utils.run(const.cmake_command, env, args, config.working_dir, config.executor, function()
       if type(callback) == "function" then
         callback()
       end
@@ -391,7 +435,7 @@ function cmake.install(opt)
     return
   end
 
-  local result = utils.get_cmake_configuration()
+  local result = utils.get_cmake_configuration(config.working_dir)
   if result.code ~= Types.SUCCESS then
     return log.error(result.message)
   end
@@ -400,7 +444,15 @@ function cmake.install(opt)
 
   local args = { "--install", config.build_directory.filename }
   vim.list_extend(args, fargs)
-  return utils.run(const.cmake_command, {}, args, config.executor, nil, const.cmake_notifications)
+  return utils.run(
+    const.cmake_command,
+    {},
+    args,
+    config.working_dir,
+    config.executor,
+    nil,
+    const.cmake_notifications
+  )
 end
 
 --- CMake close cmake console
@@ -473,7 +525,7 @@ function cmake.run(opt)
 
       if full_cmd ~= "" then
         full_cmd = 'cd "'
-          .. vim.loop.cwd()
+          .. config.working_dir
           .. '" && '
           .. full_cmd
           .. " && "
@@ -530,9 +582,9 @@ function cmake.run(opt)
 
         if full_cmd ~= "" then
           -- This jumps to the working directory, builds the target and then launches it inside the launch terminal
-          -- Hence, "cd ".. vim.cwd .. " && "..    The \" is for path handling, specifically in win32
+          -- Hence, "cd ".. cwd .. " && "..    The \" is for path handling, specifically in win32
           full_cmd = 'cd "'
-            .. vim.loop.cwd()
+            .. config.working_dir
             .. '" && '
             .. full_cmd
             .. " && "
@@ -778,12 +830,12 @@ function cmake.select_build_type(callback)
     return
   end
 
-  local result = utils.get_cmake_configuration()
+  local result = utils.get_cmake_configuration(config.working_dir)
   if result.code ~= Types.SUCCESS then
     return log.error(result.message)
   end
 
-  local types = variants.get(const.cmake_variants_message)
+  local types = variants.get(const.cmake_variants_message, config.working_dir)
   -- Put selected build type first
   for idx, type in ipairs(types) do
     if type == config.build_type then
@@ -821,12 +873,12 @@ function cmake.select_kit(callback)
     return
   end
 
-  local result = utils.get_cmake_configuration()
+  local result = utils.get_cmake_configuration(config.working_dir)
   if result.code ~= Types.SUCCESS then
     return log.error(result.message)
   end
 
-  local cmake_kits = kits.get(const.cmake_kits_path)
+  local cmake_kits = kits.get(const.cmake_kits_path, config.working_dir)
   if cmake_kits then
     -- Put selected kit first
     for idx, kit in ipairs(cmake_kits) do
@@ -854,7 +906,7 @@ function cmake.select_kit(callback)
       end)
     )
   else
-    log.error("Cannot find CMakeKits.[json|yaml] at Root!!")
+    log.error("Cannot find CMakeKits.[json|yaml] at Root (" .. config.working_dir .. ")!!")
   end
 end
 
@@ -863,17 +915,18 @@ function cmake.select_configure_preset(callback)
     return
   end
 
-  local result = utils.get_cmake_configuration()
+  local result = utils.get_cmake_configuration(config.working_dir)
   if result.code ~= Types.SUCCESS then
     return log.error(result.message)
   end
 
   -- if exists presets
-  local presets_file = presets.check()
+  local presets_file = presets.check(config.working_dir)
   if presets_file then
-    local configure_preset_names = presets.parse("configurePresets", { include_hidden = false })
+    local configure_preset_names =
+      presets.parse("configurePresets", { include_hidden = false }, config.working_dir)
     local configure_presets =
-      presets.parse_name_mapped("configurePresets", { include_hidden = false })
+      presets.parse_name_mapped("configurePresets", { include_hidden = false }, config.working_dir)
     local format_preset_name = function(p_name)
       local p = configure_presets[p_name]
       return p.displayName or p.name
@@ -890,8 +943,9 @@ function cmake.select_configure_preset(callback)
         end
         if config.configure_preset ~= choice then
           config.configure_preset = choice
-          config.build_type =
-            presets.get_build_type(presets.get_preset_by_name(choice, "configurePresets"))
+          config.build_type = presets.get_build_type(
+            presets.get_preset_by_name(choice, "configurePresets", config.working_dir)
+          )
         end
         if type(callback) == "function" then
           callback()
@@ -901,7 +955,7 @@ function cmake.select_configure_preset(callback)
       end)
     )
   else
-    log.error("Cannot find CMake[User]Presets.json at Root!!")
+    log.error("Cannot find CMake[User]Presets.json at Root (" .. config.working_dir .. ") !!")
   end
 end
 
@@ -910,16 +964,18 @@ function cmake.select_build_preset(callback)
     return
   end
 
-  local result = utils.get_cmake_configuration()
+  local result = utils.get_cmake_configuration(config.working_dir)
   if result.code ~= Types.SUCCESS then
     return log.error(result.message)
   end
 
   -- if exists presets
-  local presets_file = presets.check()
+  local presets_file = presets.check(config.working_dir)
   if presets_file then
-    local build_preset_names = presets.parse("buildPresets", { include_hidden = false })
-    local build_presets = presets.parse_name_mapped("buildPresets", { include_hidden = false })
+    local build_preset_names =
+      presets.parse("buildPresets", { include_hidden = false }, config.working_dir)
+    local build_presets =
+      presets.parse_name_mapped("buildPresets", { include_hidden = false }, config.working_dir)
     local format_preset_name = function(p_name)
       local p = build_presets[p_name]
       return p.displayName or p.name
@@ -940,7 +996,7 @@ function cmake.select_build_preset(callback)
       end)
     )
   else
-    log.error("Cannot find CMake[User]Presets.json at Root!!")
+    log.error("Cannot find CMake[User]Presets.json at Root (" .. config.working_dir .. ")!!")
   end
 end
 
@@ -1086,7 +1142,7 @@ function cmake.settings()
     return
   end
 
-  local result = utils.get_cmake_configuration()
+  local result = utils.get_cmake_configuration(config.working_dir)
   if result.code ~= Types.SUCCESS then
     return log.error(result.message)
   end
@@ -1112,7 +1168,7 @@ function cmake.target_settings(opt)
     return
   end
 
-  local result = utils.get_cmake_configuration()
+  local result = utils.get_cmake_configuration(config.working_dir)
   if result.code ~= Types.SUCCESS then
     return log.error(result.message)
   end
@@ -1214,12 +1270,12 @@ function cmake.get_build_directory()
 end
 
 function cmake.is_cmake_project()
-  local result = utils.get_cmake_configuration()
+  local result = utils.get_cmake_configuration(config.working_dir)
   return result.code == Types.SUCCESS
 end
 
 function cmake.has_cmake_preset()
-  local presets_file = presets.check()
+  local presets_file = presets.check(config.working_dir)
   return presets_file ~= nil
 end
 
@@ -1238,7 +1294,7 @@ function cmake.compile_commands_from_soft_link()
     return
   end
 
-  local source = vim.loop.cwd()
+  local source = config.working_dir
     .. "/"
     .. config.build_directory.filename
     .. "/compile_commands.json"
@@ -1290,6 +1346,22 @@ end
 local group = vim.api.nvim_create_augroup("cmaketools", { clear = true })
 local regenerate_id = nil
 
+function cmake.select_cwd()
+  vim.ui.input(
+    {
+      prompt = "The directory where the main CMakeLists.txt is located",
+      default = vim.loop.cwd(),
+      completion = "dir",
+    },
+    vim.schedule_wrap(function(input)
+      --local new_path = Path:new(input)
+      --if new_path:is_dir() then
+      config.working_dir = vim.fn.resolve(input)
+      --	end
+    end)
+  )
+end
+
 function cmake.create_regenerate_on_save_autocmd()
   if not const.cmake_regenerate_on_save then
     return
@@ -1310,7 +1382,7 @@ function cmake.create_regenerate_on_save_autocmd()
     table.insert(pattern, ss)
   end
 
-  local presets_file = presets.check()
+  local presets_file = presets.check(config.working_dir)
   if presets_file then
     for _, item in ipairs({
       "CMakePresets.json",
@@ -1318,7 +1390,7 @@ function cmake.create_regenerate_on_save_autocmd()
       "cmake-presets.json",
       "cmake-user-presets.json",
     }) do
-      table.insert(pattern, vim.loop.cwd() .. "/" .. item)
+      table.insert(pattern, config.working_dir .. "/" .. item)
     end
   else
     for _, item in ipairs({
@@ -1329,7 +1401,7 @@ function cmake.create_regenerate_on_save_autocmd()
       "CMakeKits.json",
       "cmake-kits.json",
     }) do
-      table.insert(pattern, vim.loop.cwd() .. "/" .. item)
+      table.insert(pattern, config.working_dir .. "/" .. item)
     end
   end
 

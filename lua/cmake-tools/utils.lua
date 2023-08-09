@@ -32,13 +32,13 @@ function utils.get_executor(name)
   return require("cmake-tools.executors")[name]
 end
 
-function utils.get_cmake_configuration()
-  local cmakelists = Path:new(vim.loop.cwd(), "CMakeLists.txt")
+function utils.get_cmake_configuration(cwd)
+  local cmakelists = Path:new(cwd, "CMakeLists.txt")
   if not cmakelists:is_file() then
     return Result:new(
       Types.CANNOT_FIND_CMAKE_CONFIGURATION_FILE,
       nil,
-      "Cannot find CMakeLists.txt at cwd."
+      "Cannot find CMakeLists.txt at cwd (" .. cwd .. ")."
     )
   end
   return Result:new(Types.SUCCESS, cmakelists, "cmake-tools has found CMakeLists.txt.")
@@ -129,10 +129,11 @@ end
 ---@param cmd string the executable to execute
 ---@param env table environment variables
 ---@param args table arguments to the executable
+---@param cwd string the directory to run in
 ---@param executor_data executor_conf the executor
 ---@param on_success nil|function extra arguments, f.e on_success is a callback to be called when the process finishes
 ---@return nil
-function utils.run(cmd, env, args, executor_data, on_success, cmake_notifications)
+function utils.run(cmd, env, args, cwd, executor_data, on_success, cmake_notifications)
   -- save all
   vim.cmd("wall")
 
@@ -147,7 +148,7 @@ function utils.run(cmd, env, args, executor_data, on_success, cmake_notification
     notification.update_spinner()
   end
 
-  utils.get_executor(executor_data.name).run(cmd, env, args, executor_data.opts, function(code)
+  utils.get_executor(executor_data.name).run(cmd, env, args, cwd, executor_data.opts, function(code)
     local msg = "Exited with code " .. code
     local level = cmake_notifications.level
     local icon = ""

@@ -529,7 +529,7 @@ function terminal.prepare_cmd_for_run(cmd, env, args)
   return full_cmd
 end
 
-function terminal.run(cmd, env, args, opts)
+function terminal.run(cmd, env, args, cwd, opts)
   local prefix = opts.prefix_name -- [CMakeTools]
 
   -- prefix is added to the terminal name because the reposition_term() function needs to find it
@@ -544,7 +544,7 @@ function terminal.run(cmd, env, args, opts)
 
   -- Prepare Launch path form
   -- TODO prepare proper cwd
-  local launch_path = terminal.prepare_launch_path(vim.loop.cwd())
+  local launch_path = terminal.prepare_launch_path(cwd)
   -- Launch form executable's build directory by default
   cmd = "cd " .. launch_path .. " && " .. cmd
 

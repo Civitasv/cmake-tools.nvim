@@ -1,18 +1,18 @@
 local kits = {}
 
 -- checks if there is a cmake-kits.json file and parses it to a Lua table
-function kits.parse(global_kits_path)
+function kits.parse(global_kits_path, cwd)
   -- helper function to find the config file
   -- returns file path if found, nil otherwise
   local function findcfg()
-    local files = vim.fn.readdir(".")
+    local files = vim.fn.readdir(cwd)
 
     -- it will use local kits path first,
     -- otherwise, it will use global kits path
     local file = global_kits_path
     for _, f in ipairs(files) do -- iterate over files in current directory
       if f == "cmake-kits.json" or f == "CMakeKits.json" then -- if a kits config file is found
-        file = vim.fn.resolve("./" .. f)
+        file = vim.fn.resolve(cwd .. "/" .. f)
         break
       end
     end
@@ -33,9 +33,9 @@ function kits.parse(global_kits_path)
 end
 
 -- returns a list of descriptions of all kits
-function kits.get(global_kits_path)
+function kits.get(global_kits_path, cwd)
   -- start parsing
-  local config = kits.parse(global_kits_path)
+  local config = kits.parse(global_kits_path, cwd)
   local res = {}
   if config then -- if a config is found
     for _, item in ipairs(config) do
@@ -46,8 +46,8 @@ function kits.get(global_kits_path)
   return res
 end
 
-function kits.get_by_name(kit_name)
-  local config = kits.parse()
+function kits.get_by_name(kit_name, cwd)
+  local config = kits.parse(nil, cwd)
   if config then
     for _, item in ipairs(config) do
       local name = item.name
@@ -60,8 +60,8 @@ function kits.get_by_name(kit_name)
 end
 
 -- given a kit, build an argument list for CMake
-function kits.build_env_and_args(kit_name, always_use_terminal)
-  local kit = kits.get_by_name(kit_name)
+function kits.build_env_and_args(kit_name, always_use_terminal, cwd)
+  local kit = kits.get_by_name(kit_name, cwd)
   local args = {}
   local env = {}
 

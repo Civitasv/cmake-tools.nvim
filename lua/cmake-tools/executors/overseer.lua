@@ -14,12 +14,12 @@ function overseer_executor.close(opts)
   overseer.close()
 end
 
-function overseer_executor.run(cmd, env, args, opts, on_exit, on_output)
+function overseer_executor.run(cmd, env, args, cwd, opts, on_exit, on_output)
   opts = vim.tbl_extend("keep", {
     cmd = cmd,
     args = args,
     env = env,
-    cwd = vim.fn.getcwd(),
+    cwd = cwd,
   }, opts.new_task_opts)
   overseer_executor.job = overseer.new_task(opts)
   if on_exit ~= nil then

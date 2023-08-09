@@ -13,11 +13,11 @@ local DEFAULT_VARIANTS_VAL = {
 }
 
 -- checks if there is a cmake-variants.[yaml|json] file and parses it to a Lua table
-function variants.parse()
+function variants.parse(cwd)
   -- helper function to find the config file
   -- returns file path if found, nil otherwise
   local function findcfg()
-    local files = vim.fn.readdir(".")
+    local files = vim.fn.readdir(cwd)
     local file = nil
     for _, f in ipairs(files) do -- iterate over files in current directory
       if
@@ -26,7 +26,7 @@ function variants.parse()
         or f == "CMakeVariants.yaml"
         or f == "CMakeVariants.json"
       then -- if a variants config file is found
-        file = vim.fn.resolve("./" .. f)
+        file = vim.fn.resolve(cwd .. "/" .. f)
         break
       end
     end
@@ -51,7 +51,7 @@ function variants.parse()
 end
 
 -- returns a list of string descriptions of all possible combinations of configurations, using their short names and optional detailed description
-function variants.get(variants_opt)
+function variants.get(variants_opt, cwd)
   -- helper function to collect all short names of choices
   local function collect_choices(config)
     local choices = {}
@@ -160,7 +160,7 @@ function variants.get(variants_opt)
 
   -- start parsing
 
-  local config = variants.parse()
+  local config = variants.parse(cwd)
   if config then -- if a config is found
     local choices = collect_choices(config) -- collect all possible choices from it
     local combinations = create_combinations(choices) -- calculate the cartesian product
@@ -173,7 +173,7 @@ function variants.get(variants_opt)
   return DEFAULT_VARIANTS_VAL
 end
 
-function variants.debuggable(variant)
+function variants.debuggable(variant, cwd)
   -- check if the chosen variants is one of the defaults
   for _, defaultvar in ipairs(DEFAULT_VARIANTS) do
     if variant == defaultvar then
@@ -182,7 +182,7 @@ function variants.debuggable(variant)
   end
 
   -- otherwise, find the config file to parse
-  local config = variants.parse()
+  local config = variants.parse(cwd)
   if not config then
     return false -- silent error (empty arglist) if no config file found
   end
@@ -211,7 +211,7 @@ function variants.debuggable(variant)
 end
 
 -- given a variant, build an argument list for CMake
-function variants.build_arglist(variant)
+function variants.build_arglist(variant, cwd)
   -- helper function to build a simple command line option that defines the CMAKE_BUILD_TYPE variable to `build_type`
   local function build_simple(build_type)
     return { "-D", "CMAKE_BUILD_TYPE:STRING=" .. build_type }
@@ -227,7 +227,7 @@ function variants.build_arglist(variant)
   end
 
   -- otherwise, find the config file to parse
-  local config = variants.parse()
+  local config = variants.parse(cwd)
   if not config then
     return {} -- silent error (empty arglist) if no config file found
   end

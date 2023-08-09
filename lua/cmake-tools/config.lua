@@ -25,6 +25,7 @@ local Config = {
   executor = nil,
   terminal = nil,
   always_use_terminal = false,
+  working_dir = vim.loop.cwd(),
 }
 
 function Config:new(const)
@@ -42,9 +43,9 @@ function Config:new(const)
 end
 
 function Config:update_build_dir(build_dir)
-  self.build_directory = Path:new(build_dir)
-  self.query_directory = Path:new(build_dir, ".cmake", "api", "v1", "query")
-  self.reply_directory = Path:new(build_dir, ".cmake", "api", "v1", "reply")
+  self.build_directory = Path:new(self.working_dir, build_dir)
+  self.query_directory = Path:new(self.working_dir, build_dir, ".cmake", "api", "v1", "query")
+  self.reply_directory = Path:new(self.working_dir, build_dir, ".cmake", "api", "v1", "reply")
 end
 
 function Config:generate_options()
@@ -56,7 +57,7 @@ function Config:build_options()
 end
 
 function Config:generate_build_directory()
-  local build_directory = Path:new(vim.loop.cwd(), self.build_directory)
+  local build_directory = Path:new(self.build_directory)
 
   if not build_directory:mkdir({ parents = true }) then
     return Result:new(Types.CANNOT_CREATE_DIRECTORY, false, "cannot create directory")
@@ -65,7 +66,7 @@ function Config:generate_build_directory()
 end
 
 function Config:generate_query_files()
-  local query_directory = Path:new(vim.loop.cwd(), self.query_directory)
+  local query_directory = Path:new(self.query_directory)
   if not query_directory:mkdir({ parents = true }) then
     return Result:new(Types.CANNOT_CREATE_DIRECTORY, false, "cannot create directory")
   end
@@ -97,7 +98,7 @@ end
 
 function Config:get_cmake_files()
   -- if reply_directory exists
-  local reply_directory = Path:new(vim.loop.cwd(), self.reply_directory)
+  local reply_directory = Path:new(self.reply_directory)
   if not reply_directory:exists() then
     return Result:new(Types.NOT_CONFIGURED, nil, "Configure fail")
   end
@@ -113,7 +114,7 @@ end
 
 function Config:get_codemodel_targets()
   -- if reply_directory exists
-  local reply_directory = Path:new(vim.loop.cwd(), self.reply_directory)
+  local reply_directory = Path:new(self.reply_directory)
   if not reply_directory:exists() then
     return Result:new(Types.NOT_CONFIGURED, nil, "Configure fail")
   end
@@ -128,14 +129,14 @@ function Config:get_codemodel_targets()
 end
 
 function Config:get_code_model_target_info(codemodel_target)
-  local reply_directory = Path:new(vim.loop.cwd(), self.reply_directory)
+  local reply_directory = Path:new(self.reply_directory)
   return vim.json.decode((reply_directory / codemodel_target["jsonFile"]):read())
 end
 
 -- Check if launch target is built
 function Config:check_launch_target()
   -- 1. not configured
-  local build_directory = Path:new(vim.loop.cwd(), self.build_directory)
+  local build_directory = Path:new(self.build_directory)
   if not build_directory:exists() then
     return Result:new(Types.NOT_CONFIGURED, nil, "You need to configure it first")
   end
@@ -175,7 +176,7 @@ function Config:get_launch_target_from_info(target_info)
   target_path = Path:new(target_path)
   if not target_path:is_absolute() then
     -- then it is a relative path, based on build directory
-    local build_directory = Path:new(vim.loop.cwd(), self.build_directory)
+    local build_directory = Path:new(self.build_directory)
     target_path = build_directory / target_path
   end
   -- else it is an absolute path
@@ -206,7 +207,7 @@ end
 -- Check if build target exists
 function Config:check_build_target()
   -- 1. not configured
-  local build_directory = Path:new(vim.loop.cwd(), self.build_directory)
+  local build_directory = Path:new(self.build_directory)
   if not build_directory:exists() then
     return Result:new(Types.NOT_CONFIGURED, nil, "You need to configure it first")
   end
@@ -249,7 +250,7 @@ function Config:get_build_target()
   target_path = Path:new(target_path)
   if not target_path:is_absolute() then
     -- then it is a relative path, based on build directory
-    local build_directory = Path:new(vim.loop.cwd(), self.build_directory)
+    local build_directory = Path:new(self.build_directory)
     target_path = build_directory / target_path
   end
   -- else it is an absolute path
@@ -270,7 +271,7 @@ end
 function Config:validate_for_debugging()
   local build_type = self.build_type
 
-  if not build_type or not variants.debuggable(build_type) then
+  if not build_type or not variants.debuggable(build_type, self.working_dir) then
     return Result:new(Types.CANNOT_DEBUG_LAUNCH_TARGET, false, "cannot debug it")
   end
   return Result:new(Types.SUCCESS, true, "Yeah, it may be")

@@ -224,3 +224,13 @@ vim.api.nvim_create_user_command(
     desc = "CMake show cmake model files or target",
   }
 )
+
+--- CMake select cwd
+vim.api.nvim_create_user_command(
+  "CMakeSelectCwd", -- name
+  cmake_tools.select_cwd, -- command
+  { -- opts
+    nargs = 0,
+    desc = "CMake select cwd",
+  }
+)

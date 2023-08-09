@@ -6,11 +6,11 @@ local presets = {}
 -- in the current directory, a CMakeUserPresets.json is
 -- preferred over CMakePresets.json as CMakePresets.json
 -- is implicitly included by CMakeUserPresets.json
-function presets.check()
+function presets.check(cwd)
   -- helper function to find the config file
   -- returns file path if found, nil otherwise
   local function findcfg()
-    local files = vim.fn.readdir(".")
+    local files = vim.fn.readdir(cwd)
     local file = nil
     local presetFiles = {}
     for _, f in ipairs(files) do -- iterate over files in current directory
@@ -20,7 +20,7 @@ function presets.check()
         or f == "cmake-presets.json"
         or f == "cmake-user-presets.json"
       then -- if a preset file is found
-        presetFiles[#presetFiles + 1] = vim.fn.resolve("./" .. f)
+        presetFiles[#presetFiles + 1] = tostring(Path:new(cwd, f))
       end
     end
     table.sort(presetFiles, function(a, b)
@@ -73,7 +73,7 @@ local function decode(file)
   end
 
   for _, f in ipairs(includes) do
-    local fdata = vim.fn.json_decode(vim.fn.readfile(f))
+    local fdata = vim.fn.json_decode(vim.fn.readfile(vim.fs.dirname(file) .. "/" .. f))
     local thisFilePresetKeys = vim.tbl_filter(function(key)
       if string.find(key, "Presets") then
         return true
@@ -95,8 +95,8 @@ end
 -- @param {opts}: include_hidden(bool|nil).
 --                If true, hidden preset will be included in result.
 -- @returns : list with all preset names
-function presets.parse(type, opts)
-  local file = presets.check()
+function presets.parse(type, opts, cwd)
+  local file = presets.check(cwd)
   local options = {}
   if not file then
     return options
@@ -119,8 +119,8 @@ end
 -- @param {opts}: include_hidden(bool|nil).
 --                If true, hidden preset will be included in result.
 -- @returns : table with preset name as key and preset content as value
-function presets.parse_name_mapped(type, opts)
-  local file = presets.check()
+function presets.parse_name_mapped(type, opts, cwd)
+  local file = presets.check(cwd)
   local options = {}
   if not file then
     return options
@@ -141,8 +141,8 @@ end
 -- Retrieve preset by name and type
 -- @param name: from `name` option
 -- @param type: `buildPresets` or `configurePresets`
-function presets.get_preset_by_name(name, type)
-  local file = presets.check()
+function presets.get_preset_by_name(name, type, cwd)
+  local file = presets.check(cwd)
   if not file then
     return nil
   end
@@ -164,7 +164,7 @@ function presets.get_build_type(preset)
 end
 
 -- Retrieve build directory from preset
-function presets.get_build_dir(preset)
+function presets.get_build_dir(preset, working_dir)
   -- check if this preset is extended
   local function helper(p_preset)
     local build_dir = ""
@@ -176,7 +176,7 @@ function presets.get_build_dir(preset)
     if p_preset.inherits then
       local inherits = p_preset.inherits
       local set_dir_by_parent = function(parent)
-        local ppreset = presets.get_preset_by_name(parent, "configurePresets")
+        local ppreset = presets.get_preset_by_name(parent, "configurePresets", working_dir)
         local ppreset_build_dir = helper(ppreset)
         if ppreset_build_dir ~= "" then
           build_dir = ppreset_build_dir
