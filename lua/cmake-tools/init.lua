@@ -1294,10 +1294,7 @@ function cmake.compile_commands_from_soft_link()
     return
   end
 
-  local source = config.working_dir
-    .. "/"
-    .. config.build_directory.filename
-    .. "/compile_commands.json"
+  local source = config.build_directory.filename .. "/compile_commands.json"
   local destination = vim.loop.cwd() .. "/compile_commands.json"
   if config.always_use_terminal or utils.file_exists(source) then
     utils.softlink(source, destination, config.always_use_terminal, config.terminal.opts)
