@@ -59,12 +59,15 @@ local function decode(file)
   local isUserPreset = string.find(file:lower(), "user")
   if #includes == 0 and isUserPreset then
     local parentDir = vim.fs.dirname(file)
-    local parentPreset = parentDir .. "/CMakePresets.json"
-    local parentPresetKebapCase = parentDir .. "/cmake-presets.json"
-    if vim.fn.filereadable(parentPreset) then
-      includes[#includes + 1] = parentPreset
-    elseif vim.fn.filereadable(parentPresetKebapCase) then
-      includes[#includes + 1] = parentPresetKebapCase
+    local preset = "CMakePresets.json"
+    local presetKebapCase = "cmake-presets.json"
+    local presetPath = parentDir .. "/" .. preset
+    local presetKebapCasePath = parentDir .. "/" .. presetKebapCase
+
+    if vim.fn.filereadable(presetPath) then
+      includes[#includes + 1] = preset
+    elseif vim.fn.filereadable(presetKebapCasePath) then
+      includes[#includes + 1] = presetKebapCase
     end
   end
 
