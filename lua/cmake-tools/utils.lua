@@ -1,4 +1,5 @@
 local Path = require("plenary.path")
+local osys = require("cmake-tools.osys")
 local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
 local terminal = require("cmake-tools.executors.terminal")
@@ -55,7 +56,7 @@ function utils.close_cmake_window(executor_data)
 end
 
 function utils.get_path(str, sep)
-  sep = sep or "/"
+  sep = sep or (osys.iswin32 and "\\" or "/")
   return str:match("(.*" .. sep .. ")")
 end
 
