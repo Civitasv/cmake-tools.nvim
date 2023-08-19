@@ -1133,7 +1133,7 @@ function cmake.get_target_vars(target)
 
   local model = config:get_code_model_info()[target]
   local result = config:get_launch_target_from_info(model)
-  vars.dir.binary = utils.get_path(result.data, "/") .. "/"
+  vars.dir.binary = utils.get_path(result.data) .. "/"
   return vars
 end
 
