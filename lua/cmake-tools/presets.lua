@@ -167,7 +167,7 @@ function presets.get_build_type(preset)
 end
 
 -- Retrieve build directory from preset
-function presets.get_build_dir(preset, working_dir)
+function presets.get_build_dir(preset, cwd)
   -- check if this preset is extended
   local function helper(p_preset)
     local build_dir = ""
@@ -179,7 +179,7 @@ function presets.get_build_dir(preset, working_dir)
     if p_preset.inherits then
       local inherits = p_preset.inherits
       local set_dir_by_parent = function(parent)
-        local ppreset = presets.get_preset_by_name(parent, "configurePresets", working_dir)
+        local ppreset = presets.get_preset_by_name(parent, "configurePresets", cwd)
         local ppreset_build_dir = helper(ppreset)
         if ppreset_build_dir ~= "" then
           build_dir = ppreset_build_dir
@@ -215,10 +215,10 @@ function presets.get_build_dir(preset, working_dir)
   local build_dir = helper(preset)
 
   -- macro expansion
-  local source_path = Path:new(working_dir)
-  local source_relative = vim.fn.fnamemodify(working_dir, ":t")
+  local source_path = Path:new(cwd)
+  local source_relative = vim.fn.fnamemodify(cwd, ":t")
 
-  local cwd = working_dir
+  local cwd = cwd
   if not cwd then
     cwd = "."
   end

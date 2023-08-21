@@ -25,7 +25,7 @@ local Config = {
   executor = nil,
   terminal = nil,
   always_use_terminal = false,
-  working_dir = vim.loop.cwd(),
+  cwd = vim.loop.cwd(),
 }
 
 function Config:new(const)
@@ -43,9 +43,9 @@ function Config:new(const)
 end
 
 function Config:update_build_dir(build_dir)
-  self.build_directory = Path:new(self.working_dir, build_dir)
-  self.query_directory = Path:new(self.working_dir, build_dir, ".cmake", "api", "v1", "query")
-  self.reply_directory = Path:new(self.working_dir, build_dir, ".cmake", "api", "v1", "reply")
+  self.build_directory = Path:new(self.cwd, build_dir)
+  self.query_directory = Path:new(self.cwd, build_dir, ".cmake", "api", "v1", "query")
+  self.reply_directory = Path:new(self.cwd, build_dir, ".cmake", "api", "v1", "reply")
 end
 
 function Config:generate_options()
@@ -271,7 +271,7 @@ end
 function Config:validate_for_debugging()
   local build_type = self.build_type
 
-  if not build_type or not variants.debuggable(build_type, self.working_dir) then
+  if not build_type or not variants.debuggable(build_type, self.cwd) then
     return Result:new(Types.CANNOT_DEBUG_LAUNCH_TARGET, false, "cannot debug it")
   end
   return Result:new(Types.SUCCESS, true, "Yeah, it may be")
