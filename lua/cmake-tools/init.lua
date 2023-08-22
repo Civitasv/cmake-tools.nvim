@@ -1282,7 +1282,7 @@ function cmake.clangd_on_new_config(new_config)
   local found = false
   local arg = "--compile-commands-dir=" .. config.build_directory.filename
   for _, v in ipairs(new_config.cmd) do
-    if string.find(v, "--compile-commands-dir=") ~= nil then
+    if string.find(v, "%-%-compile%-commands%-dir=") ~= nil then
       found = true
       break
     end
