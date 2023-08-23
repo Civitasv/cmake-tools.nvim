@@ -1317,6 +1317,10 @@ function cmake.select_cwd()
   )
 end
 
+function cmake.select_cwd_given(cwd_path)
+  config.cwd = vim.fn.resolve(cwd_path)
+end
+
 function cmake.create_regenerate_on_save_autocmd()
   if not const.cmake_regenerate_on_save then
     return

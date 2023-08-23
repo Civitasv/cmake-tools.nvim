@@ -234,3 +234,13 @@ vim.api.nvim_create_user_command(
     desc = "CMake select cwd",
   }
 )
+
+--- CMake select cwd with arguments
+vim.api.nvim_create_user_command(
+  "CMakeSelectCwdArgs",
+  cmake_tools.select_cwd_given,
+  { -- opts
+    nargs = 1,
+    desc = "CMake select cwd",
+  }
+)
