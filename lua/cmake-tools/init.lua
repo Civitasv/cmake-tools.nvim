@@ -1301,24 +1301,24 @@ end
 local group = vim.api.nvim_create_augroup("cmaketools", { clear = true })
 local regenerate_id = nil
 
-function cmake.select_cwd()
-  vim.ui.input(
-    {
-      prompt = "The directory where the main CMakeLists.txt is located",
-      default = vim.loop.cwd(),
-      completion = "dir",
-    },
-    vim.schedule_wrap(function(input)
-      --local new_path = Path:new(input)
-      --if new_path:is_dir() then
-      config.cwd = vim.fn.resolve(input)
-      --	end
-    end)
-  )
-end
-
-function cmake.select_cwd_given(cwd_path)
-  config.cwd = vim.fn.resolve(cwd_path)
+function cmake.select_cwd(cwd_path)
+  if cwd_path.args == nil then
+    vim.ui.input(
+      {
+        prompt = "The directory where the main CMakeLists.txt is located",
+        default = vim.loop.cwd(),
+        completion = "dir",
+      },
+      vim.schedule_wrap(function(input)
+        --local new_path = Path:new(input)
+        --if new_path:is_dir() then
+        config.cwd = vim.fn.resolve(input)
+        --	end
+      end)
+    )
+  elseif cwd_path.args then
+    config.cwd = vim.fn.resolve(cwd_path.args)
+  end
 end
 
 function cmake.create_regenerate_on_save_autocmd()
