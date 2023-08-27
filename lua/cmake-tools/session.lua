@@ -64,8 +64,13 @@ function session.save(config)
   local path = get_current_path()
   local file = io.open(path, "w")
 
+  local serialized_build_directory = ""
+  if config.build_directory then
+    serialized_build_directory = config.build_directory:make_relative(config.cwd)
+  end
+
   local serialized_object = {
-    build_directory = config.build_directory and config.build_directory.filename or "",
+    build_directory = serialized_build_directory,
     build_type = config.build_type,
     build_target = config.build_target,
     launch_target = config.launch_target,
