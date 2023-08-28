@@ -1,7 +1,3 @@
-local finders = require("telescope.finders")
-local pickers = require("telescope.pickers")
-local make_entry = require("telescope.make_entry")
-local conf = require("telescope.config").values
 local Types = require("cmake-tools.types")
 local log = require("cmake-tools.log")
 
@@ -88,6 +84,14 @@ end
 
 function M.show_target_files(target)
   local cmake = require("cmake-tools")
+  local has_telescope, _ = pcall(require, "telescope")
+  if not has_telescope then
+    return
+  end
+  local finders = require("telescope.finders")
+  local pickers = require("telescope.pickers")
+  local make_entry = require("telescope.make_entry")
+  local conf = require("telescope.config").values
   local config = cmake.get_config()
 
   log.info(vim.inspect(target))

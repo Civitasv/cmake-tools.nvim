@@ -3,6 +3,7 @@
 
 local cmake_tools = require("cmake-tools")
 local has_nvim_dap, _ = pcall(require, "dap")
+local has_telescope, _ = pcall(require, "telescope")
 
 ---------------- Commands ------------------
 
@@ -215,15 +216,17 @@ vim.api.nvim_create_user_command(
   }
 )
 
---- CMake show files
-vim.api.nvim_create_user_command(
-  "CMakeShowTargetFiles", -- name
-  cmake_tools.show_target_files, -- command
-  { -- opts
-    nargs = "*",
-    desc = "CMake show cmake model files or target",
-  }
-)
+if has_telescope then
+  --- CMake show files
+  vim.api.nvim_create_user_command(
+    "CMakeShowTargetFiles", -- name
+    cmake_tools.show_target_files, -- command
+    { -- opts
+      nargs = "*",
+      desc = "CMake show cmake model files or target",
+    }
+  )
+end
 
 --- CMake select cwd
 vim.api.nvim_create_user_command(
