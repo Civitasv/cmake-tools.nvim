@@ -78,10 +78,10 @@ function utils.execute(executable, full_cmd, terminal_data, executor_data)
   terminal.execute(executable, full_cmd, terminal_data.opts)
 end
 
-function utils.softlink(src, target, use_terminal, opts)
+function utils.softlink(src, target, use_terminal, cwd, opts)
   if use_terminal and not utils.file_exists(target) then
     local cmd = "cmake -E create_symlink " .. src .. " " .. target
-    terminal.run(cmd, {}, {}, opts)
+    terminal.run(cmd, {}, {}, cwd, opts)
     return
   end
 

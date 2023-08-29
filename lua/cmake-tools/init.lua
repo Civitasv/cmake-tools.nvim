@@ -184,7 +184,12 @@ function cmake.generate(opt, callback)
 
   -- cmake kits, if cmake-kits.json doesn't exist, kit_option will
   -- be {env={}, args={}}, so it's okay.
-  local kit_option = kits.build_env_and_args(config.kit, config.always_use_terminal, config.cwd)
+  local kit_option = kits.build_env_and_args(
+    config.kit,
+    config.always_use_terminal,
+    config.cwd,
+    const.cmake_kits_path
+  )
 
   if const.cmake_build_directory ~= "" then
     config:update_build_dir(const.cmake_build_directory)
@@ -1255,7 +1260,13 @@ function cmake.compile_commands_from_soft_link()
   local source = config.build_directory.filename .. "/compile_commands.json"
   local destination = vim.loop.cwd() .. "/compile_commands.json"
   if config.always_use_terminal or utils.file_exists(source) then
-    utils.softlink(source, destination, config.always_use_terminal, config.terminal.opts)
+    utils.softlink(
+      source,
+      destination,
+      config.always_use_terminal,
+      config.cwd,
+      config.terminal.opts
+    )
   end
 end
 

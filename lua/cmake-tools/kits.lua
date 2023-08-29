@@ -46,8 +46,8 @@ function kits.get(global_kits_path, cwd)
   return res
 end
 
-function kits.get_by_name(kit_name, cwd)
-  local config = kits.parse(nil, cwd)
+function kits.get_by_name(kit_name, cwd, global_kits_path)
+  local config = kits.parse(global_kits_path, cwd)
   if config then
     for _, item in ipairs(config) do
       local name = item.name
@@ -60,8 +60,8 @@ function kits.get_by_name(kit_name, cwd)
 end
 
 -- given a kit, build an argument list for CMake
-function kits.build_env_and_args(kit_name, always_use_terminal, cwd)
-  local kit = kits.get_by_name(kit_name, cwd)
+function kits.build_env_and_args(kit_name, always_use_terminal, cwd, global_kits_path)
+  local kit = kits.get_by_name(kit_name, cwd, global_kits_path)
   local args = {}
   local env = {}
 
