@@ -47,13 +47,28 @@ function cmake.setup(values)
   if cmake.is_cmake_project() then
     local old_config = _session.load()
     if next(old_config) ~= nil then
-      config:update_build_dir(old_config.build_directory)
-      config.build_type = old_config.build_type
-      config.build_target = old_config.build_target
-      config.launch_target = old_config.launch_target
-      config.kit = old_config.kit
-      config.configure_preset = old_config.configure_preset
-      config.build_preset = old_config.build_preset
+      if old_config.build_directory then
+        config:update_build_dir(old_config.build_directory)
+      end
+      if old_config.build_type then
+        config.build_type = old_config.build_type
+      end
+      if old_config.build_target then
+        config.build_target = old_config.build_target
+      end
+      if old_config.launch_target then
+        config.launch_target = old_config.launch_target
+      end
+      if old_config.kit then
+        config.kit = old_config.kit
+      end
+      if old_config.configure_preset then
+        config.configure_preset = old_config.configure_preset
+      end
+      if old_config.build_preset then
+        config.build_preset = old_config.build_preset
+      end
+
       config.cwd = old_config.cwd or vim.loop.cwd()
 
       config.base_settings =
