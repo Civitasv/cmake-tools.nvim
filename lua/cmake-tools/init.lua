@@ -68,11 +68,14 @@ function cmake.setup(values)
       if old_config.build_preset then
         config.build_preset = old_config.build_preset
       end
+      if old_config.env_script then
+        config.env_script = old_config.env_script
+      end
 
       config.cwd = old_config.cwd or vim.loop.cwd()
 
       config.base_settings =
-        vim.tbl_deep_extend("keep", old_config.base_settings, config.base_settings)
+          vim.tbl_deep_extend("keep", old_config.base_settings, config.base_settings)
       config.target_settings = old_config.target_settings or {}
 
       -- migrate old launch args to new config
@@ -155,21 +158,21 @@ function cmake.generate(opt, callback)
     if config.always_use_terminal then
       if full_cmd ~= "" then
         full_cmd = full_cmd
-          .. " && "
-          .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
+            .. " && "
+            .. terminal.prepare_cmd_for_run(const.cmake_command, env, args)
       else
         full_cmd = terminal.prepare_cmd_for_run(const.cmake_command, env, args)
       end
       if type(callback) == "function" then
         callback()
       else
-        utils.run(full_cmd, {}, {}, config.cwd, config.executor, nil, const.cmake_notifications)
+        utils.run(full_cmd, config.env_script, {}, {}, config.cwd, config.executor, nil, const.cmake_notifications)
         cmake.configure_compile_commands()
         cmake.create_regenerate_on_save_autocmd()
         full_cmd = ""
       end
     else
-      return utils.run(const.cmake_command, env, args, config.cwd, config.executor, function()
+      return utils.run(const.cmake_command, config.env_script, env, args, config.cwd, config.executor, function()
         if type(callback) == "function" then
           callback()
         end
@@ -179,20 +182,20 @@ function cmake.generate(opt, callback)
     end
   end
 
-  -- if exists cmake-kits.json, kit is used to set
-  -- environmental variables and args.
-  local kits_config = kits.parse(const.cmake_kits_path, config.cwd)
-  if kits_config and not config.kit then
-    return cmake.select_kit(function()
-      cmake.generate(opt, callback)
-    end)
-  end
-
   -- specify build type, if exists cmake-variants.json,
   -- this will get build variant from it. Or this will
   -- get build variant from "Debug, Release, RelWithDebInfo, MinSizeRel"
   if not config.build_type then
     return cmake.select_build_type(function()
+      cmake.generate(opt, callback)
+    end)
+  end
+
+  -- if exists cmake-kits.json, kit is used to set
+  -- environmental variables and args.
+  local kits_config = kits.parse(const.cmake_kits_path, config.cwd)
+  if kits_config and not config.kit then
+    return cmake.select_kit(function()
       cmake.generate(opt, callback)
     end)
   end
@@ -205,6 +208,9 @@ function cmake.generate(opt, callback)
     config.cwd,
     const.cmake_kits_path
   )
+
+  config.env_script = kit_option.env_script
+  -- vim.print(config.env_script)
 
   if const.cmake_build_directory ~= "" then
     config:update_build_dir(const.cmake_build_directory)
@@ -237,14 +243,14 @@ function cmake.generate(opt, callback)
     if type(callback) == "function" then
       callback()
     else
-      utils.run(full_cmd, {}, {}, config.cwd, config.executor, nil, const.cmake_notifications)
+      utils.run(full_cmd, config.env_script, {}, {}, config.cwd, config.executor, nil, const.cmake_notifications)
       cmake.configure_compile_commands()
       cmake.create_regenerate_on_save_autocmd()
       full_cmd = ""
     end
   else
     env = vim.tbl_extend("keep", env, kit_option.env)
-    utils.run(const.cmake_command, env, args, config.cwd, config.executor, function()
+    utils.run(const.cmake_command, config.env_script, env, args, config.cwd, config.executor, function()
       if type(callback) == "function" then
         callback()
       end
@@ -278,11 +284,11 @@ function cmake.clean(callback)
     if type(callback) == "function" then
       return callback()
     else
-      utils.run(full_cmd, {}, {}, config.cwd, config.executor, nil, const.cmake_notifications)
+      utils.run(full_cmd, config.env_script, {}, {}, config.cwd, config.executor, nil, const.cmake_notifications)
       full_cmd = ""
     end
   else
-    return utils.run(const.cmake_command, env, args, config.cwd, config.executor, function()
+    return utils.run(const.cmake_command, config.env_script, env, args, config.cwd, config.executor, function()
       if type(callback) == "function" then
         callback()
       end
@@ -355,11 +361,11 @@ function cmake.build(opt, callback)
     if type(callback) == "function" then
       callback()
     else
-      utils.run(full_cmd, {}, {}, config.cwd, config.executor, nil, const.cmake_notifications)
+      utils.run(full_cmd, config.env_script, {}, {}, config.cwd, config.executor, nil, const.cmake_notifications)
       full_cmd = ""
     end
   else
-    utils.run(const.cmake_command, env, args, config.cwd, config.executor, function()
+    utils.run(const.cmake_command, config.env_script, env, args, config.cwd, config.executor, function()
       if type(callback) == "function" then
         callback()
       end
@@ -425,6 +431,7 @@ function cmake.install(opt)
   vim.list_extend(args, fargs)
   return utils.run(
     const.cmake_command,
+    config.env_script,
     {},
     args,
     config.cwd,
@@ -472,13 +479,13 @@ function cmake.get_launch_path(target)
 
   if config.base_settings.working_dir and type(config.base_settings.working_dir) == "string" then
     launch_path =
-      cmake.substitute_path(config.base_settings.working_dir, cmake.get_target_vars(target))
+        cmake.substitute_path(config.base_settings.working_dir, cmake.get_target_vars(target))
   end
 
   if
-    config.target_settings[target]
-    and config.target_settings[target].working_dir
-    and type(config.target_settings[target].working_dir) == "string"
+      config.target_settings[target]
+      and config.target_settings[target].working_dir
+      and type(config.target_settings[target].working_dir) == "string"
   then
     launch_path = config.target_settings[target].working_dir
     launch_path = cmake.substitute_path(launch_path, cmake.get_target_vars(target))
@@ -504,17 +511,17 @@ function cmake.run(opt)
 
       if full_cmd ~= "" then
         full_cmd = 'cd "'
-          .. config.cwd
-          .. '" && '
-          .. full_cmd
-          .. " && "
-          .. terminal.prepare_cmd_for_execute(
-            target_path,
-            opt.args,
-            launch_path,
-            opt.wrap_call,
-            environment.get_run_environment(config, opt.target, true)
-          )
+            .. config.cwd
+            .. '" && '
+            .. full_cmd
+            .. " && "
+            .. terminal.prepare_cmd_for_execute(
+              target_path,
+              opt.args,
+              launch_path,
+              opt.wrap_call,
+              environment.get_run_environment(config, opt.target, true)
+            )
       else
         full_cmd = terminal.prepare_cmd_for_execute(
           target_path,
@@ -542,9 +549,9 @@ function cmake.run(opt)
         end)
       end
     elseif
-      result_code == Types.NOT_SELECT_LAUNCH_TARGET
-      or result_code == Types.NOT_A_LAUNCH_TARGET
-      or result_code == Types.NOT_EXECUTABLE
+        result_code == Types.NOT_SELECT_LAUNCH_TARGET
+        or result_code == Types.NOT_A_LAUNCH_TARGET
+        or result_code == Types.NOT_EXECUTABLE
     then
       -- Re Select a target that could launch
       return cmake.select_launch_target(function()
@@ -563,17 +570,17 @@ function cmake.run(opt)
           -- This jumps to the working directory, builds the target and then launches it inside the launch terminal
           -- Hence, "cd ".. cwd .. " && "..    The \" is for path handling, specifically in win32
           full_cmd = 'cd "'
-            .. config.cwd
-            .. '" && '
-            .. full_cmd
-            .. " && "
-            .. terminal.prepare_cmd_for_execute(
-              target_path,
-              cmake:get_launch_args(),
-              launch_path,
-              opt.wrap_call,
-              environment.get_run_environment(config, config.launch_target, true)
-            )
+              .. config.cwd
+              .. '" && '
+              .. full_cmd
+              .. " && "
+              .. terminal.prepare_cmd_for_execute(
+                target_path,
+                cmake:get_launch_args(),
+                launch_path,
+                opt.wrap_call,
+                environment.get_run_environment(config, config.launch_target, true)
+              )
         else
           full_cmd = terminal.prepare_cmd_for_execute(
             target_path,
@@ -740,15 +747,15 @@ if has_nvim_dap then
           end)
         end
       elseif
-        result_code == Types.NOT_SELECT_LAUNCH_TARGET
-        or result_code == Types.NOT_A_LAUNCH_TARGET
-        or result_code == Types.NOT_EXECUTABLE
+          result_code == Types.NOT_SELECT_LAUNCH_TARGET
+          or result_code == Types.NOT_A_LAUNCH_TARGET
+          or result_code == Types.NOT_EXECUTABLE
       then
         -- Re Select a target that could launch
         return cmake.select_launch_target(function()
-          cmake.debug(opt, callback)
-        end),
-          true
+              cmake.debug(opt, callback)
+            end),
+            true
       else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
         -- Build select launch target every time
         config.build_target = config.launch_target
@@ -903,9 +910,9 @@ function cmake.select_configure_preset(callback)
   local presets_file = presets.check(config.cwd)
   if presets_file then
     local configure_preset_names =
-      presets.parse("configurePresets", { include_hidden = false }, config.cwd)
+        presets.parse("configurePresets", { include_hidden = false }, config.cwd)
     local configure_presets =
-      presets.parse_name_mapped("configurePresets", { include_hidden = false }, config.cwd)
+        presets.parse_name_mapped("configurePresets", { include_hidden = false }, config.cwd)
     local format_preset_name = function(p_name)
       local p = configure_presets[p_name]
       return p.displayName or p.name
@@ -1111,8 +1118,8 @@ local function convert_to_table(str)
   end
 
   if pcall(function()
-    vim.inspect(fn())
-  end) then
+        vim.inspect(fn())
+      end) then
     str = "return " .. vim.inspect(fn())
     fn = loadstring(str)
     if not fn then
@@ -1226,8 +1233,8 @@ function cmake.get_launch_args()
     return {}
   end
   if
-    config.target_settings[cmake.get_launch_target()]
-    and config.target_settings[cmake.get_launch_target()].args
+      config.target_settings[cmake.get_launch_target()]
+      and config.target_settings[cmake.get_launch_target()].args
   then
     return config.target_settings[cmake.get_launch_target()].args
   end

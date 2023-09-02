@@ -20,11 +20,12 @@ local Config = {
     working_dir = "${dir.binary}",
     generate_options = {},
     build_options = {},
-  }, -- general config
+  },                    -- general config
   target_settings = {}, -- target specific config
   executor = nil,
   terminal = nil,
   always_use_terminal = false,
+  env_script = " ",
   cwd = vim.loop.cwd(),
 }
 

@@ -76,6 +76,7 @@ function session.save(config)
     launch_target = config.launch_target,
     kit = config.kit,
     configure_preset = config.configure_preset,
+    env_script = config.env_script,
     build_preset = config.build_preset,
     base_settings = config.base_settings,
     target_settings = config.target_settings,

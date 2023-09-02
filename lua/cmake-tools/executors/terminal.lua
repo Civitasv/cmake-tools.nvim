@@ -58,8 +58,8 @@ function terminal.new_instance(term_name, opts)
   -- Now create the plit
   vim.cmd(":" .. opts.split_direction .. " " .. opts.split_size .. "sp | :term") -- Creater terminal in a split
   -- local new_name = vim.fn.fnamemodify(term_name, ":t")                           -- Extract only the terminal name and reassign it
-  vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), term_name) -- Set the buffer name
-  vim.cmd(":setlocal laststatus=3") -- Let there be a single status/lualine in the neovim instance
+  vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), term_name)           -- Set the buffer name
+  vim.cmd(":setlocal laststatus=3")                                              -- Let there be a single status/lualine in the neovim instance
 
   -- Renamming a terminal buffer creates a new hidden buffer, so duplicate terminals need to be deleted
   local new_buffers_list = vim.api.nvim_list_bufs()
@@ -204,24 +204,24 @@ function terminal.create_if_not_exists(term_name, opts)
     end
   end
 
-  local does_terminal_already_exist = false
+  local terminal_already_exists = false
 
   if term_idx ~= nil and vim.api.nvim_buf_is_valid(term_idx) then
     local type = vim.api.nvim_get_option_value("buftype", {
       buf = term_idx,
     })
     if type == "terminal" then
-      does_terminal_already_exist = true
+      terminal_already_exists = true
     else
       vim.api.nvim_buf_delete(term_idx, { force = true })
     end
   end
 
-  if not does_terminal_already_exist then
+  if not terminal_already_exists then
     term_idx = terminal.new_instance(term_name, opts)
     -- does_terminal_already_exist terminal will be default (false)
   end
-  return does_terminal_already_exist, term_idx
+  return terminal_already_exists, term_idx
 end
 
 function terminal.reposition(opts)
@@ -247,10 +247,10 @@ function terminal.reposition(opts)
   local final_win_id = -1 -- If -1, then a new window needs to be created, otherwise, we must return an existing winid
   if single_terminal_per_instance then
     if static_window_location then
-      terminal.close_window_from_tabs_with_prefix(true, opts) -- Close all cmake windows in all other tabs
+      terminal.close_window_from_tabs_with_prefix(true, opts)                             -- Close all cmake windows in all other tabs
       local buflist = terminal.check_if_cmake_buffers_are_displayed_across_all_tabs(opts) -- Get list of all buffers that are displayed in current tab
       if next(buflist) then
-        for i = 1, #buflist do -- Buffers exist in current tab, so close all except first buffer in buflist
+        for i = 1, #buflist do                                                            -- Buffers exist in current tab, so close all except first buffer in buflist
           if i > 1 then
             vim.api.nvim_win_close(buflist[i], false)
           end
@@ -258,7 +258,7 @@ function terminal.reposition(opts)
         final_win_id = buflist[1]
       end
     else
-      terminal.close_window_from_tabs_with_prefix(true, opts) -- Close all cmake windows in all tabs
+      terminal.close_window_from_tabs_with_prefix(true, opts)                             -- Close all cmake windows in all tabs
       local buflist = terminal.check_if_cmake_buffers_are_displayed_across_all_tabs(opts) -- Get list of all buffers that are displayed in current tab
       if next(buflist) then
         -- Buffers exist in current tab, so close all buffers in buflist
@@ -470,7 +470,8 @@ function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_ca
   full_cmd = full_cmd .. " "
 
   if osys.islinux or osys.iswsl or osys.ismac then
-    full_cmd = " " .. full_cmd -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
+    full_cmd = " " ..
+        full_cmd -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
   end
 
   full_cmd = full_cmd .. executable
@@ -529,11 +530,11 @@ function terminal.prepare_cmd_for_run(cmd, env, args)
   return full_cmd
 end
 
-function terminal.run(cmd, env, args, cwd, opts)
+function terminal.run(cmd, env_script, env, args, cwd, opts)
   local prefix = opts.prefix_name -- [CMakeTools]
 
   -- prefix is added to the terminal name because the reposition_term() function needs to find it
-  local _, buffer_idx = terminal.create_if_not_exists(
+  local termianl_already_exists, buffer_idx = terminal.create_if_not_exists(
     prefix .. opts.name, -- [CMakeTools]Main Terminal
     opts
   )
@@ -541,6 +542,17 @@ function terminal.run(cmd, env, args, cwd, opts)
 
   -- Reposition the terminal buffer, before sending commands
   local final_win_id = terminal.reposition(opts)
+
+  --- env_script needs to be run only once if the terminal buffer does not already exist
+  if not termianl_already_exists then
+    terminal.send_data_to_terminal(buffer_idx, env_script, {
+      win_id = final_win_id,
+      split_direction = opts.split_direction,
+      split_size = opts.split_size,
+      start_insert = opts.start_insert_in_other_tasks,
+      focus_on_main_terminal = opts.focus_on_main_terminal,
+    })
+  end
 
   -- Prepare Launch path form
   -- TODO prepare proper cwd

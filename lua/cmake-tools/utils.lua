@@ -81,7 +81,7 @@ end
 function utils.softlink(src, target, use_terminal, cwd, opts)
   if use_terminal and not utils.file_exists(target) then
     local cmd = "cmake -E create_symlink " .. src .. " " .. target
-    terminal.run(cmd, {}, {}, cwd, opts)
+    terminal.run(cmd, "", {}, {}, cwd, opts)
     return
   end
 
@@ -116,7 +116,7 @@ end
 local notify_update_line = function(out, err)
   local line = err and err or out
   if line ~= nil then
-    if line and line:match("^%[%s*(%d+)%s*%%%]") then -- only show lines containing build progress e.g [ 12%]
+    if line and line:match("^%[%s*(%d+)%s*%%%]") then     -- only show lines containing build progress e.g [ 12%]
       notification.notification.id = notification.notify( -- notify with percentage and message
         line,
         err and "warn" or notification.notification.level,
@@ -128,13 +128,14 @@ end
 
 ---Run a commond
 ---@param cmd string the executable to execute
+---@param env_script string environment setup script
 ---@param env table environment variables
 ---@param args table arguments to the executable
 ---@param cwd string the directory to run in
 ---@param executor_data executor_conf the executor
 ---@param on_success nil|function extra arguments, f.e on_success is a callback to be called when the process finishes
 ---@return nil
-function utils.run(cmd, env, args, cwd, executor_data, on_success, cmake_notifications)
+function utils.run(cmd, env_script, env, args, cwd, executor_data, on_success, cmake_notifications)
   -- save all
   vim.cmd("wall")
 
@@ -145,11 +146,11 @@ function utils.run(cmd, env, args, cwd, executor_data, on_success, cmake_notific
     notification.notification.level = "info"
 
     notification.notification.id =
-      notification.notify(cmd, notification.notification.level, { title = "CMakeTools" })
+        notification.notify(cmd, notification.notification.level, { title = "CMakeTools" })
     notification.update_spinner()
   end
 
-  utils.get_executor(executor_data.name).run(cmd, env, args, cwd, executor_data.opts, function(code)
+  utils.get_executor(executor_data.name).run(cmd, env_script, env, args, cwd, executor_data.opts, function(code)
     local msg = "Exited with code " .. code
     local level = cmake_notifications.level
     local icon = ""
@@ -175,7 +176,7 @@ end
 -- @return true if exists else false
 function utils.has_active_job(terminal_data, executor_data)
   return utils.get_executor(executor_data.name).has_active_job(executor_data.opts)
-    or utils.get_executor(terminal_data.name).has_active_job(terminal_data.opts)
+      or utils.get_executor(terminal_data.name).has_active_job(terminal_data.opts)
 end
 
 function utils.mkdir(dir)

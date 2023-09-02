@@ -10,7 +10,7 @@ function kits.parse(global_kits_path, cwd)
     -- it will use local kits path first,
     -- otherwise, it will use global kits path
     local file = global_kits_path
-    for _, f in ipairs(files) do -- iterate over files in current directory
+    for _, f in ipairs(files) do                              -- iterate over files in current directory
       if f == "cmake-kits.json" or f == "CMakeKits.json" then -- if a kits config file is found
         file = vim.fn.resolve(cwd .. "/" .. f)
         break
@@ -22,8 +22,8 @@ function kits.parse(global_kits_path, cwd)
   -- start parsing
   local config = nil
 
-  local file = findcfg() -- check for config file
-  if file then -- if one is found ...
+  local file = findcfg()           -- check for config file
+  if file then                     -- if one is found ...
     if file:match(".*%.json") then -- .. and is a json file
       config = vim.fn.json_decode(vim.fn.readfile(file))
     end
@@ -64,9 +64,10 @@ function kits.build_env_and_args(kit_name, always_use_terminal, cwd, global_kits
   local kit = kits.get_by_name(kit_name, cwd, global_kits_path)
   local args = {}
   local env = {}
+  local env_script = " "
 
   if not kit then
-    return { env = env, args = args } -- silent error (empty arglist) if no config file found
+    return { env = env, env_script = env_script, args = args } -- silent error (empty arglist) if no config file found
   end
 
   -- local function to add an argument to `args`
@@ -82,6 +83,10 @@ function kits.build_env_and_args(kit_name, always_use_terminal, cwd, global_kits
     end
   end
 
+  if kit.environmentSetupScript then
+    env_script = kit.environmentSetupScript
+    -- vim.print(env_script)
+  end
   -- if exists `compilers` option, then set variable for cmake
   if kit.compilers then
     for lang, compiler in pairs(kit.compilers) do
@@ -123,7 +128,7 @@ function kits.build_env_and_args(kit_name, always_use_terminal, cwd, global_kits
       add_env({ k .. "=" .. v })
     end
   end
-  return { env = env, args = args }
+  return { env = env, env_script = env_script, args = args }
 end
 
 return kits
