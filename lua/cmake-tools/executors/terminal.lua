@@ -450,7 +450,6 @@ function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_ca
   -- executable = vim.fn.fnamemodify(executable, ":t")
 
   -- Launch form executable's build directory by default
-  launch_path = terminal.prepare_launch_path(launch_path)
   full_cmd = "cd " .. launch_path .. " &&"
 
   if osys.iswin32 then
@@ -471,8 +470,7 @@ function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_ca
   full_cmd = full_cmd .. " "
 
   if osys.islinux or osys.iswsl or osys.ismac then
-    full_cmd = " " ..
-        full_cmd -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
+    full_cmd = " " .. full_cmd -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
   end
 
   full_cmd = full_cmd .. executable
@@ -545,8 +543,8 @@ function terminal.run(cmd, env_script, env, args, cwd, opts)
   local final_win_id = terminal.reposition(opts)
 
   --- NOTE: env_script needs to be run only once if the terminal buffer does not already exist
-  --- We compare the old and the new id and only if they are same, plus if the terminal exists, only then
-  ---   we do not reinitialize the environment, else we reinit the env
+  --- We compare the old and the new id and only if they are not the same, plus if the terminal exists,
+  --    only then, we do not reinitialize the environment, else we reinit the env
   if not terminal_already_exists or terminal.id_old ~= terminal.id then
     terminal.id_old = terminal.id
     terminal.send_data_to_terminal(buffer_idx, env_script, {
