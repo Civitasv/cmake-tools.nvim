@@ -1305,17 +1305,13 @@ end
 function cmake.clangd_on_new_config(new_config)
   const.lsp_type = "clangd"
 
-  local found = false
   local arg = "--compile-commands-dir=" .. config.build_directory.filename
-  for _, v in ipairs(new_config.cmd) do
+  for i, v in ipairs(new_config.cmd) do
     if string.find(v, "%-%-compile%-commands%-dir=") ~= nil then
-      found = true
-      break
+      table.remove(new_config.cmd, i)
     end
   end
-  if found ~= true then
-    table.insert(new_config.cmd, arg)
-  end
+  table.insert(new_config.cmd, arg)
 end
 
 function cmake.ccls_on_new_config(new_config)
