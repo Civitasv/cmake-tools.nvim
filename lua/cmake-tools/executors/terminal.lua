@@ -3,7 +3,8 @@ local log = require("cmake-tools.log")
 
 ---@class terminal:executor
 local terminal = {
-  id = nil, -- id for the unified terminal
+  id = nil,    -- id for the unified terminal
+  id_old = nil -- Old id to keep track of the buffer
 }
 
 function terminal.has_active_job(opts)
@@ -534,7 +535,7 @@ function terminal.run(cmd, env_script, env, args, cwd, opts)
   local prefix = opts.prefix_name -- [CMakeTools]
 
   -- prefix is added to the terminal name because the reposition_term() function needs to find it
-  local termianl_already_exists, buffer_idx = terminal.create_if_not_exists(
+  local terminal_already_exists, buffer_idx = terminal.create_if_not_exists(
     prefix .. opts.name, -- [CMakeTools]Main Terminal
     opts
   )
@@ -543,8 +544,11 @@ function terminal.run(cmd, env_script, env, args, cwd, opts)
   -- Reposition the terminal buffer, before sending commands
   local final_win_id = terminal.reposition(opts)
 
-  --- env_script needs to be run only once if the terminal buffer does not already exist
-  if not termianl_already_exists then
+  --- NOTE: env_script needs to be run only once if the terminal buffer does not already exist
+  --- We compare the old and the new id and only if they are same, plus if the terminal exists, only then
+  ---   we do not reinitialize the environment, else we reinit the env
+  if not terminal_already_exists or terminal.id_old ~= terminal.id then
+    terminal.id_old = terminal.id
     terminal.send_data_to_terminal(buffer_idx, env_script, {
       win_id = final_win_id,
       split_direction = opts.split_direction,
