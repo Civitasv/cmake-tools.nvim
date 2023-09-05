@@ -3,8 +3,8 @@ local log = require("cmake-tools.log")
 
 ---@class terminal:executor
 local terminal = {
-  id = nil,    -- id for the unified terminal
-  id_old = nil -- Old id to keep track of the buffer
+  id = nil, -- id for the unified terminal
+  id_old = nil, -- Old id to keep track of the buffer
 }
 
 function terminal.has_active_job(opts)
@@ -59,8 +59,8 @@ function terminal.new_instance(term_name, opts)
   -- Now create the plit
   vim.cmd(":" .. opts.split_direction .. " " .. opts.split_size .. "sp | :term") -- Creater terminal in a split
   -- local new_name = vim.fn.fnamemodify(term_name, ":t")                           -- Extract only the terminal name and reassign it
-  vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), term_name)           -- Set the buffer name
-  vim.cmd(":setlocal laststatus=3")                                              -- Let there be a single status/lualine in the neovim instance
+  vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), term_name) -- Set the buffer name
+  vim.cmd(":setlocal laststatus=3") -- Let there be a single status/lualine in the neovim instance
 
   -- Renamming a terminal buffer creates a new hidden buffer, so duplicate terminals need to be deleted
   local new_buffers_list = vim.api.nvim_list_bufs()
@@ -248,10 +248,10 @@ function terminal.reposition(opts)
   local final_win_id = -1 -- If -1, then a new window needs to be created, otherwise, we must return an existing winid
   if single_terminal_per_instance then
     if static_window_location then
-      terminal.close_window_from_tabs_with_prefix(true, opts)                             -- Close all cmake windows in all other tabs
+      terminal.close_window_from_tabs_with_prefix(true, opts) -- Close all cmake windows in all other tabs
       local buflist = terminal.check_if_cmake_buffers_are_displayed_across_all_tabs(opts) -- Get list of all buffers that are displayed in current tab
       if next(buflist) then
-        for i = 1, #buflist do                                                            -- Buffers exist in current tab, so close all except first buffer in buflist
+        for i = 1, #buflist do -- Buffers exist in current tab, so close all except first buffer in buflist
           if i > 1 then
             vim.api.nvim_win_close(buflist[i], false)
           end
@@ -259,7 +259,7 @@ function terminal.reposition(opts)
         final_win_id = buflist[1]
       end
     else
-      terminal.close_window_from_tabs_with_prefix(true, opts)                             -- Close all cmake windows in all tabs
+      terminal.close_window_from_tabs_with_prefix(true, opts) -- Close all cmake windows in all tabs
       local buflist = terminal.check_if_cmake_buffers_are_displayed_across_all_tabs(opts) -- Get list of all buffers that are displayed in current tab
       if next(buflist) then
         -- Buffers exist in current tab, so close all buffers in buflist
@@ -545,7 +545,7 @@ function terminal.run(cmd, env_script, env, args, cwd, opts)
   --- NOTE: env_script needs to be run only once if the terminal buffer does not already exist
   --- We compare the old and the new id and only if they are not the same, plus if the terminal exists,
   --    only then, we do not reinitialize the environment, else we reinit the env
-  if not terminal_already_exists or terminal.id_old ~= terminal.id then
+  if terminal_already_exists or terminal.id_old ~= terminal.id then
     terminal.id_old = terminal.id
     terminal.send_data_to_terminal(buffer_idx, env_script, {
       win_id = final_win_id,

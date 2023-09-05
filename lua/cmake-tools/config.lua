@@ -20,7 +20,7 @@ local Config = {
     working_dir = "${dir.binary}",
     generate_options = {},
     build_options = {},
-  },                    -- general config
+  }, -- general config
   target_settings = {}, -- target specific config
   executor = nil,
   terminal = nil,

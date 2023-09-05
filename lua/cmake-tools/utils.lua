@@ -116,7 +116,7 @@ end
 local notify_update_line = function(out, err)
   local line = err and err or out
   if line ~= nil then
-    if line and line:match("^%[%s*(%d+)%s*%%%]") then     -- only show lines containing build progress e.g [ 12%]
+    if line and line:match("^%[%s*(%d+)%s*%%%]") then -- only show lines containing build progress e.g [ 12%]
       notification.notification.id = notification.notify( -- notify with percentage and message
         line,
         err and "warn" or notification.notification.level,
@@ -146,28 +146,30 @@ function utils.run(cmd, env_script, env, args, cwd, executor_data, on_success, c
     notification.notification.level = "info"
 
     notification.notification.id =
-        notification.notify(cmd, notification.notification.level, { title = "CMakeTools" })
+      notification.notify(cmd, notification.notification.level, { title = "CMakeTools" })
     notification.update_spinner()
   end
 
-  utils.get_executor(executor_data.name).run(cmd, env_script, env, args, cwd, executor_data.opts, function(code)
-    local msg = "Exited with code " .. code
-    local level = cmake_notifications.level
-    local icon = ""
-    if code ~= 0 then
-      level = "error"
-      icon = ""
-    end
-    notification.notify(
-      msg,
-      level,
-      { icon = icon, replace = notification.notification.id, timeout = 3000 }
-    )
-    notification.notification = {} -- reset and stop update_spinner
-    if code == 0 and on_success then
-      on_success()
-    end
-  end, notify_update_line)
+  utils
+    .get_executor(executor_data.name)
+    .run(cmd, env_script, env, args, cwd, executor_data.opts, function(code)
+      local msg = "Exited with code " .. code
+      local level = cmake_notifications.level
+      local icon = ""
+      if code ~= 0 then
+        level = "error"
+        icon = ""
+      end
+      notification.notify(
+        msg,
+        level,
+        { icon = icon, replace = notification.notification.id, timeout = 3000 }
+      )
+      notification.notification = {} -- reset and stop update_spinner
+      if code == 0 and on_success then
+        on_success()
+      end
+    end, notify_update_line)
 end
 
 --- Check if exists active job.
@@ -176,7 +178,7 @@ end
 -- @return true if exists else false
 function utils.has_active_job(terminal_data, executor_data)
   return utils.get_executor(executor_data.name).has_active_job(executor_data.opts)
-      or utils.get_executor(terminal_data.name).has_active_job(terminal_data.opts)
+    or utils.get_executor(terminal_data.name).has_active_job(terminal_data.opts)
 end
 
 function utils.mkdir(dir)
