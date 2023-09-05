@@ -968,8 +968,21 @@ function cmake.select_build_preset(callback)
         if config.build_preset ~= choice then
           config.build_preset = choice
         end
+        local associated_configure_preset =
+          presets.get_preset_by_name(choice, "buildPresets", config.cwd)["configurePreset"]
+        local configure_preset_updated = false
+
+        if
+          associated_configure_preset and config.configure_preset ~= associated_configure_preset
+        then
+          config.configure_preset = associated_configure_preset
+          configure_preset_updated = true
+        end
+
         if type(callback) == "function" then
           callback()
+        elseif configure_preset_updated then
+          cmake.generate({ bang = true, fargs = {} }, nil)
         end
       end)
     )
