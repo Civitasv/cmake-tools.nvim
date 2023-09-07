@@ -545,7 +545,7 @@ function terminal.run(cmd, env_script, env, args, cwd, opts)
   --- NOTE: env_script needs to be run only once if the terminal buffer does not already exist
   --- We compare the old and the new id and only if they are not the same, plus if the terminal exists,
   --    only then, we do not reinitialize the environment, else we reinit the env
-  if terminal_already_exists or terminal.id_old ~= terminal.id then
+  if not terminal_already_exists or terminal.id_old ~= terminal.id then
     terminal.id_old = terminal.id
     terminal.send_data_to_terminal(buffer_idx, env_script, {
       win_id = final_win_id,
