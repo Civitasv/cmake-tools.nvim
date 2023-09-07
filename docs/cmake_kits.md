@@ -30,6 +30,7 @@ An Example:
     "name": "VS 17 2022 amd64",
     "generator": "Visual Studio 17 2022",
     "host_architecture": "x64",
+    "environmentSetupScript": "& \"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat\"",
     "target_architecture": "x64",
     "compilers": {
       "C": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x64/cl.exe",
@@ -51,4 +52,4 @@ You can also define general global kits in somewhere. To do this, you will have 
 2. Option `visualStudio` and `visualStudioArchitecture` is not supported.
 3. Option `preferredGenerator` is not supported.
 4. Option `cmakeSettings` is not supported.
-5. Option `environmentSetupScript` is not supported.
+5. Option `environmentSetupScript` is only supported in the experimental terminal mode.
