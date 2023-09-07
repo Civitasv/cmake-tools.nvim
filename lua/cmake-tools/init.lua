@@ -241,7 +241,7 @@ function cmake.generate(opt, callback)
 
   local args = {
     "-B",
-    '"' .. config.build_directory.filename .. '"',
+    config.build_directory.filename ,
     "-S",
     ".",
   }
@@ -389,7 +389,7 @@ function cmake.build(opt, callback)
   if presets_file and config.build_preset then
     args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
   else
-    args = { "--build", '"' .. config.build_directory.filename .. '"' }
+    args = { "--build", config.build_directory.filename }
   end
 
   vim.list_extend(args, config:build_options())
@@ -499,7 +499,7 @@ function cmake.install(opt)
 
   local fargs = opt.fargs
 
-  local args = { "--install", '"' .. config.build_directory.filename .. '"' }
+  local args = { "--install", config.build_directory.filename }
   vim.list_extend(args, fargs)
   return utils.run(
     const.cmake_command,
