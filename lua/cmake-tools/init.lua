@@ -200,20 +200,20 @@ function cmake.generate(opt, callback)
     end
   end
 
-  -- specify build type, if exists cmake-variants.json,
-  -- this will get build variant from it. Or this will
-  -- get build variant from "Debug, Release, RelWithDebInfo, MinSizeRel"
-  if not config.build_type then
-    return cmake.select_build_type(function()
-      cmake.generate(opt, callback)
-    end)
-  end
-
   -- if exists cmake-kits.json, kit is used to set
   -- environmental variables and args.
   local kits_config = kits.parse(const.cmake_kits_path, config.cwd)
   if kits_config and not config.kit then
     return cmake.select_kit(function()
+      cmake.generate(opt, callback)
+    end)
+  end
+
+  -- specify build type, if exists cmake-variants.json,
+  -- this will get build variant from it. Or this will
+  -- get build variant from "Debug, Release, RelWithDebInfo, MinSizeRel"
+  if not config.build_type then
+    return cmake.select_build_type(function()
       cmake.generate(opt, callback)
     end)
   end
