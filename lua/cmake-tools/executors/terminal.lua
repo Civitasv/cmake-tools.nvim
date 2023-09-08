@@ -185,7 +185,7 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
     local type = vim.api.nvim_get_option_value("buftype", {
       buf = buffer_idx,
     })
-    if type ~= "terminal" then
+    if type == "terminal" then
       vim.cmd("normal! G")
     end
   end)
