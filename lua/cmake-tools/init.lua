@@ -241,7 +241,7 @@ function cmake.generate(opt, callback)
 
   local args = {
     "-B",
-    config.build_directory.filename ,
+    config.build_directory.filename,
     "-S",
     ".",
   }
