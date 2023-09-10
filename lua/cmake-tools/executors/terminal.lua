@@ -185,14 +185,12 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
     local name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(0))
     local basename = vim.fn.fnamemodify(name, ":t")
     if opts and (basename:sub(1, #opts.prefix) == opts.prefix) then -- If currently focused buffer is cmake buffer then ...
-
       -- Now we check again if the buffer needs to be focused as the user might be scrolling
       -- a cmake buffer and execute a :CMakeCommand, so we do not want to move their
       -- cursor out of the cmake buffer, as it can be annoying
       if opts and (opts.focus_on_launch_terminal or opts.focus_on_main_terminal) then
         vim.cmd("wincmd p") -- Goes back to previous window: Equivalent to [[ CTRL-W p ]]
       end
-
     end
   end
 
