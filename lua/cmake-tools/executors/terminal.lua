@@ -165,31 +165,51 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
   elseif opts and opts.win_id >= -1 then
     -- The window is not active, we need to create a new buffer
     vim.cmd(":" .. opts.split_direction .. " " .. opts.split_size .. "sp") -- Split
-    vim.api.nvim_win_set_buf(0, buffer_idx)
+    vim.api.nvim_win_set_buf(0, buffer_idx) -- Set buffer to newly created window
   else
     -- log.error("Invalid window Id!")
     -- do nothing
   end
 
+  -- Now, the cmake buffer's window is currently in focus
+
   if opts and (opts.focus_on_launch_terminal or opts.focus_on_main_terminal) then
-    vim.cmd("wincmd p") -- Goes back to previous window: Equivalent to [[ CTRL-W w ]]
+    -- We want to focus on the newly set terminal
+    vim.api.nvim_set_current_win(opts.win_id)
   elseif opts and opts.start_insert then
+    -- We want to focus on the newly set terminal and enter start_insert
     vim.api.nvim_set_current_win(opts.win_id)
     vim.cmd("startinsert")
   else
-    vim.api.nvim_set_current_win(opts.win_id)
+    -- We want to focus on our currently focused window and not ther cmake terminal
+    local name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(0))
+    local basename = vim.fn.fnamemodify(name, ":t")
+    if opts and (basename:sub(1, #opts.prefix) == opts.prefix) then -- If currently focused buffer is cmake buffer then ...
+
+      -- Now we check again if the buffer needs to be focused as the user might be scrolling
+      -- a cmake buffer and execute a :CMakeCommand, so we do not want to move their
+      -- cursor out of the cmake buffer, as it can be annoying
+      if opts and (opts.focus_on_launch_terminal or opts.focus_on_main_terminal) then
+        vim.cmd("wincmd p") -- Goes back to previous window: Equivalent to [[ CTRL-W p ]]
+      end
+
+    end
   end
 
   -- Focus on the last line in the buffer to keep the scrolling output
+  -- [[ We keep this option enabled by default because when users scroll the buffer and run :CMakeCommands,
+  --    we must scroll the buffer even if they are focused on it
+  -- ]]
   vim.api.nvim_buf_call(buffer_idx, function()
     local type = vim.api.nvim_get_option_value("buftype", {
       buf = buffer_idx,
     })
     if type == "terminal" then
-      vim.cmd("normal! G")
+      vim.cmd("normal! G") -- Goes to last line to enable autoscrolling
     end
   end)
 
+  -- Finally send data to the terminal for execution
   local chan = vim.api.nvim_buf_get_var(buffer_idx, "terminal_job_id")
   vim.api.nvim_chan_send(chan, cmd)
 end
@@ -506,6 +526,7 @@ function terminal.execute(executable, full_cmd, opts)
   -- Send final cmd to terminal
   terminal.send_data_to_terminal(buffer_idx, full_cmd, {
     win_id = final_win_id,
+    prefix = opts.prefix_name,
     split_direction = opts.split_direction,
     split_size = opts.split_size,
     start_insert = opts.start_insert_in_launch_task,
@@ -549,6 +570,7 @@ function terminal.run(cmd, env_script, env, args, cwd, opts)
     terminal.id_old = terminal.id
     terminal.send_data_to_terminal(buffer_idx, env_script, {
       win_id = final_win_id,
+      prefix = opts.prefix_name,
       split_direction = opts.split_direction,
       split_size = opts.split_size,
       start_insert = opts.start_insert_in_other_tasks,
@@ -565,6 +587,7 @@ function terminal.run(cmd, env_script, env, args, cwd, opts)
   -- Send final cmd to terminal
   terminal.send_data_to_terminal(buffer_idx, cmd, {
     win_id = final_win_id,
+    prefix = opts.prefix_name,
     split_direction = opts.split_direction,
     split_size = opts.split_size,
     start_insert = opts.start_insert_in_other_tasks,
