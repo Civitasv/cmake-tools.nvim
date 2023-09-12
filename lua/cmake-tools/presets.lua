@@ -218,11 +218,7 @@ function presets.get_build_dir(preset, cwd)
   local source_path = Path:new(cwd)
   local source_relative = vim.fn.fnamemodify(cwd, ":t")
 
-  local cwd = cwd
-  if not cwd then
-    cwd = "."
-  end
-  build_dir = build_dir:gsub("${sourceDir}", cwd)
+  build_dir = build_dir:gsub("${sourceDir}", ".") -- sourceDir is relative to the CMakePresests.json file, and should be relative
   build_dir = build_dir:gsub("${sourceParentDir}", source_path:parent().filename)
   build_dir = build_dir:gsub("${sourceDirName}", source_relative)
   build_dir = build_dir:gsub("${presetName}", preset.name)
