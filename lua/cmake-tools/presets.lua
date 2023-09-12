@@ -79,9 +79,9 @@ local function decode(file)
     local f_read_data = nil
     local f_path = Path.new(f)
     if f_path:is_absolute() then
-	f_read_data = f_path:read()
+      f_read_data = f_path:read()
     else
-	f_read_data = (Path.new(parentDir)/ f):read()
+      f_read_data = (Path.new(parentDir) / f):read()
     end
 
     local fdata = vim.fn.json_decode(f_read_data)
