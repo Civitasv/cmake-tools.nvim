@@ -952,11 +952,10 @@ function cmake.select_build_preset(callback)
   local presets_file = presets.check(config.cwd)
   if presets_file then
     local build_preset_names = presets.parse("buildPresets", { include_hidden = false }, config.cwd)
-
     local build_presets =
       presets.parse_name_mapped("buildPresets", { include_hidden = false }, config.cwd)
-    build_preset_names = vim.list_extend( build_preset_names, {"None"})
-    build_presets = vim.tbl_extend("keep", build_presets, {None={displayName="None"}})
+    build_preset_names = vim.list_extend(build_preset_names, { "None" })
+    build_presets = vim.tbl_extend("keep", build_presets, { None = { displayName = "None" } })
     local format_preset_name = function(p_name)
       local p = build_presets[p_name]
       return p.displayName or p.name
@@ -967,16 +966,16 @@ function cmake.select_build_preset(callback)
       vim.schedule_wrap(function(choice)
         if not choice then
           return
-	end
-	if choice=="None" then
-          	config.build_preset = nil
-		return
+        end
+        if choice == "None" then
+          config.build_preset = nil
+          return
         end
         if config.build_preset ~= choice then
           config.build_preset = choice
         end
-	local associated_configure_preset =
-	   presets.get_preset_by_name(choice, "buildPresets", config.cwd)["configurePreset"]
+        local associated_configure_preset =
+          presets.get_preset_by_name(choice, "buildPresets", config.cwd)["configurePreset"]
         local configure_preset_updated = false
 
         if
