@@ -76,7 +76,7 @@ local function decode(file)
   end
 
   for _, f in ipairs(includes) do
-    local fdata = vim.fn.json_decode(vim.fn.readfile(f))
+    local fdata = vim.fn.json_decode((Path.new(file):parent() / f):read())
     local thisFilePresetKeys = vim.tbl_filter(function(key)
       if string.find(key, "Presets") then
         return true
