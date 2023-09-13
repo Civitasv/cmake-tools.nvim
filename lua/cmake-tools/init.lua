@@ -954,6 +954,8 @@ function cmake.select_build_preset(callback)
     local build_preset_names = presets.parse("buildPresets", { include_hidden = false }, config.cwd)
     local build_presets =
       presets.parse_name_mapped("buildPresets", { include_hidden = false }, config.cwd)
+    build_preset_names = vim.list_extend(build_preset_names, { "None" })
+    build_presets = vim.tbl_extend("keep", build_presets, { None = { displayName = "None" } })
     local format_preset_name = function(p_name)
       local p = build_presets[p_name]
       return p.displayName or p.name
@@ -963,6 +965,10 @@ function cmake.select_build_preset(callback)
       { prompt = "Select cmake build presets", format_item = format_preset_name },
       vim.schedule_wrap(function(choice)
         if not choice then
+          return
+        end
+        if choice == "None" then
+          config.build_preset = nil
           return
         end
         if config.build_preset ~= choice then

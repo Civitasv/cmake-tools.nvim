@@ -57,8 +57,8 @@ local function decode(file)
   end
   local includes = data["include"] or {}
   local isUserPreset = string.find(file:lower(), "user")
+  local parentDir = vim.fs.dirname(file)
   if #includes == 0 and isUserPreset then
-    local parentDir = vim.fs.dirname(file)
     local preset = "CMakePresets.json"
     local presetKebapCase = "cmake-presets.json"
     local presetPath = parentDir .. "/" .. preset
@@ -76,7 +76,15 @@ local function decode(file)
   end
 
   for _, f in ipairs(includes) do
-    local fdata = vim.fn.json_decode(vim.fn.readfile(f))
+    local f_read_data = nil
+    local f_path = Path.new(f)
+    if f_path:is_absolute() then
+      f_read_data = f_path:read()
+    else
+      f_read_data = (Path.new(parentDir) / f):read()
+    end
+
+    local fdata = vim.fn.json_decode(f_read_data)
     local thisFilePresetKeys = vim.tbl_filter(function(key)
       if string.find(key, "Presets") then
         return true
@@ -218,11 +226,7 @@ function presets.get_build_dir(preset, cwd)
   local source_path = Path:new(cwd)
   local source_relative = vim.fn.fnamemodify(cwd, ":t")
 
-  local cwd = cwd
-  if not cwd then
-    cwd = "."
-  end
-  build_dir = build_dir:gsub("${sourceDir}", cwd)
+  build_dir = build_dir:gsub("${sourceDir}", ".") -- sourceDir is relative to the CMakePresests.json file, and should be relative
   build_dir = build_dir:gsub("${sourceParentDir}", source_path:parent().filename)
   build_dir = build_dir:gsub("${sourceDirName}", source_relative)
   build_dir = build_dir:gsub("${presetName}", preset.name)
