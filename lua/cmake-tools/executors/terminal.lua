@@ -176,10 +176,9 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
   if opts and (opts.focus_on_launch_terminal or opts.focus_on_main_terminal) then
     -- We want to focus on the newly set terminal
     vim.api.nvim_set_current_win(opts.win_id)
-  elseif opts and opts.start_insert then
-    -- We want to focus on the newly set terminal and enter start_insert
-    vim.api.nvim_set_current_win(opts.win_id)
-    vim.cmd("startinsert")
+    if opts.start_insert then
+      vim.cmd("startinsert")
+    end
   else
     -- We want to focus on our currently focused window and not ther cmake terminal
     local name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(0))
@@ -188,7 +187,7 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
       -- Now we check again if the buffer needs to be focused as the user might be scrolling
       -- a cmake buffer and execute a :CMakeCommand, so we do not want to move their
       -- cursor out of the cmake buffer, as it can be annoying
-      if opts and (opts.focus_on_launch_terminal or opts.focus_on_main_terminal) then
+      if opts and not (opts.focus_on_launch_terminal or opts.focus_on_main_terminal) then
         vim.cmd("wincmd p") -- Goes back to previous window: Equivalent to [[ CTRL-W p ]]
       end
     end
