@@ -4,6 +4,7 @@ local log = require("cmake-tools.log")
 ---@class terminal:executor
 local terminal = {
   id = nil, -- id for the unified terminal
+  id_old = nil, -- Old id to keep track of the buffer
 }
 
 function terminal.has_active_job(opts)
@@ -164,31 +165,48 @@ function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
   elseif opts and opts.win_id >= -1 then
     -- The window is not active, we need to create a new buffer
     vim.cmd(":" .. opts.split_direction .. " " .. opts.split_size .. "sp") -- Split
-    vim.api.nvim_win_set_buf(0, buffer_idx)
+    vim.api.nvim_win_set_buf(0, buffer_idx) -- Set buffer to newly created window
   else
     -- log.error("Invalid window Id!")
     -- do nothing
   end
 
-  if opts and not (opts.focus_on_launch_terminal or opts.focus_on_main_terminal) then
-    vim.cmd("wincmd p") -- Goes back to previous window: Equivalent to [[ CTRL-W w ]]
-  elseif opts and opts.start_insert then
+  -- Now, the cmake buffer's window is currently in focus
+
+  if opts and (opts.focus_on_launch_terminal or opts.focus_on_main_terminal) then
+    -- We want to focus on the newly set terminal
     vim.api.nvim_set_current_win(opts.win_id)
-    vim.cmd("startinsert")
+    if opts.start_insert then
+      vim.cmd("startinsert")
+    end
   else
-    vim.api.nvim_set_current_win(opts.win_id)
+    -- We want to focus on our currently focused window and not ther cmake terminal
+    local name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(0))
+    local basename = vim.fn.fnamemodify(name, ":t")
+    if opts and (basename:sub(1, #opts.prefix) == opts.prefix) then -- If currently focused buffer is cmake buffer then ...
+      -- Now we check again if the buffer needs to be focused as the user might be scrolling
+      -- a cmake buffer and execute a :CMakeCommand, so we do not want to move their
+      -- cursor out of the cmake buffer, as it can be annoying
+      if opts and not (opts.focus_on_launch_terminal or opts.focus_on_main_terminal) then
+        vim.cmd("wincmd p") -- Goes back to previous window: Equivalent to [[ CTRL-W p ]]
+      end
+    end
   end
 
   -- Focus on the last line in the buffer to keep the scrolling output
+  -- [[ We keep this option enabled by default because when users scroll the buffer and run :CMakeCommands,
+  --    we must scroll the buffer even if they are focused on it
+  -- ]]
   vim.api.nvim_buf_call(buffer_idx, function()
     local type = vim.api.nvim_get_option_value("buftype", {
       buf = buffer_idx,
     })
-    if type ~= "terminal" then
-      vim.cmd("normal! G")
+    if type == "terminal" then
+      vim.cmd("normal! G") -- Goes to last line to enable autoscrolling
     end
   end)
 
+  -- Finally send data to the terminal for execution
   local chan = vim.api.nvim_buf_get_var(buffer_idx, "terminal_job_id")
   vim.api.nvim_chan_send(chan, cmd)
 end
@@ -204,24 +222,24 @@ function terminal.create_if_not_exists(term_name, opts)
     end
   end
 
-  local does_terminal_already_exist = false
+  local terminal_already_exists = false
 
   if term_idx ~= nil and vim.api.nvim_buf_is_valid(term_idx) then
     local type = vim.api.nvim_get_option_value("buftype", {
       buf = term_idx,
     })
     if type == "terminal" then
-      does_terminal_already_exist = true
+      terminal_already_exists = true
     else
       vim.api.nvim_buf_delete(term_idx, { force = true })
     end
   end
 
-  if not does_terminal_already_exist then
+  if not terminal_already_exists then
     term_idx = terminal.new_instance(term_name, opts)
     -- does_terminal_already_exist terminal will be default (false)
   end
-  return does_terminal_already_exist, term_idx
+  return terminal_already_exists, term_idx
 end
 
 function terminal.reposition(opts)
@@ -449,7 +467,6 @@ function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_ca
   -- executable = vim.fn.fnamemodify(executable, ":t")
 
   -- Launch form executable's build directory by default
-  launch_path = terminal.prepare_launch_path(launch_path)
   full_cmd = "cd " .. launch_path .. " &&"
 
   if osys.iswin32 then
@@ -506,6 +523,7 @@ function terminal.execute(executable, full_cmd, opts)
   -- Send final cmd to terminal
   terminal.send_data_to_terminal(buffer_idx, full_cmd, {
     win_id = final_win_id,
+    prefix = opts.prefix_name,
     split_direction = opts.split_direction,
     split_size = opts.split_size,
     start_insert = opts.start_insert_in_launch_task,
@@ -529,11 +547,11 @@ function terminal.prepare_cmd_for_run(cmd, env, args)
   return full_cmd
 end
 
-function terminal.run(cmd, env, args, cwd, opts)
+function terminal.run(cmd, env_script, env, args, cwd, opts)
   local prefix = opts.prefix_name -- [CMakeTools]
 
   -- prefix is added to the terminal name because the reposition_term() function needs to find it
-  local _, buffer_idx = terminal.create_if_not_exists(
+  local terminal_already_exists, buffer_idx = terminal.create_if_not_exists(
     prefix .. opts.name, -- [CMakeTools]Main Terminal
     opts
   )
@@ -541,6 +559,21 @@ function terminal.run(cmd, env, args, cwd, opts)
 
   -- Reposition the terminal buffer, before sending commands
   local final_win_id = terminal.reposition(opts)
+
+  --- NOTE: env_script needs to be run only once if the terminal buffer does not already exist
+  --- We compare the old and the new id and only if they are not the same, plus if the terminal exists,
+  --    only then, we do not reinitialize the environment, else we reinit the env
+  if not terminal_already_exists or terminal.id_old ~= terminal.id then
+    terminal.id_old = terminal.id
+    terminal.send_data_to_terminal(buffer_idx, env_script, {
+      win_id = final_win_id,
+      prefix = opts.prefix_name,
+      split_direction = opts.split_direction,
+      split_size = opts.split_size,
+      start_insert = opts.start_insert_in_other_tasks,
+      focus_on_main_terminal = opts.focus_on_main_terminal,
+    })
+  end
 
   -- Prepare Launch path form
   -- TODO prepare proper cwd
@@ -551,6 +584,7 @@ function terminal.run(cmd, env, args, cwd, opts)
   -- Send final cmd to terminal
   terminal.send_data_to_terminal(buffer_idx, cmd, {
     win_id = final_win_id,
+    prefix = opts.prefix_name,
     split_direction = opts.split_direction,
     split_size = opts.split_size,
     start_insert = opts.start_insert_in_other_tasks,

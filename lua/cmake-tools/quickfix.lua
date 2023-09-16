@@ -32,11 +32,13 @@ function quickfix.close(opts)
   vim.api.nvim_command("cclose")
 end
 
-function quickfix.run(cmd, env, args, cwd, opts, on_exit, on_output)
+function quickfix.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
   vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
   if opts.show == "always" then
     quickfix.show(opts)
   end
+
+  -- NOTE: Unused env_script for quickfix.run() as plenary does not yet support running scripts
 
   local job_args = {}
 

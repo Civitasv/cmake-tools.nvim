@@ -25,6 +25,7 @@ local Config = {
   executor = nil,
   terminal = nil,
   always_use_terminal = false,
+  env_script = " ",
   cwd = vim.loop.cwd(),
 }
 
