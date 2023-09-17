@@ -105,6 +105,9 @@ Generally, the default is enough.
 
 If you want to implement a missing feature, [consider making a PR](./docs/contribute.md).
 
+Optionally you can even add tests. We use [plenary test harness](https://github.com/nvim-lua/plenary.nvim#plenarytest_harness), as taken from [neotest-rust](https://github.com/rouge8/neotest-rust).
+The tests run from inside a neovim instance, so `vim` and such are available.
+
 ## LICENCE
 
 [GPL-3.0 License](https://www.gnu.org/licenses/gpl-3.0.html) © Civitasv
