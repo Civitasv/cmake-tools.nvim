@@ -53,6 +53,9 @@ function cmake.setup(values)
       if old_config.build_type then
         config.build_type = old_config.build_type
       end
+      if old_config.variant then
+        config.variant = old_config.variant
+      end
       if old_config.build_target then
         config.build_target = old_config.build_target
       end
@@ -212,7 +215,7 @@ function cmake.generate(opt, callback)
   -- specify build type, if exists cmake-variants.json,
   -- this will get build variant from it. Or this will
   -- get build variant from "Debug, Release, RelWithDebInfo, MinSizeRel"
-  if not config.build_type then
+  if not config.build_type or not config.variant then
     return cmake.select_build_type(function()
       cmake.generate(opt, callback)
     end)
@@ -230,12 +233,14 @@ function cmake.generate(opt, callback)
   config.env_script = kit_option.env_script
   -- vim.print(config.env_script)
 
-  if const.cmake_build_directory ~= "" then
-    config:update_build_dir(const.cmake_build_directory)
-  else
-    local _build_type = config.build_type:gsub("+", "_"):gsub(" ", "")
-    config:update_build_dir(const.cmake_build_directory_prefix .. _build_type)
-  end
+  -- macro expansion for build directory
+  local build_dir = utils.prepare_build_directory(
+    const.cmake_build_directory,
+    kits_config,
+    config.kit,
+    config.variant
+  )
+  config:update_build_dir(build_dir)
 
   config:generate_build_directory()
 
@@ -916,6 +921,7 @@ function cmake.select_build_type(callback)
       end
       if config.build_type ~= build_type then
         config.build_type = build_type.short
+        config.variant = build_type.kv
         if type(callback) == "function" then
           callback()
         else

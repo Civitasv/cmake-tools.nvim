@@ -6,10 +6,10 @@ local syaml = require("simpleyaml")
 -- fallback if no cmake-variants.[yaml|json] is found
 local DEFAULT_VARIANTS = { "Debug", "Release", "RelWithDebInfo", "MinSizeRel" }
 local DEFAULT_VARIANTS_VAL = {
-  { short = "Debug", long = "" },
-  { short = "Release", long = "" },
-  { short = "RelWithDebInfo", long = "" },
-  { short = "MinSizeRel", long = "" },
+  { short = "Debug", long = "", kv = { buildType = "Debug" } },
+  { short = "Release", long = "", kv = { buildType = "Release" } },
+  { short = "RelWithDebInfo", long = "", kv = { buildType = "RelWithDebInfo" } },
+  { short = "MinSizeRel", long = "", kv = { buildType = "MinSizeRel" } },
 }
 
 -- checks if there is a cmake-variants.[yaml|json] file and parses it to a Lua table
@@ -55,20 +55,22 @@ function variants.get(variants_opt, cwd)
   -- helper function to collect all short names of choices
   local function collect_choices(config)
     local choices = {}
+    local keys = {}
 
-    for _, option in pairs(config) do -- for all options
+    for key, option in pairs(config) do -- for all options
       local cs = {}
       for _, choice in pairs(option["choices"]) do -- for all choices of that option
         table.insert(cs, choice) -- collect their short name
       end
       table.insert(choices, cs)
+      table.insert(keys, key)
     end
 
-    return choices
+    return keys, choices
   end
 
   -- helper function to create all possible combinations of choices (cartesian product)
-  local function create_combinations(choices)
+  local function create_combinations(keys, choices)
     -- The following code is a *modified* version of
     -- https://rosettacode.org/wiki/Cartesian_product_of_two_or_more_lists#Functional-esque_(non-iterator)
     -- under CC-BY-SA 4.0
@@ -117,9 +119,11 @@ function variants.get(variants_opt, cwd)
     local combinations = cartprod(choices)
     local strings = reduce(combinations, function(t, a)
       local function handleItem()
-        local res = { short = "", long = "" }
+        local res = { short = "", long = "", kv = {} }
 
         for i = 1, #t do
+          res.kv[keys[i]] = t[i]["short"]
+
           res.short = res.short .. t[i]["short"]
           if i ~= #t then
             res.short = res.short .. " + "
@@ -162,8 +166,8 @@ function variants.get(variants_opt, cwd)
 
   local config = variants.parse(cwd)
   if config then -- if a config is found
-    local choices = collect_choices(config) -- collect all possible choices from it
-    local combinations = create_combinations(choices) -- calculate the cartesian product
+    local keys, choices = collect_choices(config) -- collect all possible choices from it
+    local combinations = create_combinations(keys, choices) -- calculate the cartesian product
     table.sort(combinations, function(lhs, rhs)
       return lhs.short < rhs.short
     end) -- sort lexicographically

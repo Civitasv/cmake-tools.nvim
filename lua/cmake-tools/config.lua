@@ -10,6 +10,7 @@ local Config = {
   query_directory = nil,
   reply_directory = nil,
   build_type = nil,
+  variant = nil,
   build_target = nil,
   launch_target = nil,
   kit = nil,

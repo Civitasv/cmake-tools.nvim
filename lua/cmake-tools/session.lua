@@ -72,6 +72,7 @@ function session.save(config)
   local serialized_object = {
     build_directory = serialized_build_directory,
     build_type = config.build_type,
+    variant = config.variant,
     build_target = config.build_target,
     launch_target = config.launch_target,
     kit = config.kit,
