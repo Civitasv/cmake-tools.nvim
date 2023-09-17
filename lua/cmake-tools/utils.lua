@@ -216,9 +216,11 @@ function utils.prepare_build_directory(build_dir, kits, kit, variant)
   --       ${variant:xx}
   -- get the detailed info of the selected kit
   local kit_info = nil
-  for _, item in ipairs(kits) do
-    if item.name == kit then
-      kit_info = item
+  if kits then
+    for _, item in ipairs(kits) do
+      if item.name == kit then
+        kit_info = item
+      end
     end
   end
   build_dir = build_dir:gsub("${kit}", kit_info and kit_info.name or "")
