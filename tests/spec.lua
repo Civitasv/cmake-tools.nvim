@@ -1,5 +1,5 @@
 describe("something", function()
-	it("some function", function()
-		assert.equals(2,2)
-	end)
+  it("some function", function()
+    assert.equals(2, 2)
+  end)
 end)
