@@ -16,7 +16,7 @@ end
 
 function overseer_executor.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
   opts = vim.tbl_extend("keep", {
-    cmd = env_script .. " & " .. cmd,
+    cmd = env_script .. " && " .. cmd,
     args = args,
     env = env,
     cwd = cwd,
