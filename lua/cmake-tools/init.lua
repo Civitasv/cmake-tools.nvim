@@ -312,7 +312,7 @@ function cmake.clean(callback)
     return log.error(result.message)
   end
 
-  local args = { "--build", '"' .. config.build_directory.filename .. '"', "--target", "clean" }
+  local args = { "--build", config.build_directory.filename, "--target", "clean" }
 
   local env = environment.get_build_environment(config, config.always_use_terminal)
 
