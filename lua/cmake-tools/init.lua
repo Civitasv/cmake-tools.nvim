@@ -1440,9 +1440,9 @@ function cmake.select_cwd(cwd_path)
         --if new_path:is_dir() then
         config.cwd = vim.fn.resolve(input)
         --	end
+        cmake.generate({ bang = false, fargs = {} }, nil)
       end)
     )
-    cmake.generate({ bang = false, fargs = {} }, nil)
   elseif cwd_path.args then
     config.cwd = vim.fn.resolve(cwd_path.args)
     cmake.generate({ bang = false, fargs = {} }, nil)
