@@ -117,9 +117,11 @@ function presets.parse(type, opts, cwd)
   if not data then
     error("Error when parsing the presets file")
   end
-  for _, v in pairs(data[type]) do
-    if include_hidden or not v["hidden"] then
-      table.insert(options, v["name"])
+  if data[type] then
+    for _, v in pairs(data[type]) do
+      if include_hidden or not v["hidden"] then
+        table.insert(options, v["name"])
+      end
     end
   end
   return options
@@ -141,9 +143,11 @@ function presets.parse_name_mapped(type, opts, cwd)
   if not data then
     error("Error when parsing the presets file")
   end
-  for _, v in pairs(data[type]) do
-    if include_hidden or not v["hidden"] then
-      options[v["name"]] = v
+  if data[type] then
+    for _, v in pairs(data[type]) do
+      if include_hidden or not v["hidden"] then
+        options[v["name"]] = v
+      end
     end
   end
   return options
@@ -158,9 +162,11 @@ function presets.get_preset_by_name(name, type, cwd)
     return nil
   end
   local data = decode(file)
-  for _, v in pairs(data[type]) do
-    if v.name == name then
-      return v
+  if data[type] then
+    for _, v in pairs(data[type]) do
+      if v.name == name then
+        return v
+      end
     end
   end
   return nil
