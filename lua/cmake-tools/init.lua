@@ -74,8 +74,9 @@ function cmake.setup(values)
       if old_config.env_script then
         config.env_script = old_config.env_script
       end
-
-      config.cwd = old_config.cwd or vim.loop.cwd()
+      if old_config.cwd then
+        config.cwd = old_config.cwd
+      end
 
       config.base_settings =
         vim.tbl_deep_extend("keep", old_config.base_settings, config.base_settings)
