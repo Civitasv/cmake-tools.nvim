@@ -490,6 +490,7 @@ function cmake.stop()
   end
 
   utils.stop(config.executor)
+  utils.stop(config.terminal)
 end
 
 --- CMake install targets
