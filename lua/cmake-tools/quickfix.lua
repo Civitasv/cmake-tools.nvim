@@ -14,8 +14,12 @@ function quickfix.scroll_to_bottom()
   vim.api.nvim_command("cbottom")
 end
 
-local function append_to_quickfix(error, data)
+local function append_to_quickfix(encoding, error, data)
   local line = error and error or data
+  if encoding ~= "utf-8" then
+    line = vim.fn.iconv(line, encoding, "utf-8")
+  end
+
   vim.fn.setqflist({}, "a", { lines = { line } })
   -- scroll the quickfix buffer to bottom
   if quickfix.check_scroll() then
@@ -61,18 +65,18 @@ function quickfix.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
     args = job_args,
     cwd = cwd,
     on_stdout = vim.schedule_wrap(function(err, data)
-      append_to_quickfix(err, data)
+      append_to_quickfix(opts.encoding, err, data)
       on_output(data, err)
     end),
     on_stderr = vim.schedule_wrap(function(err, data)
-      append_to_quickfix(err, data)
+      append_to_quickfix(opts.encoding, err, data)
       on_output(data, err)
     end),
     on_exit = vim.schedule_wrap(function(_, code, signal)
       code = signal == 0 and code or 128 + signal
       local msg = "Exited with code " .. code
 
-      append_to_quickfix(msg)
+      append_to_quickfix(opts.encoding, msg)
       if code ~= 0 and opts.show == "only_on_error" then
         quickfix.show(opts)
         quickfix.scroll_to_bottom()

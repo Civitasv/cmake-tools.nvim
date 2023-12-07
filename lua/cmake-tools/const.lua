@@ -27,6 +27,7 @@ local const = {
         show = "always", -- "always", "only_on_error"
         position = "belowright", -- "bottom", "top"
         size = 10,
+        encoding = "utf-8",
       },
       overseer = {
         new_task_opts = {}, -- options to pass into the `overseer.new_task` command

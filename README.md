@@ -55,6 +55,7 @@ require("cmake-tools").setup {
         show = "always", -- "always", "only_on_error"
         position = "belowright", -- "bottom", "top"
         size = 10,
+        encoding = "utf-8", -- if encoding is not "utf-8", it will be converted to "utf-8" using `vim.fn.iconv`
       },
       overseer = {
         new_task_opts = {}, -- options to pass into the `overseer.new_task` command
