@@ -638,40 +638,42 @@ function cmake.run(opt)
       end), true
     else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT
       -- Build select launch target every time
-      config.build_target = config.launch_target
-      return cmake.build({ fargs = utils.deepcopy(opt.fargs) }, function()
-        result = config:get_launch_target()
-        local target_path = result.data
+      return cmake.build(
+        { target = config.launch_target, fargs = utils.deepcopy(opt.fargs) },
+        function()
+          result = config:get_launch_target()
+          local target_path = result.data
 
-        local launch_path = cmake.get_launch_path(cmake.get_launch_target())
+          local launch_path = cmake.get_launch_path(cmake.get_launch_target())
 
-        if full_cmd ~= "" then
-          -- This jumps to the working directory, builds the target and then launches it inside the launch terminal
-          -- Hence, "cd ".. cwd .. " && "..    The \" is for path handling, specifically in win32
-          full_cmd = 'cd "'
-            .. config.cwd
-            .. '" && '
-            .. full_cmd
-            .. " && "
-            .. terminal.prepare_cmd_for_execute(
+          if full_cmd ~= "" then
+            -- This jumps to the working directory, builds the target and then launches it inside the launch terminal
+            -- Hence, "cd ".. cwd .. " && "..    The \" is for path handling, specifically in win32
+            full_cmd = 'cd "'
+              .. config.cwd
+              .. '" && '
+              .. full_cmd
+              .. " && "
+              .. terminal.prepare_cmd_for_execute(
+                target_path,
+                cmake:get_launch_args(),
+                launch_path,
+                opt.wrap_call,
+                environment.get_run_environment(config, config.launch_target, true)
+              )
+          else
+            full_cmd = terminal.prepare_cmd_for_execute(
               target_path,
               cmake:get_launch_args(),
               launch_path,
               opt.wrap_call,
               environment.get_run_environment(config, config.launch_target, true)
             )
-        else
-          full_cmd = terminal.prepare_cmd_for_execute(
-            target_path,
-            cmake:get_launch_args(),
-            launch_path,
-            opt.wrap_call,
-            environment.get_run_environment(config, config.launch_target, true)
-          )
+          end
+          utils.execute(target_path, full_cmd, config.terminal, config.executor)
+          full_cmd = ""
         end
-        utils.execute(target_path, full_cmd, config.terminal, config.executor)
-        full_cmd = ""
-      end)
+      )
     end
   end
 end
@@ -837,21 +839,23 @@ if has_nvim_dap then
           true
       else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
         -- Build select launch target every time
-        config.build_target = config.launch_target
-        return cmake.build({ fargs = utils.deepcopy(opt.fargs) }, function()
-          result = config:get_launch_target()
-          local target_path = result.data
-          local dap_config = {
-            name = config.launch_target,
-            program = target_path,
-            cwd = cmake.get_launch_path(cmake.get_launch_target()),
-            args = cmake:get_launch_args(),
-            env = env,
-          }
-          -- close cmake console
-          cmake.close()
-          dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
-        end)
+        return cmake.build(
+          { target = config.launch_target, fargs = utils.deepcopy(opt.fargs) },
+          function()
+            result = config:get_launch_target()
+            local target_path = result.data
+            local dap_config = {
+              name = config.launch_target,
+              program = target_path,
+              cwd = cmake.get_launch_path(cmake.get_launch_target()),
+              args = cmake:get_launch_args(),
+              env = env,
+            }
+            -- close cmake console
+            cmake.close()
+            dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
+          end
+        )
       end
     end
   end
