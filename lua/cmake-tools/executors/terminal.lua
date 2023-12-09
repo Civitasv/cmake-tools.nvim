@@ -623,6 +623,9 @@ function terminal.close(opts)
 end
 
 function terminal.stop(opts)
+  if not terminal.has_active_job() then
+    return
+  end
   local main_pid = vim.api.nvim_buf_get_var(terminal.id, "terminal_job_pid")
   local child_procs = vim.api.nvim_get_proc_children(main_pid)
   for _, pid in ipairs(child_procs) do
