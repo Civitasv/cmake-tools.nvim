@@ -94,6 +94,8 @@ require("cmake-tools").setup {
 
 Generally, the default is enough.
 
+And attention, when you firstly enter a new project, a session file for this project will be created, and `cmake_generate_options`, `cmake_build_options`, `cmake_build_directory` in your configuration will be used to initialize some fields of it. Then, if you reopen this project, it will reuse this session file to initialize these fields, or, you can think this project has its own settings, so if you change the values in global configuration, it will not reflect on these projects, you should refresh these fields by your own. Also see [session docs](./docs/sessions.md) and issue #162.
+
 ## :magic_wand: Docs
 
 1. [basic usage](./docs/basic_usage.md)

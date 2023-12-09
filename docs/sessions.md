@@ -5,18 +5,23 @@ cmake-tools.nvim now supports session.
 It can autoload settings for Config:
 
 ```lua
-local Config = {
-  build_directory = nil,
-  query_directory = nil,
-  reply_directory = nil,
-  generate_options = {},
-  build_options = {},
-  build_type = nil,
-  build_target = nil,
-  launch_target = nil,
-  kit = nil,
-  configure_preset = nil,
-  build_preset = nil,
+return {
+  base_settings = {
+    build_dir = "/Users/civitasv/Documents/project/ModernCppStarter/all/out",
+    build_options = { "-j4" },
+    env = {},
+    generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" },
+    working_dir = "${dir.binary}"
+  },
+  build_target = "Greeter",
+  build_type = "Debug",
+  cwd = "/Users/civitasv/Documents/project/ModernCppStarter/all",
+  env_script = " ",
+  kit = "Clang 14.0.3 arm64-apple-darwin22.5.0",
+  target_settings = {},
+  variant = {
+    buildType = "Debug"
+  }
 }
 ```
 
