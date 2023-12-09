@@ -47,8 +47,8 @@ function cmake.setup(values)
   if cmake.is_cmake_project() then
     local old_config = _session.load()
     if next(old_config) ~= nil then
-      if old_config.build_directory then
-        config:update_build_dir(old_config.build_directory)
+      if old_config.base_settings.build_dir then
+        config:update_build_dir(old_config.base_settings.build_dir)
       end
       if old_config.build_type then
         config.build_type = old_config.build_type
@@ -119,7 +119,7 @@ function cmake.generate(opt, callback)
   if clean then
     return cmake.clean(function()
       -- Clear CMakeCache.txt
-      if config.build_directory then
+      if config:has_build_directory() then
         utils.rmfile(config.build_directory / "CMakeCache.txt")
       end
       cmake.generate({ fargs = fargs }, callback)
@@ -236,18 +236,17 @@ function cmake.generate(opt, callback)
 
   -- macro expansion for build directory
   local build_dir = utils.prepare_build_directory(
-    const.cmake_build_directory,
+    config:build_directory_path(),
     kits_config,
     config.kit,
     config.variant
   )
   config:update_build_dir(build_dir)
-
   config:generate_build_directory()
 
   local args = {
     "-B",
-    config.build_directory.filename,
+    config:build_directory_path(),
     "-S",
     ".",
   }
@@ -313,7 +312,7 @@ function cmake.clean(callback)
     return log.error(result.message)
   end
 
-  local args = { "--build", config.build_directory.filename, "--target", "clean" }
+  local args = { "--build", config:build_directory_path(), "--target", "clean" }
 
   local env = environment.get_build_environment(config, config.always_use_terminal)
 
@@ -376,7 +375,7 @@ function cmake.build(opt, callback)
     end)
   end
 
-  if not (config.build_directory and config.build_directory:exists()) then
+  if not (config:has_build_directory()) then
     -- configure it
     return cmake.generate({ bang = false, fargs = {} }, function()
       cmake.build(opt, callback)
@@ -395,7 +394,7 @@ function cmake.build(opt, callback)
   if presets_file and config.build_preset then
     args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
   else
-    args = { "--build", config.build_directory.filename }
+    args = { "--build", config:build_directory_path() }
   end
 
   vim.list_extend(args, config:build_options())
@@ -458,7 +457,7 @@ function cmake.quick_build(opt, callback)
       return
     end
 
-    if not (config.build_directory and config.build_directory:exists()) then
+    if not (config:has_build_directory()) then
       -- configure it
       return cmake.generate({ bang = false, fargs = {} }, function()
         cmake.quick_build(opt, callback)
@@ -506,7 +505,7 @@ function cmake.install(opt)
 
   local fargs = opt.fargs
 
-  local args = { "--install", config.build_directory.filename }
+  local args = { "--install", config:build_directory_path() }
   vim.list_extend(args, fargs)
   return utils.run(
     const.cmake_command,
@@ -686,7 +685,7 @@ if has_telescope then
         return
       end
 
-      if not (config.build_directory and config.build_directory:exists()) then
+      if not (config:has_build_directory()) then
         -- configure it
         return cmake.generate({ bang = false, fargs = {} }, function()
           cmake.show(opt)
@@ -726,7 +725,7 @@ function cmake.quick_run(opt)
       return
     end
 
-    if not (config.build_directory and config.build_directory:exists()) then
+    if not (config:has_build_directory()) then
       -- configure it
       return cmake.generate({ bang = false, fargs = {} }, function()
         cmake.quick_run(opt)
@@ -867,7 +866,7 @@ if has_nvim_dap then
         return
       end
 
-      if not (config.build_directory and config.build_directory:exists()) then
+      if not (config:has_build_directory()) then
         -- configure it
         return cmake.generate({ bang = false, fargs = {} }, function()
           cmake.quick_debug(opt, callback)
@@ -1089,7 +1088,7 @@ function cmake.select_build_preset(callback)
 end
 
 function cmake.select_build_target(callback, regenerate)
-  if not (config.build_directory and config.build_directory:exists()) then
+  if not (config:has_build_directory()) then
     -- configure it
     return cmake.generate({ bang = false, fargs = {} }, function()
       cmake.select_build_target(callback, true)
@@ -1131,7 +1130,7 @@ function cmake.select_build_target(callback, regenerate)
 end
 
 function cmake.get_cmake_launch_targets(callback)
-  if not (config.build_directory and config.build_directory:exists()) then
+  if not (config:has_build_directory()) then
     -- configure it
     return cmake.generate({ bang = false, fargs = {} }, function()
       cmake.get_cmake_launch_targets(callback)
@@ -1144,7 +1143,7 @@ function cmake.get_cmake_launch_targets(callback)
 end
 
 function cmake.select_launch_target(callback, regenerate)
-  if not (config.build_directory and config.build_directory:exists()) then
+  if not (config:has_build_directory()) then
     -- configure it
     return cmake.generate({ bang = false, fargs = {} }, function()
       cmake.select_launch_target(callback, true)
@@ -1189,7 +1188,7 @@ end
 function cmake.get_base_vars()
   local vars = { dir = {} }
 
-  vars.dir.build = config.build_directory.filename .. "/"
+  vars.dir.build = config:build_directory_path() .. "/"
   vars.dir.binary = "${dir.binary}"
   return vars
 end
@@ -1236,6 +1235,7 @@ function cmake.settings()
   end
 
   if not window.is_open() then
+    local prev_build_dir = config.base_settings.build_dir
     local content = "local vars = " .. vim.inspect(cmake.get_base_vars())
     content = content .. "\nreturn " .. vim.inspect(config.base_settings)
 
@@ -1245,6 +1245,16 @@ function cmake.settings()
       local ok, val = convert_to_table(str)
       if ok then
         config.base_settings = val
+      end
+    end
+
+    window.on_exit = function(str)
+      local ok, val = convert_to_table(str)
+      if ok then
+        config.base_settings = val
+        if prev_build_dir ~= config.base_settings.build_dir then
+          cmake.select_build_dir({ args = config.base_settings.build_dir })
+        end
       end
     end
     window.open()
@@ -1378,11 +1388,11 @@ function cmake.configure_compile_commands()
 end
 
 function cmake.compile_commands_from_soft_link()
-  if config.build_directory == nil then
+  if not config:has_build_directory() then
     return
   end
 
-  local source = config.build_directory.filename .. "/compile_commands.json"
+  local source = config:build_directory_path() .. "/compile_commands.json"
   local destination = vim.loop.cwd() .. "/compile_commands.json"
   if config.always_use_terminal or utils.file_exists(source) then
     utils.softlink(
@@ -1396,7 +1406,7 @@ function cmake.compile_commands_from_soft_link()
 end
 
 function cmake.compile_commands_from_lsp()
-  if config.build_directory == nil or const.lsp_type == nil then
+  if not config:has_build_directory() or not const.lsp_type then
     return
   end
 
@@ -1415,7 +1425,7 @@ end
 function cmake.clangd_on_new_config(new_config)
   const.lsp_type = "clangd"
 
-  local arg = "--compile-commands-dir=" .. config.build_directory.filename
+  local arg = "--compile-commands-dir=" .. config:build_directory_path()
   for i, v in ipairs(new_config.cmd) do
     if string.find(v, "%-%-compile%-commands%-dir=") ~= nil then
       table.remove(new_config.cmd, i)
@@ -1427,7 +1437,7 @@ end
 function cmake.ccls_on_new_config(new_config)
   const.lsp_type = "ccls"
 
-  new_config.init_options.compilationDatabaseDirectory = config.build_directory.filename
+  new_config.init_options.compilationDatabaseDirectory = config:build_directory_path()
 end
 
 local group = vim.api.nvim_create_augroup("cmaketools", { clear = true })
@@ -1437,11 +1447,14 @@ function cmake.select_cwd(cwd_path)
   if cwd_path.args == "" then
     vim.ui.input(
       {
-        prompt = "The directory where the main CMakeLists.txt is located",
-        default = vim.loop.cwd(),
+        prompt = "The directory where the main CMakeLists.txt is located: \n",
+        default = config.cwd,
         completion = "dir",
       },
       vim.schedule_wrap(function(input)
+        if not input then
+          return
+        end
         --local new_path = Path:new(input)
         --if new_path:is_dir() then
         config.cwd = vim.fn.resolve(input)
@@ -1451,6 +1464,31 @@ function cmake.select_cwd(cwd_path)
     )
   elseif cwd_path.args then
     config.cwd = vim.fn.resolve(cwd_path.args)
+    cmake.generate({ bang = false, fargs = {} }, nil)
+  end
+end
+
+function cmake.select_build_dir(cwd_path)
+  if cwd_path.args == "" then
+    vim.ui.input(
+      {
+        prompt = "The directory where the build files should locate: \n",
+        default = config:build_directory_path(),
+        completion = "dir",
+      },
+      vim.schedule_wrap(function(input)
+        if not input then
+          return
+        end
+        --local new_path = Path:new(input)
+        --if new_path:is_dir() then
+        config:update_build_dir(vim.fn.resolve(input))
+        --	end
+        cmake.generate({ bang = false, fargs = {} }, nil)
+      end)
+    )
+  elseif cwd_path.args then
+    config:update_build_dir(vim.fn.resolve(cwd_path.args))
     cmake.generate({ bang = false, fargs = {} }, nil)
   end
 end

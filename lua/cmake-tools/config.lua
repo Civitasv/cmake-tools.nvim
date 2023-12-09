@@ -18,6 +18,7 @@ local Config = {
   build_preset = nil,
   base_settings = {
     env = {},
+    build_dir = nil,
     working_dir = "${dir.binary}",
     generate_options = {},
     build_options = {},
@@ -35,8 +36,11 @@ function Config:new(const)
   setmetatable(obj, self)
   self.__index = self
 
+  self:update_build_dir(const.cmake_build_directory)
+
   self.base_settings.generate_options = const.cmake_generate_options
   self.base_settings.build_options = const.cmake_build_options
+
   self.executor = const.cmake_executor
   self.terminal = const.cmake_terminal
   self.always_use_terminal = self.executor.name == "terminal"
@@ -44,10 +48,35 @@ function Config:new(const)
   return self
 end
 
+function Config:relative_build_directory()
+  if self:has_build_directory() then
+    return self.build_directory:make_relative(self.cwd)
+  else
+    return nil
+  end
+end
+
+function Config:build_directory_path()
+  return self.build_directory.filename
+end
+
+function Config:has_build_directory()
+  return self.build_directory and self.build_directory:exists()
+end
+
 function Config:update_build_dir(build_dir)
-  self.build_directory = Path:new(self.cwd, build_dir)
-  self.query_directory = Path:new(self.cwd, build_dir, ".cmake", "api", "v1", "query")
-  self.reply_directory = Path:new(self.cwd, build_dir, ".cmake", "api", "v1", "reply")
+  local build_path = Path:new(build_dir)
+  if build_path:is_absolute() then
+    self.build_directory = Path:new(build_dir)
+    self.query_directory = Path:new(build_dir, ".cmake", "api", "v1", "query")
+    self.reply_directory = Path:new(build_dir, ".cmake", "api", "v1", "reply")
+  else
+    self.build_directory = Path:new(self.cwd, build_dir)
+    self.query_directory = Path:new(self.cwd, build_dir, ".cmake", "api", "v1", "query")
+    self.reply_directory = Path:new(self.cwd, build_dir, ".cmake", "api", "v1", "reply")
+  end
+
+  self.base_settings.build_dir = build_path:absolute()
 end
 
 function Config:generate_options()

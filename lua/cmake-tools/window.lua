@@ -26,6 +26,7 @@ local M = {
   bufh = nil,
   content = nil,
   on_save = nil,
+  on_exit = nil,
   title = "",
 }
 
@@ -59,6 +60,17 @@ function M.save()
   end
 end
 
+function M.exit()
+  local str = ""
+  local lines = vim.api.nvim_buf_get_lines(M.bufh, 0, -1, true)
+  for _, v in ipairs(lines) do
+    str = str .. v .. "\n"
+  end
+  if M.on_exit ~= nil and type(M.on_exit) == "function" then
+    M.on_exit(str)
+  end
+end
+
 function M.open()
   local win_info = create_window(M.title)
 
@@ -84,6 +96,13 @@ function M.open()
     buffer = M.bufh,
     callback = function()
       M.save()
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("BufLeave", {
+    buffer = M.bufh,
+    callback = function()
+      M.exit()
     end,
   })
 

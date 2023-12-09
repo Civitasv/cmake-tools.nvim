@@ -4,7 +4,7 @@
 
 `CMakeSettings` is used for general settings.
 
-`CMakeTargetSettings` is used for settings of a specific target.
+`CMakeTargetSettings` is used for settings of a specific launch target.
 
 To configure these settings a lua buffer is used. Upon executing `CMakeSettings` or `CMakeTargetSettings` popup will open.
 In this popup you are able edit the current settings.
@@ -18,7 +18,10 @@ return {
   env = {
     VERBOSE = 1,
   },
+  build_dir = nil,
   working_dir = "${dir.binary}"
+  generate_options = {},
+  build_options = {},
 }
 ```
 
@@ -30,13 +33,14 @@ return {
   args = {}
   env = {
     log_level = "trace"
-  }
+  },
+  working_dir = "${dir.binary}"
 }
 ```
 
 ## variables
 
-The popup window will show available variables and their values.
+The popup window will show available variables and their values. And please attention that the value of vars is auto computed, and **cannot be changed**.
 
 ```lua
 local vars = {
@@ -105,3 +109,42 @@ Specify the working directory in which run and debug commands are executed. Supp
 |--------------         | --------------     |  --------------         |
 | `CMakeSettings`       | :white_check_mark: | Defines the working directory for all targets unless overwritten. |
 | `CMakeTargetSettings` | :white_check_mark: | Sets the working directory just for this target. No default value - Has to be added manually. |
+
+### `build_directory`
+
+Specify the build directory in which generate files should locate.
+
+```lua
+  build_directory = ""
+```
+
+| Command               | Supported          | Details                 |
+|--------------         | --------------     |  --------------         |
+| `CMakeSettings`       | :white_check_mark: | Defines the build directory. |
+| `CMakeTargetSettings` | :x: | |
+
+### `generate_options`
+
+Specify the generate options for cmake project.
+
+```lua
+  generate_options = {}
+```
+
+| Command               | Supported          | Details                 |
+|--------------         | --------------     |  --------------         |
+| `CMakeSettings`       | :white_check_mark: | Defines the generate options. |
+| `CMakeTargetSettings` | :x: | |
+
+### `build_options`
+
+Specify the build options for cmake project.
+
+```lua
+  build_options = {}
+```
+
+| Command               | Supported          | Details                 |
+|--------------         | --------------     |  --------------         |
+| `CMakeSettings`       | :white_check_mark: | Defines the build options for all targets. |
+| `CMakeTargetSettings` | :x: | |

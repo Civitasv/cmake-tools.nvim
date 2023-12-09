@@ -228,12 +228,22 @@ if has_telescope then
   )
 end
 
---- CMake select cwd
+--- CMake select cwd (source dir)
 vim.api.nvim_create_user_command(
   "CMakeSelectCwd", -- name
   cmake_tools.select_cwd, -- command
   { -- opts
     nargs = "?",
     desc = "CMake select cwd",
+  }
+)
+
+--- CMake select build dir
+vim.api.nvim_create_user_command(
+  "CMakeSelectBuildDir", -- name
+  cmake_tools.select_build_dir, -- command
+  { -- opts
+    nargs = "?",
+    desc = "CMake select build dir",
   }
 )
