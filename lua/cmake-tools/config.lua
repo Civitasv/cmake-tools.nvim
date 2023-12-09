@@ -48,14 +48,6 @@ function Config:new(const)
   return self
 end
 
-function Config:relative_build_directory()
-  if self:has_build_directory() then
-    return self.build_directory:make_relative(self.cwd)
-  else
-    return nil
-  end
-end
-
 function Config:build_directory_path()
   return self.build_directory.filename
 end
