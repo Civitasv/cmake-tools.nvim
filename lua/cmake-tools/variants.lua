@@ -54,6 +54,7 @@ end
 function variants.get(variants_opt, cwd)
   -- helper function to collect all short names of choices
   local function collect_choices(config)
+    local defaults = { val = {}, kv = {} }
     local choices = {}
     local keys = {}
 
@@ -62,11 +63,13 @@ function variants.get(variants_opt, cwd)
       for _, choice in pairs(option["choices"]) do -- for all choices of that option
         table.insert(cs, choice) -- collect their short name
       end
+      defaults.kv[key] = option["default"]
+      table.insert(defaults.val, option["default"])
       table.insert(choices, cs)
       table.insert(keys, key)
     end
 
-    return keys, choices
+    return defaults, keys, choices
   end
 
   -- helper function to create all possible combinations of choices (cartesian product)
@@ -166,15 +169,15 @@ function variants.get(variants_opt, cwd)
 
   local config = variants.parse(cwd)
   if config then -- if a config is found
-    local keys, choices = collect_choices(config) -- collect all possible choices from it
+    local defaults, keys, choices = collect_choices(config) -- collect all possible choices from it
     local combinations = create_combinations(keys, choices) -- calculate the cartesian product
     table.sort(combinations, function(lhs, rhs)
       return lhs.short < rhs.short
     end) -- sort lexicographically
-    return combinations
+    return defaults, combinations
   end -- otherwise return the defaults
 
-  return DEFAULT_VARIANTS_VAL
+  return DEFAULT_VARIANTS_VAL[1], DEFAULT_VARIANTS_VAL
 end
 
 function variants.debuggable(variant, cwd)

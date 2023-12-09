@@ -217,9 +217,13 @@ function cmake.generate(opt, callback)
   -- this will get build variant from it. Or this will
   -- get build variant from "Debug, Release, RelWithDebInfo, MinSizeRel"
   if not config.build_type or not config.variant then
-    return cmake.select_build_type(function()
-      cmake.generate(opt, callback)
-    end)
+    -- Use the default variant
+    local defaults, _ = variants.get(const.cmake_variants_message, config.cwd)
+    config.build_type = table.concat(defaults.val, " + ")
+    config.variant = defaults.kv
+    --[[ return cmake.select_build_type(function() ]]
+    --[[   cmake.generate(opt, callback) ]]
+    --[[ end) ]]
   end
 
   -- cmake kits, if cmake-kits.json doesn't exist, kit_option will
@@ -790,6 +794,7 @@ if has_nvim_dap then
     local can_debug_result = config:validate_for_debugging()
     if can_debug_result.code == Types.CANNOT_DEBUG_LAUNCH_TARGET then
       -- Select build type to debug
+      log.info("Reselect build type to ensure it contains debug information!")
       return cmake.select_build_type(function()
         cmake.debug(opt, callback)
       end)
@@ -903,7 +908,7 @@ function cmake.select_build_type(callback)
     return log.error(result.message)
   end
 
-  local types = variants.get(const.cmake_variants_message, config.cwd)
+  local _, types = variants.get(const.cmake_variants_message, config.cwd)
   -- Put selected build type first
   for idx, type in ipairs(types) do
     if type == config.build_type then
