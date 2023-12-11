@@ -18,7 +18,7 @@ local Config = {
   build_preset = nil,
   base_settings = {
     env = {},
-    build_dir = nil,
+    build_dir = "",
     working_dir = "${dir.binary}",
     generate_options = {},
     build_options = {},
@@ -36,7 +36,7 @@ function Config:new(const)
   setmetatable(obj, self)
   self.__index = self
 
-  self:update_build_dir(const.cmake_build_directory)
+  self:update_build_dir(const.cmake_build_directory, const.cmake_build_directory)
 
   self.base_settings.generate_options = const.cmake_generate_options
   self.base_settings.build_options = const.cmake_build_options
@@ -56,7 +56,11 @@ function Config:has_build_directory()
   return self.build_directory and self.build_directory:exists()
 end
 
-function Config:update_build_dir(build_dir)
+function Config:no_expand_build_directory_path()
+  return self.base_settings.build_dir
+end
+
+function Config:update_build_dir(build_dir, no_expand_build_dir)
   local build_path = Path:new(build_dir)
   if build_path:is_absolute() then
     self.build_directory = Path:new(build_dir)
@@ -68,7 +72,7 @@ function Config:update_build_dir(build_dir)
     self.reply_directory = Path:new(self.cwd, build_dir, ".cmake", "api", "v1", "reply")
   end
 
-  self.base_settings.build_dir = build_path:absolute()
+  self.base_settings.build_dir = Path:new(no_expand_build_dir):absolute()
 end
 
 function Config:generate_options()

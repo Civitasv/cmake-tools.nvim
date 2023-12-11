@@ -48,7 +48,10 @@ function cmake.setup(values)
     local old_config = _session.load()
     if next(old_config) ~= nil then
       if old_config.base_settings.build_dir then
-        config:update_build_dir(old_config.base_settings.build_dir)
+        config:update_build_dir(
+          old_config.base_settings.build_dir,
+          old_config.base_settings.build_dir
+        )
       end
       if old_config.build_type then
         config.build_type = old_config.build_type
@@ -146,7 +149,7 @@ function cmake.generate(opt, callback)
       config.cwd
     )
     if build_directory ~= "" then
-      config:update_build_dir(build_directory)
+      config:update_build_dir(build_directory, build_directory)
     end
     config:generate_build_directory()
 
@@ -240,12 +243,12 @@ function cmake.generate(opt, callback)
 
   -- macro expansion for build directory
   local build_dir = utils.prepare_build_directory(
-    config:build_directory_path(),
+    config:no_expand_build_directory_path(),
     kits_config,
     config.kit,
     config.variant
   )
-  config:update_build_dir(build_dir)
+  config:update_build_dir(build_dir, config:no_expand_build_directory_path())
   config:generate_build_directory()
 
   local args = {
@@ -929,14 +932,12 @@ function cmake.select_build_type(callback)
       if not build_type then
         return
       end
-      if config.build_type ~= build_type then
-        config.build_type = build_type.short
-        config.variant = build_type.kv
-        if type(callback) == "function" then
-          callback()
-        else
-          cmake.generate({ bang = false, fargs = {} }, nil)
-        end
+      config.build_type = build_type.short
+      config.variant = build_type.kv
+      if type(callback) == "function" then
+        callback()
+      else
+        cmake.generate({ bang = false, fargs = {} }, nil)
       end
     end)
   )
@@ -1487,13 +1488,13 @@ function cmake.select_build_dir(cwd_path)
         end
         --local new_path = Path:new(input)
         --if new_path:is_dir() then
-        config:update_build_dir(vim.fn.resolve(input))
+        config:update_build_dir(vim.fn.resolve(input), vim.fn.resolve(input))
         --	end
         cmake.generate({ bang = false, fargs = {} }, nil)
       end)
     )
   elseif cwd_path.args then
-    config:update_build_dir(vim.fn.resolve(cwd_path.args))
+    config:update_build_dir(vim.fn.resolve(cwd_path.args), vim.fn.resolve(cwd_path.args))
     cmake.generate({ bang = false, fargs = {} }, nil)
   end
 end
