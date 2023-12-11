@@ -24,8 +24,8 @@ function kits.parse(global_kits_path, cwd)
 
   local file = findcfg() -- check for config file
 
-  file = file:gsub("~", vim.fn.expand("~"))
   if file then -- if one is found ...
+    file = file:gsub("~", vim.fn.expand("~"))
     if file:match(".*%.json") then -- .. and is a json file
       config = vim.fn.json_decode(vim.fn.readfile(file))
     end
