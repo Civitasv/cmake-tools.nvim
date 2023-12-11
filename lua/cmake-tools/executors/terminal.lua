@@ -467,7 +467,7 @@ function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_ca
   -- executable = vim.fn.fnamemodify(executable, ":t")
 
   -- Launch form executable's build directory by default
-  full_cmd = "cd " .. launch_path .. " &&"
+  full_cmd = 'cd "' .. launch_path .. '" &&'
 
   if osys.iswin32 then
     for _, v in ipairs(env) do
@@ -579,7 +579,7 @@ function terminal.run(cmd, env_script, env, args, cwd, opts)
   -- TODO prepare proper cwd
   local launch_path = terminal.prepare_launch_path(cwd)
   -- Launch form executable's build directory by default
-  cmd = "cd " .. launch_path .. " && " .. cmd
+  cmd = 'cd "' .. launch_path .. '" && ' .. cmd
 
   -- Send final cmd to terminal
   terminal.send_data_to_terminal(buffer_idx, cmd, {
