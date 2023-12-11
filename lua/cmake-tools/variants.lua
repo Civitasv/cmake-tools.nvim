@@ -64,7 +64,7 @@ function variants.get(variants_opt, cwd)
         table.insert(cs, choice) -- collect their short name
       end
       defaults.kv[key] = option["default"]
-      table.insert(defaults.val, option["default"])
+      table.insert(defaults.val, option["choices"][option["default"]]["short"])
       table.insert(choices, cs)
       table.insert(keys, key)
     end
@@ -177,7 +177,8 @@ function variants.get(variants_opt, cwd)
     return defaults, combinations
   end -- otherwise return the defaults
 
-  return DEFAULT_VARIANTS_VAL[1], DEFAULT_VARIANTS_VAL
+  return { val = { DEFAULT_VARIANTS_VAL[1].short }, kv = DEFAULT_VARIANTS_VAL[1].kv },
+    DEFAULT_VARIANTS_VAL
 end
 
 function variants.debuggable(variant, cwd)
