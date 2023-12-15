@@ -490,7 +490,7 @@ function terminal.prepare_cmd_for_execute(executable, args, launch_path, wrap_ca
     full_cmd = " " .. full_cmd -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
   end
 
-  full_cmd = full_cmd .. executable
+  full_cmd = full_cmd .. '"' .. executable .. '"'
 
   -- Add args to the cmd
   if args then
