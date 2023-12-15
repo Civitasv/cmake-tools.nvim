@@ -31,9 +31,9 @@ function ctest.list_all_tests(build_dir)
   return tests
 end
 
-function ctest.run(test, build_dir, env, config)
-  local cmd = "ctest"
-  local args = { "--test-dir", build_dir, "-R", test }
+function ctest.run(ctest_command, test_name, build_dir, env, config)
+  local cmd = ctest_command
+  local args = { "--test-dir", build_dir, "-R", test_name }
   utils.run(
     cmd,
     config.env_script,

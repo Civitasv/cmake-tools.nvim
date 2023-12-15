@@ -1325,7 +1325,7 @@ function cmake.run_test(opt)
       if not idx then
         return
       end
-      ctest.run(all_tests[idx], config:build_directory_path(), env, config)
+      ctest.run(const.ctest_command, all_tests[idx], config:build_directory_path(), env, config)
     end)
   )
 end

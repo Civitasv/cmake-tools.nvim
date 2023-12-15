@@ -18,6 +18,8 @@ With our plugin, you can use:
 CMakeGenerate # Correspond to cmake ../Step1
 CMakeBuild    # Correspond to cmake --build .
 CMakeRun      # Correspond to ./Tutorial
+
+CMakeRunTest  # Correspond to ctest --test-dir <build-dir> -R xx
 ```
 
 And, actually with our plugin, you no longer need to execute `generate`, `build` and `run` in a specific order, instead, you can directly run `CMakeRun` to run specific target. This plugin will automatically generate and build targets for you.

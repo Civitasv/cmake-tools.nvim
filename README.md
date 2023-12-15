@@ -24,6 +24,7 @@ The goal of this plugin is to offer a comprehensive, convenient, and powerful wo
 ```lua
 require("cmake-tools").setup {
   cmake_command = "cmake", -- this is used to specify cmake command path
+  ctest_command = "ctest", -- this is used to specify ctest command path
   cmake_regenerate_on_save = true, -- auto generate when save CMakeLists.txt
   cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" }, -- this will be passed when invoke `CMakeGenerate`
   cmake_build_options = {}, -- this will be passed when invoke `CMakeBuild`
