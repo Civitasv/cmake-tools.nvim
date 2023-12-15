@@ -1315,6 +1315,7 @@ function cmake.run_test(opt)
     return
   end
 
+  local env = environment.get_build_environment(config, config.always_use_terminal)
   local all_tests = ctest.list_all_tests(config:build_directory_path())
 
   vim.ui.select(
@@ -1324,7 +1325,7 @@ function cmake.run_test(opt)
       if not idx then
         return
       end
-      ctest.run(all_tests[idx], config:build_directory_path(), config)
+      ctest.run(all_tests[idx], config:build_directory_path(), env, config)
     end)
   )
 end

@@ -31,10 +31,19 @@ function ctest.list_all_tests(build_dir)
   return tests
 end
 
-function ctest.run(test, build_dir, config)
+function ctest.run(test, build_dir, env, config)
   local cmd = "ctest"
   local args = { "--test-dir", build_dir, "-R", test }
-  utils.run(cmd, "", {}, args, config.cwd, config.executor, nil, const.cmake_notifications)
+  utils.run(
+    cmd,
+    config.env_script,
+    env,
+    args,
+    config.cwd,
+    config.executor,
+    nil,
+    const.cmake_notifications
+  )
 end
 
 return ctest
