@@ -1479,7 +1479,7 @@ function cmake.select_build_dir(cwd_path)
     vim.ui.input(
       {
         prompt = "The directory where the build files should locate: \n",
-        default = config:build_directory_path(),
+        default = config:no_expand_build_directory_path(),
         completion = "dir",
       },
       vim.schedule_wrap(function(input)
