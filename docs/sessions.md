@@ -6,16 +6,17 @@ It can autoload settings for Config:
 
 ```lua
 return {
+  build_directory = "",
   base_settings = {
-    build_dir = "/Users/civitasv/Documents/project/ModernCppStarter/all/out",
+    build_dir = "",
     build_options = { "-j4" },
     env = {},
     generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" },
     working_dir = "${dir.binary}"
   },
-  build_target = "Greeter",
+  build_target = "",
   build_type = "Debug",
-  cwd = "/Users/civitasv/Documents/project/ModernCppStarter/all",
+  cwd = "",
   env_script = " ",
   kit = "Clang 14.0.3 arm64-apple-darwin22.5.0",
   target_settings = {},

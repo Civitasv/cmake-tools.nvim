@@ -15,6 +15,8 @@ local window = require("cmake-tools.window")
 local environment = require("cmake-tools.environment")
 local file_picker = require("cmake-tools.file_picker")
 
+local ctest = require("cmake-tools.test.ctest")
+
 local config = Config:new(const)
 
 local cmake = {}
@@ -47,11 +49,8 @@ function cmake.setup(values)
   if cmake.is_cmake_project() then
     local old_config = _session.load()
     if next(old_config) ~= nil then
-      if old_config.base_settings.build_dir then
-        config:update_build_dir(
-          old_config.base_settings.build_dir,
-          old_config.base_settings.build_dir
-        )
+      if old_config.build_directory and old_config.base_settings.build_dir then
+        config:update_build_dir(old_config.build_directory, old_config.base_settings.build_dir)
       end
       if old_config.build_type then
         config.build_type = old_config.build_type
@@ -1309,6 +1308,14 @@ function cmake.target_settings(opt)
     end
     window.open()
   end
+end
+
+function cmake.run_test(opt)
+  if utils.has_active_job(config.terminal, config.executor) then
+    return
+  end
+
+  ctest.list_all_tests(config:build_directory_path())
 end
 
 --[[ Getters ]]

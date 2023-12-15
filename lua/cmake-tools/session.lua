@@ -65,6 +65,7 @@ function session.save(config)
   local file = io.open(path, "w")
 
   local serialized_object = {
+    build_directory = config:build_directory_path(),
     build_type = config.build_type,
     variant = config.variant,
     build_target = config.build_target,

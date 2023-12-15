@@ -247,3 +247,13 @@ vim.api.nvim_create_user_command(
     desc = "CMake select build dir",
   }
 )
+
+--- CMake run tests
+vim.api.nvim_create_user_command(
+  "CMakeRunTest", -- name
+  cmake_tools.run_test, -- command
+  { -- opts
+    nargs = "*",
+    desc = "CMake run test",
+  }
+)
