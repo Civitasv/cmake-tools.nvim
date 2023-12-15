@@ -1315,7 +1315,18 @@ function cmake.run_test(opt)
     return
   end
 
-  ctest.list_all_tests(config:build_directory_path())
+  local all_tests = ctest.list_all_tests(config:build_directory_path())
+
+  vim.ui.select(
+    all_tests,
+    { prompt = "Select test to run" },
+    vim.schedule_wrap(function(_, idx)
+      if not idx then
+        return
+      end
+      ctest.run(all_tests[idx], config:build_directory_path(), config)
+    end)
+  )
 end
 
 --[[ Getters ]]
