@@ -54,7 +54,7 @@ require("cmake-tools").setup {
     default_opts = { -- a list of default and possible values for executors
       quickfix = {
         show = "always", -- "always", "only_on_error"
-        position = "belowright", -- "bottom", "top"
+        position = "belowright", -- "vertical", "horizontal", "leftabove", "aboveleft", "rightbelow", "belowright", "topleft", "botright", use `:h vertical` for example to see help on them
         size = 10,
         encoding = "utf-8", -- if encoding is not "utf-8", it will be converted to "utf-8" using `vim.fn.iconv`
       },
