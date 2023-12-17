@@ -83,6 +83,7 @@ require("cmake-tools").setup {
       start_insert_in_other_tasks = false, -- If you want to enter terminal with :startinsert upon launching all other cmake tasks in the terminal. Generally set as false
       focus_on_main_terminal = false, -- Focus on cmake terminal when cmake task is launched. Only used if executor is terminal.
       focus_on_launch_terminal = false, -- Focus on cmake launch terminal when executable target in launched.
+      do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
     },
   },
   cmake_notifications = {
