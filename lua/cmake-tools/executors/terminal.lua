@@ -143,7 +143,7 @@ function terminal.get_buffer_number_from_name(buffer_name)
 end
 
 function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
-  if (not opts) or (not opts.do_not_add_newline) then
+  if not opts or not opts.do_not_add_newline then
     if osys.iswin32 then
       cmd = cmd .. " \r"
     elseif osys.ismac then
