@@ -60,28 +60,53 @@ vim.api.nvim_create_user_command(
 )
 --- CMake stop
 vim.api.nvim_create_user_command(
-  "CMakeStop", -- name
-  cmake_tools.stop, -- command
+  "CMakeStopExecutor", -- name
+  cmake_tools.stop_executor, -- command
   { -- opts
-    desc = "CMake stop",
+    desc = "CMake stop executor",
+  }
+)
+vim.api.nvim_create_user_command(
+  "CMakeStopRunner", -- name
+  cmake_tools.stop_runner, -- command
+  { -- opts
+    desc = "CMake stop runner",
   }
 )
 
---- CMake close
+--- CMake close executor
 vim.api.nvim_create_user_command(
-  "CMakeClose", -- name
-  cmake_tools.close, -- command
+  "CMakeCloseExecutor", -- name
+  cmake_tools.close_executor, -- command
   { -- opts
-    desc = "Close CMake quickfix window",
+    desc = "Close CMake executor window",
   }
 )
 
---- CMake open
+--- CMake close runner
 vim.api.nvim_create_user_command(
-  "CMakeOpen", -- name
-  cmake_tools.open, -- command
+  "CMakeCloseRunner", -- name
+  cmake_tools.close_runner, -- command
   { -- opts
-    desc = "Open CMake quickfix window",
+    desc = "Close CMake runner window",
+  }
+)
+
+--- CMake open executor
+vim.api.nvim_create_user_command(
+  "CMakeOpenExecutor", -- name
+  cmake_tools.open_executor, -- command
+  { -- opts
+    desc = "Open CMake executor window",
+  }
+)
+
+--- CMake open runner
+vim.api.nvim_create_user_command(
+  "CMakeOpenRunner", -- name
+  cmake_tools.open_runner, -- command
+  { -- opts
+    desc = "Open CMake runner window",
   }
 )
 

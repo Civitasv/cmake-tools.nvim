@@ -61,7 +61,7 @@ function kits.get_by_name(kit_name, cwd, global_kits_path)
 end
 
 -- given a kit, build an argument list for CMake
-function kits.build_env_and_args(kit_name, always_use_terminal, cwd, global_kits_path)
+function kits.build_env_and_args(kit_name, escape, cwd, global_kits_path)
   local kit = kits.get_by_name(kit_name, cwd, global_kits_path)
   local args = {}
   local env = {}
@@ -91,7 +91,7 @@ function kits.build_env_and_args(kit_name, always_use_terminal, cwd, global_kits
   -- if exists `compilers` option, then set variable for cmake
   if kit.compilers then
     for lang, compiler in pairs(kit.compilers) do
-      if always_use_terminal then
+      if escape then
         add_args({ "-DCMAKE_" .. lang .. '_COMPILER:FILEPATH="' .. compiler .. '"' })
       else
         add_args({ "-DCMAKE_" .. lang .. "_COMPILER:FILEPATH=" .. compiler })
@@ -101,14 +101,14 @@ function kits.build_env_and_args(kit_name, always_use_terminal, cwd, global_kits
 
   -- See : https://metricpanda.com/rival-fortress-update-27-compiling-with-clang-on-windows/
   if kit.linker then
-    if always_use_terminal then
+    if escape then
       table.insert(args, "-DCMAKE_LINKER=" .. '"' .. kit.linker .. '"')
     else -- Quick Fix Lists
       table.insert(args, "-DCMAKE_LINKER=" .. kit.linker)
     end
   end
   if kit.generator then
-    if always_use_terminal then
+    if escape then
       table.insert(args, "-G" .. '"' .. kit.generator .. '"')
     else -- Quick Fix Lists
       table.insert(args, "-G" .. kit.generator)

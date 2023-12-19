@@ -5,12 +5,12 @@ local Job = require("plenary.job")
 ---@alias quickfix_position '"belowright"'|'"bottom"'|'"top"'
 ---@alias quickfix_opts_type {show:quickfix_show, position:quickfix_position, size:number}
 --
----@class quickfix : executor
-local quickfix = {
+---@class quickfix : executor, runner
+local _quickfix = {
   job = nil,
 }
 
-function quickfix.scroll_to_bottom()
+function _quickfix.scroll_to_bottom()
   vim.api.nvim_command("cbottom")
 end
 
@@ -22,24 +22,24 @@ local function append_to_quickfix(encoding, error, data)
 
   vim.fn.setqflist({}, "a", { lines = { line } })
   -- scroll the quickfix buffer to bottom
-  if quickfix.check_scroll() then
-    quickfix.scroll_to_bottom()
+  if _quickfix.check_scroll() then
+    _quickfix.scroll_to_bottom()
   end
 end
 
-function quickfix.show(opts)
+function _quickfix.show(opts)
   vim.api.nvim_command(opts.position .. " copen " .. opts.size)
   vim.api.nvim_command("wincmd p")
 end
 
-function quickfix.close(opts)
+function _quickfix.close(opts)
   vim.api.nvim_command("cclose")
 end
 
-function quickfix.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
+function _quickfix.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
   vim.fn.setqflist({}, " ", { title = cmd .. " " .. table.concat(args, " ") })
   if opts.show == "always" then
-    quickfix.show(opts)
+    _quickfix.show(opts)
   end
 
   -- NOTE: Unused env_script for quickfix.run() as plenary does not yet support running scripts
@@ -60,7 +60,7 @@ function quickfix.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
     job_args = args
   end
 
-  quickfix.job = Job:new({
+  _quickfix.job = Job:new({
     command = cmd,
     args = job_args,
     cwd = cwd,
@@ -78,11 +78,13 @@ function quickfix.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
 
       append_to_quickfix(opts.encoding, msg)
       if code ~= 0 and opts.show == "only_on_error" then
-        quickfix.show(opts)
-        quickfix.scroll_to_bottom()
+        _quickfix.show(opts)
+        _quickfix.scroll_to_bottom()
       end
       if code == 0 and opts.auto_close_when_success then
-        quickfix.close(opts)
+        vim.defer_fn(function()
+          _quickfix.close(opts)
+        end, 100)
       end
       if on_exit ~= nil then
         on_exit(code)
@@ -90,19 +92,19 @@ function quickfix.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
     end),
   })
 
-  quickfix.job:start()
+  _quickfix.job:start()
 end
 
 ---Checks if there is an active job
 ---@param opts quickfix_opts_type options for this adapter
 ---@return boolean
-function quickfix.has_active_job(opts)
-  if not quickfix.job or quickfix.job.is_shutdown then
+function _quickfix.has_active_job(opts)
+  if not _quickfix.job or _quickfix.job.is_shutdown then
     return false
   end
   log.error(
     "A CMake task is already running: "
-      .. quickfix.job.command
+      .. _quickfix.job.command
       .. " Stop it before trying to run a new CMake task."
   )
   return true
@@ -111,15 +113,15 @@ end
 ---Stop the active job
 ---@param opts quickfix_opts_type options for this adapter
 ---@return nil
-function quickfix.stop(opts)
-  quickfix.job:shutdown(1, 9)
+function _quickfix.stop(opts)
+  _quickfix.job:shutdown(1, 9)
 
-  for _, pid in ipairs(vim.api.nvim_get_proc_children(quickfix.job.pid)) do
+  for _, pid in ipairs(vim.api.nvim_get_proc_children(_quickfix.job.pid)) do
     vim.loop.kill(pid, 9)
   end
 end
 
-function quickfix.check_scroll()
+function _quickfix.check_scroll()
   local function is_cursor_at_last_line()
     local current_buf = vim.api.nvim_win_get_buf(0)
     local cursor_pos = vim.api.nvim_win_get_cursor(0)
@@ -137,8 +139,8 @@ function quickfix.check_scroll()
   return true
 end
 
-function quickfix.is_installed()
+function _quickfix.is_installed()
   return true
 end
 
-return quickfix
+return _quickfix

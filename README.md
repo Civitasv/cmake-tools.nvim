@@ -63,32 +63,64 @@ require("cmake-tools").setup {
         new_task_opts = {}, -- options to pass into the `overseer.new_task` command
         on_new_task = function(task) end, -- a function that gets overseer.Task when it is created, before calling `task:start`
       },
-      terminal = {}, -- terminal executor uses the values in cmake_terminal
+      terminal = {
+        name = "Main Terminal",
+        prefix_name = "[CMakeTools]: ", -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
+        split_direction = "horizontal", -- "horizontal", "vertical"
+        split_size = 11,
+
+        -- Window handling
+        single_terminal_per_instance = true, -- Single viewport, multiple windows
+        single_terminal_per_tab = true, -- Single viewport per tab
+        keep_terminal_static_location = true, -- Static location of the viewport if avialable
+
+        -- Running Tasks
+        start_insert_in_launch_task = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
+        start_insert_in_other_tasks = false, -- If you want to enter terminal with :startinsert upon launching all other cmake tasks in the terminal. Generally set as false
+        focus_on_main_terminal = false, -- Focus on cmake terminal when cmake task is launched. Only used if executor is terminal.
+        focus_on_launch_terminal = false, -- Focus on cmake launch terminal when executable target in launched.
+        do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
+      }, -- terminal executor uses the values in cmake_terminal
     },
   },
-  cmake_terminal = {
-    name = "terminal",
-    opts = {
-      name = "Main Terminal",
-      prefix_name = "[CMakeTools]: ", -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
-      split_direction = "horizontal", -- "horizontal", "vertical"
-      split_size = 11,
+  cmake_runner = { -- executor to use
+    name = "terminal", -- name of the runner
+    opts = {}, -- the options the runner will get, possible values depend on the runner type. See `default_opts` for possible values.
+    default_opts = { -- a list of default and possible values for runners
+      quickfix = {
+        show = "always", -- "always", "only_on_error"
+        position = "belowright", -- "bottom", "top"
+        size = 10,
+        encoding = "utf-8",
+        auto_close_when_success = true, -- typically, you can use it with the "always" option; it will auto-close the quickfix buffer if the execution is successful.
+      },
+      overseer = {
+        new_task_opts = {}, -- options to pass into the `overseer.new_task` command
+        on_new_task = function(task) end, -- a function that gets overseer.Task when it is created, before calling `task:start`
+      },
+      terminal = {
+        name = "Main Terminal",
+        prefix_name = "[CMakeTools]: ", -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
+        split_direction = "horizontal", -- "horizontal", "vertical"
+        split_size = 11,
 
-      -- Window handling
-      single_terminal_per_instance = true, -- Single viewport, multiple windows
-      single_terminal_per_tab = true, -- Single viewport per tab
-      keep_terminal_static_location = true, -- Static location of the viewport if avialable
+        -- Window handling
+        single_terminal_per_instance = true, -- Single viewport, multiple windows
+        single_terminal_per_tab = true, -- Single viewport per tab
+        keep_terminal_static_location = true, -- Static location of the viewport if avialable
 
-      -- Running Tasks
-      start_insert_in_launch_task = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
-      start_insert_in_other_tasks = false, -- If you want to enter terminal with :startinsert upon launching all other cmake tasks in the terminal. Generally set as false
-      focus_on_main_terminal = false, -- Focus on cmake terminal when cmake task is launched. Only used if executor is terminal.
-      focus_on_launch_terminal = false, -- Focus on cmake launch terminal when executable target in launched.
-      do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
+        -- Running Tasks
+        start_insert_in_launch_task = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
+        start_insert_in_other_tasks = false, -- If you want to enter terminal with :startinsert upon launching all other cmake tasks in the terminal. Generally set as false
+        focus_on_main_terminal = false, -- Focus on cmake terminal when cmake task is launched. Only used if executor is terminal.
+        focus_on_launch_terminal = false, -- Focus on cmake launch terminal when executable target in launched.
+        do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
+      },
     },
   },
   cmake_notifications = {
-    enabled = true, -- show cmake execution progress in nvim-notify
+    runner = { enabled = true },
+    executor = { enabled = true },
     spinner = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }, -- icons used for progress display
     refresh_rate_ms = 100, -- how often to iterate icons
   },
@@ -103,12 +135,13 @@ Generally, the default is enough.
 
 1. [basic usage](./docs/basic_usage.md)
 2. [settings](./docs/settings.md)
-3. [all commands](./docs/all_commands.md)
-4. [cmake presets](./docs/cmake_presets.md)
-5. [cmake kits](./docs/cmake_kits.md)
-6. [cmake variants](./docs/cmake_variants.md)
-7. [sessions](./docs/sessions.md)
-8. [how to](./docs/howto.md)
+3. [executor and runner](./docs/executor_and_runner.md)
+4. [all commands](./docs/all_commands.md)
+5. [cmake presets](./docs/cmake_presets.md)
+6. [cmake kits](./docs/cmake_kits.md)
+7. [cmake variants](./docs/cmake_variants.md)
+8. [sessions](./docs/sessions.md)
+9. [how to](./docs/howto.md)
 
 ## :muscle: Contribute
 

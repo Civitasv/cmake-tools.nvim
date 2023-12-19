@@ -25,8 +25,7 @@ local Config = {
   }, -- general config
   target_settings = {}, -- target specific config
   executor = nil,
-  terminal = nil,
-  always_use_terminal = false,
+  runner = nil,
   env_script = " ",
   cwd = vim.loop.cwd(),
 }
@@ -42,8 +41,7 @@ function Config:new(const)
   self.base_settings.build_options = const.cmake_build_options
 
   self.executor = const.cmake_executor
-  self.terminal = const.cmake_terminal
-  self.always_use_terminal = self.executor.name == "terminal"
+  self.runner = const.cmake_runner
 
   return self
 end
@@ -73,6 +71,39 @@ function Config:update_build_dir(build_dir, no_expand_build_dir)
   end
 
   self.base_settings.build_dir = Path:new(no_expand_build_dir):absolute()
+end
+
+---Prepare build directory. Which allows macro expansion.
+---@param kits table all the kits
+function Config:prepare_build_directory(kits)
+  -- macro expansion:
+  --       ${kit}
+  --       ${kitGenerator}
+  --       ${variant:xx}
+  -- get the detailed info of the selected kit
+  local build_dir = self:no_expand_build_directory_path()
+  local kit = self.kit
+  local variant = self.variant
+  local kit_info = nil
+  if kits then
+    for _, item in ipairs(kits) do
+      if item.name == kit then
+        kit_info = item
+      end
+    end
+  end
+  build_dir = build_dir:gsub("${kit}", kit_info and kit_info.name or "")
+  build_dir = build_dir:gsub("${kitGenerator}", kit_info and kit_info.generator or "")
+
+  build_dir = build_dir:gsub("${variant:(%w+)}", function(v)
+    if variant and variant[v] then
+      return variant[v]
+    end
+
+    return ""
+  end)
+
+  return build_dir
 end
 
 function Config:generate_options()
