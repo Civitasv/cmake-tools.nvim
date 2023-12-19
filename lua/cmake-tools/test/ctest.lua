@@ -34,7 +34,7 @@ end
 function ctest.run(ctest_command, test_name, build_dir, env, config)
   local cmd = ctest_command
   local args = { "--test-dir", build_dir, "-R", test_name }
-  utils.run(
+  utils.execute(
     cmd,
     config.env_script,
     env,
