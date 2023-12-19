@@ -54,7 +54,8 @@ function cmake.setup(values)
     error(is_installed)
   end
 
-  cmake.register_cmake_autocmd()
+  cmake.register_autocmd()
+  cmake.register_autocmd_provided_by_users()
 end
 
 --- Generate build system for this project.
@@ -1433,14 +1434,14 @@ function cmake.select_cwd(cwd_path)
         --local new_path = Path:new(input)
         --if new_path:is_dir() then
         config.cwd = vim.fn.resolve(input)
-        cmake.register_cmake_autocmd()
+        cmake.register_autocmd()
         --	end
         cmake.generate({ bang = false, fargs = {} }, nil)
       end)
     )
   elseif cwd_path.args then
     config.cwd = vim.fn.resolve(cwd_path.args)
-    cmake.register_cmake_autocmd()
+    cmake.register_autocmd()
     cmake.generate({ bang = false, fargs = {} }, nil)
   end
 end
@@ -1537,7 +1538,7 @@ function cmake.create_regenerate_on_save_autocmd()
   end
 end
 
-function cmake.register_cmake_autocmd()
+function cmake.register_autocmd()
   -- preload the autocmd if the following option is true. only saves cmakelists.txt files
   if cmake.is_cmake_project() then
     if termclose_id then
@@ -1563,9 +1564,14 @@ function cmake.register_cmake_autocmd()
       group = group,
       callback = function()
         _session.save(config)
+        vim.api.nvim_del_augroup_by_id(group)
       end,
     })
   end
+end
+
+function cmake.register_autocmd_provided_by_users()
+  vim.api.nvim_exec_autocmds("User", { pattern = "CMakeToolsEnterProject" })
 end
 
 return cmake
