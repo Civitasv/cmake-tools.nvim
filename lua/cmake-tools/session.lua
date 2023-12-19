@@ -56,11 +56,58 @@ function session.load()
     return config or {}
   end
 
-  init_session()
   return {}
 end
 
+function session.update(config, old_config)
+  if next(old_config) ~= nil then
+    if old_config.build_directory and old_config.base_settings.build_dir then
+      config:update_build_dir(old_config.build_directory, old_config.base_settings.build_dir)
+    end
+    if old_config.build_type then
+      config.build_type = old_config.build_type
+    end
+    if old_config.variant then
+      config.variant = old_config.variant
+    end
+    if old_config.build_target then
+      config.build_target = old_config.build_target
+    end
+    if old_config.launch_target then
+      config.launch_target = old_config.launch_target
+    end
+    if old_config.kit then
+      config.kit = old_config.kit
+    end
+    if old_config.configure_preset then
+      config.configure_preset = old_config.configure_preset
+    end
+    if old_config.build_preset then
+      config.build_preset = old_config.build_preset
+    end
+    if old_config.env_script then
+      config.env_script = old_config.env_script
+    end
+    if old_config.cwd then
+      config.cwd = old_config.cwd
+    end
+
+    config.base_settings =
+      vim.tbl_deep_extend("keep", old_config.base_settings, config.base_settings)
+    config.target_settings = old_config.target_settings or {}
+
+    -- migrate old launch args to new config
+    if old_config.launch_args then
+      for k, v in pairs(old_config.launch_args) do
+        config.target_settings[k].args = v
+      end
+    end
+  end
+end
+
 function session.save(config)
+  init_session()
+
   local path = get_current_path()
   local file = io.open(path, "w")
 

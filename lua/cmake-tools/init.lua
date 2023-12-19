@@ -46,62 +46,15 @@ function cmake.setup(values)
   config = Config:new(const)
 
   -- auto reload previous session
-  if cmake.is_cmake_project() then
-    local old_config = _session.load()
-    if next(old_config) ~= nil then
-      if old_config.build_directory and old_config.base_settings.build_dir then
-        config:update_build_dir(old_config.build_directory, old_config.base_settings.build_dir)
-      end
-      if old_config.build_type then
-        config.build_type = old_config.build_type
-      end
-      if old_config.variant then
-        config.variant = old_config.variant
-      end
-      if old_config.build_target then
-        config.build_target = old_config.build_target
-      end
-      if old_config.launch_target then
-        config.launch_target = old_config.launch_target
-      end
-      if old_config.kit then
-        config.kit = old_config.kit
-      end
-      if old_config.configure_preset then
-        config.configure_preset = old_config.configure_preset
-      end
-      if old_config.build_preset then
-        config.build_preset = old_config.build_preset
-      end
-      if old_config.env_script then
-        config.env_script = old_config.env_script
-      end
-      if old_config.cwd then
-        config.cwd = old_config.cwd
-      end
-
-      config.base_settings =
-        vim.tbl_deep_extend("keep", old_config.base_settings, config.base_settings)
-      config.target_settings = old_config.target_settings or {}
-
-      -- migrate old launch args to new config
-      if old_config.launch_args then
-        for k, v in pairs(old_config.launch_args) do
-          config.target_settings[k].args = v
-        end
-      end
-    end
-  end
+  local old_config = _session.load()
+  _session.update(config, old_config)
 
   local is_installed = utils.get_executor(config.executor.name).is_installed()
   if not is_installed then
     error(is_installed)
   end
 
-  -- preload the autocmd if the following option is true. only saves cmakelists.txt files
-  if cmake.is_cmake_project() then
-    cmake.create_regenerate_on_save_autocmd()
-  end
+  cmake.register_cmake_autocmd()
 end
 
 --- Generate build system for this project.
@@ -1465,9 +1418,6 @@ function cmake.ccls_on_new_config(new_config)
   new_config.init_options.compilationDatabaseDirectory = config:build_directory_path()
 end
 
-local group = vim.api.nvim_create_augroup("cmaketools", { clear = true })
-local regenerate_id = nil
-
 function cmake.select_cwd(cwd_path)
   if cwd_path.args == "" then
     vim.ui.input(
@@ -1483,12 +1433,14 @@ function cmake.select_cwd(cwd_path)
         --local new_path = Path:new(input)
         --if new_path:is_dir() then
         config.cwd = vim.fn.resolve(input)
+        cmake.register_cmake_autocmd()
         --	end
         cmake.generate({ bang = false, fargs = {} }, nil)
       end)
     )
   elseif cwd_path.args then
     config.cwd = vim.fn.resolve(cwd_path.args)
+    cmake.register_cmake_autocmd()
     cmake.generate({ bang = false, fargs = {} }, nil)
   end
 end
@@ -1517,6 +1469,12 @@ function cmake.select_build_dir(cwd_path)
     cmake.generate({ bang = false, fargs = {} }, nil)
   end
 end
+
+local regenerate_id = nil
+local termclose_id = nil
+local vim_leave_pre_id = nil
+
+local group = vim.api.nvim_create_augroup("cmaketools", { clear = true })
 
 function cmake.create_regenerate_on_save_autocmd()
   if not const.cmake_regenerate_on_save then
@@ -1579,23 +1537,35 @@ function cmake.create_regenerate_on_save_autocmd()
   end
 end
 
--- We have a command to escape insert mode after proccess extis
--- because, we want to scroll the buffer output after completion of execution
-if cmake.is_cmake_project() then
-  vim.api.nvim_create_autocmd("TermClose", {
-    group = group,
-    callback = function()
-      vim.cmd.stopinsert()
-      vim.api.nvim_feedkeys("<C-\\><C-n><CR>", "n", false)
-    end,
-  })
+function cmake.register_cmake_autocmd()
+  -- preload the autocmd if the following option is true. only saves cmakelists.txt files
+  if cmake.is_cmake_project() then
+    if termclose_id then
+      vim.api.nvim_del_autocmd(termclose_id)
+    end
+    if vim_leave_pre_id then
+      vim.api.nvim_del_autocmd(vim_leave_pre_id)
+    end
 
-  vim.api.nvim_create_autocmd("VimLeavePre", {
-    group = group,
-    callback = function()
-      _session.save(config)
-    end,
-  })
+    cmake.create_regenerate_on_save_autocmd()
+
+    -- We have a command to escape insert mode after proccess extis
+    -- because, we want to scroll the buffer output after completion of execution
+    termclose_id = vim.api.nvim_create_autocmd("TermClose", {
+      group = group,
+      callback = function()
+        vim.cmd.stopinsert()
+        vim.api.nvim_feedkeys("<C-\\><C-n><CR>", "n", false)
+      end,
+    })
+
+    vim_leave_pre_id = vim.api.nvim_create_autocmd("VimLeavePre", {
+      group = group,
+      callback = function()
+        _session.save(config)
+      end,
+    })
+  end
 end
 
 return cmake
