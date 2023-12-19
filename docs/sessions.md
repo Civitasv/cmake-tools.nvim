@@ -26,7 +26,7 @@ return {
 }
 ```
 
-For Linux, MacOS, Windows, WSL, it will save cache files to:
+For Linux, macOS, Windows, WSL, it will save cache files to:
 
 ```lua
 local session = {
