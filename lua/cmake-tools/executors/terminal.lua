@@ -143,15 +143,20 @@ function terminal.get_buffer_number_from_name(buffer_name)
 end
 
 function terminal.send_data_to_terminal(buffer_idx, cmd, opts)
-  if osys.iswin32 then
-    cmd = cmd .. " \r"
-  elseif osys.ismac then
-    cmd = cmd .. " \n"
-  elseif osys.islinux then
-    cmd = cmd .. " \n"
-  elseif osys.iswsl then
-    --NOTE: Techinically, wsl-2 and linux are detected as linux. We might see a diferrence in wsl-1 vs wsl-2
-    cmd = cmd .. " \n"
+  if not opts or not opts.do_not_add_newline then
+    if osys.iswin32 then
+      cmd = cmd .. " \r"
+    elseif osys.ismac then
+      cmd = cmd .. " \n"
+    elseif osys.islinux then
+      cmd = cmd .. " \n"
+    elseif osys.iswsl then
+      --NOTE: Techinically, wsl-2 and linux are detected as linux. We might see a diferrence in wsl-1 vs wsl-2
+      cmd = cmd .. " \n"
+    end
+  else
+    -- Append a space but NOT the newline, so that the user has a chance to review the command before executing it
+    cmd = cmd .. " "
   end
 
   if opts and opts.win_id ~= -1 then
@@ -528,6 +533,7 @@ function terminal.execute(executable, full_cmd, opts)
     split_size = opts.split_size,
     start_insert = opts.start_insert_in_launch_task,
     focus_on_launch_terminal = opts.focus_on_launch_terminal,
+    do_not_add_newline = opts.do_not_add_newline,
   })
 end
 
