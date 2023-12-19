@@ -81,6 +81,9 @@ function quickfix.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
         quickfix.show(opts)
         quickfix.scroll_to_bottom()
       end
+      if code == 0 and opts.auto_close_when_success then
+        quickfix.close(opts)
+      end
       if on_exit ~= nil then
         on_exit(code)
       end
