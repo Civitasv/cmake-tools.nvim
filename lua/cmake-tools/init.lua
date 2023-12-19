@@ -1435,6 +1435,7 @@ function cmake.select_cwd(cwd_path)
         --if new_path:is_dir() then
         config.cwd = vim.fn.resolve(input)
         cmake.register_autocmd()
+        cmake.register_autocmd_provided_by_users()
         --	end
         cmake.generate({ bang = false, fargs = {} }, nil)
       end)
@@ -1442,6 +1443,7 @@ function cmake.select_cwd(cwd_path)
   elseif cwd_path.args then
     config.cwd = vim.fn.resolve(cwd_path.args)
     cmake.register_autocmd()
+    cmake.register_autocmd_provided_by_users()
     cmake.generate({ bang = false, fargs = {} }, nil)
   end
 end
@@ -1571,7 +1573,9 @@ function cmake.register_autocmd()
 end
 
 function cmake.register_autocmd_provided_by_users()
-  vim.api.nvim_exec_autocmds("User", { pattern = "CMakeToolsEnterProject" })
+  if cmake.is_cmake_project() then
+    vim.api.nvim_exec_autocmds("User", { pattern = "CMakeToolsEnterProject" })
+  end
 end
 
 return cmake
