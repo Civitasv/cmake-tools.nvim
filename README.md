@@ -2,6 +2,8 @@
 
 <p align="center"><img src="./docs/images/demo.gif"/></p>
 
+> With *executor* and *runner* both set to overseer.
+
 <h2 align="center">🔥CMake Tools for Neovim which is written in pure lua.🔥</h2>
 
 > CREDIT:
