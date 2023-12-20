@@ -178,7 +178,7 @@ function _terminal.send_data_to_terminal(buffer_idx, cmd, opts)
 
   -- Now, the cmake buffer's window is currently in focus
 
-  if opts and (opts.focus_on_launch_terminal or opts.focus_on_main_terminal) then
+  if opts and opts.focus then
     -- We want to focus on the newly set terminal
     vim.api.nvim_set_current_win(opts.win_id)
     if opts.start_insert then
@@ -192,7 +192,7 @@ function _terminal.send_data_to_terminal(buffer_idx, cmd, opts)
       -- Now we check again if the buffer needs to be focused as the user might be scrolling
       -- a cmake buffer and execute a :CMakeCommand, so we do not want to move their
       -- cursor out of the cmake buffer, as it can be annoying
-      if opts and not (opts.focus_on_launch_terminal or opts.focus_on_main_terminal) then
+      if opts and not opts.focus then
         vim.cmd("wincmd p") -- Goes back to previous window: Equivalent to [[ CTRL-W p ]]
       end
     end
@@ -532,7 +532,7 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts)
 
   -- prefix is added to the terminal name because the reposition_term() function needs to find it
   local terminal_already_exists, buffer_idx = _terminal.create_if_not_exists(
-    prefix .. opts.name, -- [CMakeTools]Main Terminal
+    prefix .. opts.name, -- [CMakeTools]Executor Terminal/Runner Terminal
     opts
   )
   _terminal.id = buffer_idx
@@ -550,8 +550,8 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts)
       prefix = opts.prefix_name,
       split_direction = opts.split_direction,
       split_size = opts.split_size,
-      start_insert = opts.start_insert_in_other_tasks,
-      focus_on_main_terminal = opts.focus_on_main_terminal,
+      start_insert = opts.start_insert,
+      focus = opts.focus,
     })
   end
 
@@ -561,8 +561,9 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts)
     prefix = opts.prefix_name,
     split_direction = opts.split_direction,
     split_size = opts.split_size,
-    start_insert = opts.start_insert_in_other_tasks,
-    focus_on_main_terminal = opts.focus_on_main_terminal,
+    start_insert = opts.start_insert,
+    focus = opts.focus,
+    do_not_add_newline = opts.do_not_add_newline,
   })
 end
 

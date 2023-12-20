@@ -36,7 +36,7 @@ local const = {
         on_new_task = function(task) end, -- a function that gets overseer.Task when it is created, before calling `task:start`
       },
       terminal = {
-        name = "Main Terminal",
+        name = "Executor Terminal",
         prefix_name = "[CMakeTools]: ", -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
         split_direction = "horizontal", -- "horizontal", "vertical"
         split_size = 11,
@@ -47,10 +47,8 @@ local const = {
         keep_terminal_static_location = true, -- Static location of the viewport if avialable
 
         -- Running Tasks
-        start_insert_in_launch_task = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
-        start_insert_in_other_tasks = false, -- If you want to enter terminal with :startinsert upon launching all other cmake tasks in the terminal. Generally set as false
-        focus_on_main_terminal = false, -- Focus on cmake terminal when cmake task is launched. Only used if executor is terminal.
-        focus_on_launch_terminal = false, -- Focus on cmake launch terminal when executable target in launched.
+        start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
+        focus = false, -- Focus on terminal when cmake task is launched.
         do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
       },
     },
@@ -71,7 +69,7 @@ local const = {
         on_new_task = function(task) end, -- a function that gets overseer.Task when it is created, before calling `task:start`
       },
       terminal = {
-        name = "Main Terminal",
+        name = "Runner Terminal",
         prefix_name = "[CMakeTools]: ", -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
         split_direction = "horizontal", -- "horizontal", "vertical"
         split_size = 11,
@@ -82,10 +80,8 @@ local const = {
         keep_terminal_static_location = true, -- Static location of the viewport if avialable
 
         -- Running Tasks
-        start_insert_in_launch_task = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
-        start_insert_in_other_tasks = false, -- If you want to enter terminal with :startinsert upon launching all other cmake tasks in the terminal. Generally set as false
-        focus_on_main_terminal = false, -- Focus on cmake terminal when cmake task is launched. Only used if executor is terminal.
-        focus_on_launch_terminal = false, -- Focus on cmake launch terminal when executable target in launched.
+        start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
+        focus = false, -- Focus on terminal when cmake task is launched.
         do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
       },
     },
