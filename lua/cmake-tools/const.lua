@@ -32,7 +32,14 @@ local const = {
         auto_close_when_success = true, -- typically, you can use it with the "always" option; it will auto-close the quickfix buffer if the execution is successful.
       },
       overseer = {
-        new_task_opts = {}, -- options to pass into the `overseer.new_task` command
+        new_task_opts = {
+          strategy = {
+            "toggleterm",
+            direction = "horizontal",
+            autos_croll = true,
+            quit_on_exit = "success",
+          },
+        }, -- options to pass into the `overseer.new_task` command
         on_new_task = function(task) end, -- a function that gets overseer.Task when it is created, before calling `task:start`
       },
       terminal = {
@@ -65,7 +72,14 @@ local const = {
         auto_close_when_success = true, -- typically, you can use it with the "always" option; it will auto-close the quickfix buffer if the execution is successful.
       },
       overseer = {
-        new_task_opts = {}, -- options to pass into the `overseer.new_task` command
+        new_task_opts = {
+          strategy = {
+            "toggleterm",
+            direction = "horizontal",
+            autos_croll = true,
+            quit_on_exit = "success",
+          },
+        }, -- options to pass into the `overseer.new_task` command
         on_new_task = function(task) end, -- a function that gets overseer.Task when it is created, before calling `task:start`
       },
       terminal = {

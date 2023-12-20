@@ -15,15 +15,14 @@ function _overseer.close(opts)
 end
 
 function _overseer.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
-  _overseer.show(opts)
-  opts = vim.tbl_extend("keep", {
+  local new_task_opts = vim.tbl_extend("keep", {
     -- cmd = env_script .. " && " .. cmd, -- Temporarily disabling envScript for Overseer: Refer #158 and #159 for more details
     cmd = cmd,
     args = args,
     env = env,
     cwd = cwd,
   }, opts.new_task_opts)
-  _overseer.job = overseer.new_task(opts)
+  _overseer.job = overseer.new_task(new_task_opts)
   if on_exit ~= nil then
     _overseer.job:subscribe("on_exit", function(out)
       on_exit(out.exit_code)
