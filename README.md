@@ -81,7 +81,7 @@ require("cmake-tools").setup {
       }, -- terminal executor uses the values in cmake_terminal
     },
   },
-  cmake_runner = { -- executor to use
+  cmake_runner = { -- runner to use
     name = "terminal", -- name of the runner
     opts = {}, -- the options the runner will get, possible values depend on the runner type. See `default_opts` for possible values.
     default_opts = { -- a list of default and possible values for runners
