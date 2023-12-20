@@ -75,10 +75,8 @@ require("cmake-tools").setup {
         keep_terminal_static_location = true, -- Static location of the viewport if avialable
 
         -- Running Tasks
-        start_insert_in_launch_task = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
-        start_insert_in_other_tasks = false, -- If you want to enter terminal with :startinsert upon launching all other cmake tasks in the terminal. Generally set as false
-        focus_on_main_terminal = false, -- Focus on cmake terminal when cmake task is launched. Only used if executor is terminal.
-        focus_on_launch_terminal = false, -- Focus on cmake launch terminal when executable target in launched.
+        start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
+        focus = false, -- Focus on terminal when cmake task is launched.
         do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
       }, -- terminal executor uses the values in cmake_terminal
     },
@@ -110,10 +108,8 @@ require("cmake-tools").setup {
         keep_terminal_static_location = true, -- Static location of the viewport if avialable
 
         -- Running Tasks
-        start_insert_in_launch_task = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
-        start_insert_in_other_tasks = false, -- If you want to enter terminal with :startinsert upon launching all other cmake tasks in the terminal. Generally set as false
-        focus_on_main_terminal = false, -- Focus on cmake terminal when cmake task is launched. Only used if executor is terminal.
-        focus_on_launch_terminal = false, -- Focus on cmake launch terminal when executable target in launched.
+        start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
+        focus = false, -- Focus on terminal when cmake task is launched.
         do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
       },
     },
