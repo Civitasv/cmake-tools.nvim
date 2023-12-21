@@ -207,6 +207,7 @@ function _terminal.send_data_to_terminal(buffer_idx, cmd, opts)
       buf = buffer_idx,
     })
     if type == "terminal" then
+      -- HACK: This would't work, weridly
       --[[ vim.cmd("normal! G") -- Goes to last line to enable autoscrolling ]]
     end
   end)
