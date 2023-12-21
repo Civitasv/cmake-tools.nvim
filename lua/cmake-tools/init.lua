@@ -802,7 +802,7 @@ if has_nvim_dap then
           env = env,
         }
         -- close cmake console
-        cmake.close()
+        cmake.close_executor()
         dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
       end)
     else
@@ -845,7 +845,7 @@ if has_nvim_dap then
               env = env,
             }
             -- close cmake console
-            cmake.close()
+            cmake.close_executor()
             dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
           end
         )
