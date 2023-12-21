@@ -24,16 +24,22 @@ function _overseer.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   }, opts.new_task_opts)
   _overseer.job = overseer.new_task(new_task_opts)
   if on_exit ~= nil then
-    _overseer.job:subscribe("on_exit", function(out)
-      on_exit(out.exit_code)
-    end)
+    _overseer.job:subscribe(
+      "on_exit",
+      vim.schedule_wrap(function(out)
+        on_exit(out.exit_code)
+      end)
+    )
   end
   if on_output ~= nil then
-    _overseer.job:subscribe("on_output", function(_, data)
-      local stdout = data[0]
-      local stderr = data[1]
-      on_output(stdout, stderr)
-    end)
+    _overseer.job:subscribe(
+      "on_output",
+      vim.schedule_wrap(function(_, data)
+        local stdout = data[0]
+        local stderr = data[1]
+        on_output(stdout, stderr)
+      end)
+    )
   end
   if opts.on_new_task ~= nil then
     opts.on_new_task(_overseer.job)
