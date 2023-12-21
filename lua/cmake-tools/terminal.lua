@@ -207,7 +207,7 @@ function _terminal.send_data_to_terminal(buffer_idx, cmd, opts)
       buf = buffer_idx,
     })
     if type == "terminal" then
-      vim.cmd("normal! G") -- Goes to last line to enable autoscrolling
+      --[[ vim.cmd("normal! G") -- Goes to last line to enable autoscrolling ]]
     end
   end)
 
@@ -554,6 +554,8 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts)
       focus = opts.focus,
     })
   end
+
+  print("CMD", cmd)
 
   -- Send final cmd to terminal
   _terminal.send_data_to_terminal(buffer_idx, cmd, {
