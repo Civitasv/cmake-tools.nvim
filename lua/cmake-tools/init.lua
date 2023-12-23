@@ -339,7 +339,8 @@ function cmake.build(opt, callback)
     end)
   end
 
-  if not (config:has_build_directory()) then
+  local ct = config:get_codemodel_targets()
+  if not (config:has_build_directory()) or not (ct.code == Types.SUCCESS) then
     -- configure it
     return cmake.generate({ bang = false, fargs = {} }, function()
       cmake.build(opt, callback)
