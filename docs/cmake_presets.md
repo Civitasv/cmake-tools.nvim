@@ -11,5 +11,5 @@ Read more about CMake presets from [CMake docs](https://cmake.org/cmake/help/lat
 1. [Test Preset](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html#test-preset) is not supported.
 2. [Package Preset](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html#package-preset) is not supported.
 3. [Workflow Preset](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html#workflow-preset) is not supported.
-4. [Condition](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html#condition) is nor supported.
+4. [Condition](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html#condition) is not supported.
 5. Some macros not supported yet: `$env{<variable-name>}`, `$penv{<variable-name>}`, `$vendor{<macro-name>}`
