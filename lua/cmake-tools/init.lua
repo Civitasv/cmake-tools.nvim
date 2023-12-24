@@ -118,6 +118,7 @@ function cmake.generate(opt, callback)
   end
 
   if presets_file and config.configure_preset then
+    print("HERE")
     -- if exsist preset file and set configure preset, then
     -- set build directory to the `binaryDir` option of `configurePresets`
     local build_directory = presets.get_build_dir(
@@ -156,6 +157,7 @@ function cmake.generate(opt, callback)
         cmake.configure_compile_commands()
         cmake.create_regenerate_on_save_autocmd()
         full_cmd:clear()
+        return
       end
     else
       return utils.execute(
@@ -247,10 +249,11 @@ function cmake.generate(opt, callback)
       cmake.configure_compile_commands()
       cmake.create_regenerate_on_save_autocmd()
       full_cmd:clear()
+      return
     end
   else
     env = vim.tbl_extend("keep", env, kit_option.env)
-    utils.execute(
+    return utils.execute(
       const.cmake_command,
       config.env_script,
       env,
@@ -300,6 +303,7 @@ function cmake.clean(callback)
         const.cmake_notifications
       )
       full_cmd:clear()
+      return
     end
   else
     return utils.execute(
@@ -393,9 +397,10 @@ function cmake.build(opt, callback)
         const.cmake_notifications
       )
       full_cmd:clear()
+      return
     end
   else
-    utils.execute(
+    return utils.execute(
       const.cmake_command,
       config.env_script,
       env,
@@ -564,10 +569,11 @@ function cmake.run(opt)
       local launch_path = cmake.get_launch_path(opt.target)
       local env =
         environment.get_run_environment(config, opt.target, config.runner.name == "terminal")
+      local _args = opt.args and opt.args or config.target_settings[opt.target].args
 
       if config.runner.name == "terminal" then
         full_cmd:append(
-          terminal.prepare_cmd_for_run(target_path, opt.args, launch_path, opt.wrap_call, env)
+          terminal.prepare_cmd_for_run(target_path, _args, launch_path, opt.wrap_call, env)
         )
         utils.run(
           full_cmd.value,
@@ -585,7 +591,7 @@ function cmake.run(opt)
           target_path,
           config.env_script,
           env,
-          opt.args,
+          _args,
           launch_path,
           config.runner,
           nil,
@@ -799,7 +805,7 @@ if has_nvim_dap then
           name = opt.target,
           program = result.data,
           cwd = cmake.get_launch_path(opt.target),
-          args = opt.args,
+          args = opt.args and opt.args or config.target_settings[opt.target].args,
           env = env,
         }
         -- close cmake console
