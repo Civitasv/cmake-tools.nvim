@@ -184,7 +184,7 @@ end
 function presets.get_build_dir(preset, cwd)
   -- check if this preset is extended
   local function helper(p_preset)
-    local build_dir = ""
+    local build_dir = p_preset.name
 
     if not p_preset then
       return build_dir
