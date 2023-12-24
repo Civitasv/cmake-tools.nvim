@@ -55,10 +55,11 @@ local function decode(file)
   if not data then
     error(string.format("Could not parse %s", file))
   end
-  local includes = data["include"] or {}
+  local includes = data["include"] and data["include"] or {}
+  local includes_is_empty = next(includes) == nil
   local isUserPreset = string.find(file:lower(), "user")
   local parentDir = vim.fs.dirname(file)
-  if #includes == 0 and isUserPreset then
+  if includes_is_empty and isUserPreset then
     local preset = "CMakePresets.json"
     local presetKebapCase = "cmake-presets.json"
     local presetPath = parentDir .. "/" .. preset
@@ -71,7 +72,7 @@ local function decode(file)
     end
   end
 
-  if #includes == 0 then
+  if includes_is_empty then
     return data
   end
 
