@@ -16,6 +16,7 @@ The goal of this plugin is to offer a comprehensive, convenient, and powerful wo
 
 - Require Neovim (>=0.7).
 - Require [plenary](https://github.com/nvim-lua/plenary.nvim).
+- Allow integerating with [overseer](https://github.com/stevearc/overseer.nvim).
 - Install it like any other Neovim plugin.
   - [lazy.nvim](https://github.com/folke/lazy.nvim): `return { 'Civitasv/cmake-tools.nvim' }`
   - [packer.nvim](https://github.com/wbthomason/packer.nvim): `use 'Civitasv/cmake-tools.nvim'`
@@ -51,7 +52,7 @@ require("cmake-tools").setup {
     console = "integratedTerminal",
   },
   cmake_executor = { -- executor to use
-    name = "overseer", -- name of the executor
+    name = "quickfix", -- name of the executor
     opts = {}, -- the options the executor will get, possible values depend on the executor type. See `default_opts` for possible values.
     default_opts = { -- a list of default and possible values for executors
       quickfix = {
