@@ -185,45 +185,43 @@ end
 function presets.get_build_dir(preset, cwd)
   -- check if this preset is extended
   local function helper(p_preset)
-    local build_dir = p_preset.name
-
     if not p_preset then
-      return build_dir
+      return ""
     end
 
-    if p_preset.inherits then
-      local inherits = p_preset.inherits
+    if p_preset.binaryDir then
+      return p_preset.binaryDir
+    end
+
+    local build_dir = p_preset.name
+    local inherits = p_preset.inherits
+    if inherits then
       local set_dir_by_parent = function(parent)
         local ppreset = presets.get_preset_by_name(parent, "configurePresets", cwd)
-        local ppreset_build_dir = helper(ppreset)
-        if ppreset_build_dir ~= "" then
-          build_dir = ppreset_build_dir
+        if ppreset ~= nil then
+          local ppreset_build_dir = helper(ppreset)
+          if ppreset_build_dir ~= "" then
+            return ppreset_build_dir
+          end
         end
+        return nil
       end
-
       -- According to `https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html`,
       -- `inherits` field may be a list of strings or a single string.
       -- Check type then act.
       if type(inherits) == "table" then
-        -- iterate inherits from end, cause
-        -- If multiple inherits presets provide conflicting
-        -- values for the same field, the earlier preset in
-        -- the inherits array will be preferred.
-        for i = #inherits, 1, -1 do
-          local parent = inherits[i]
-
+        for _, parent in ipairs(inherits) do
           -- retrieve its parent preset
-          set_dir_by_parent(parent)
+          local dir = set_dir_by_parent(parent)
+          if dir then
+            build_dir = dir
+            break
+          end
         end
       elseif type(inherits) == "string" then
-        set_dir_by_parent(inherits)
+        build_dir = set_dir_by_parent(inherits) or build_dir
       end
     end
-
-    if p_preset.binaryDir then
-      build_dir = p_preset.binaryDir
-    end
-
     return build_dir
   end
 
