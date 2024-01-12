@@ -34,13 +34,13 @@ end
 function ctest.run(ctest_command, test_name, build_dir, env, config)
   local cmd = ctest_command
   local args = { "--test-dir", build_dir, "-R", test_name }
-  utils.execute(
+  utils.run(
     cmd,
     config.env_script,
     env,
     args,
     config.cwd,
-    config.executor,
+    config.runner,
     nil,
     const.cmake_notifications
   )
