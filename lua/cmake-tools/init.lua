@@ -1396,6 +1396,14 @@ function cmake.has_cmake_preset()
   return presets_file ~= nil
 end
 
+function cmake.get_build_targets()
+  return config:build_targets()
+end
+
+function cmake.get_launch_targets()
+  return config:launch_targets()
+end
+
 --[[ end ]]
 
 function cmake.configure_compile_commands()
