@@ -31,6 +31,11 @@ local const = {
         encoding = "utf-8",
         auto_close_when_success = true, -- typically, you can use it with the "always" option; it will auto-close the quickfix buffer if the execution is successful.
       },
+      toggleterm = {
+        direction = "float", -- 'vertical' | 'horizontal' | 'tab' | 'float'
+        close_on_exit = false, -- whether close the terminal when exit
+        auto_scroll = true, -- whether auto scroll to the bottom
+      },
       overseer = {
         new_task_opts = {
           strategy = {
@@ -67,6 +72,11 @@ local const = {
         size = 10,
         encoding = "utf-8",
         auto_close_when_success = true, -- typically, you can use it with the "always" option; it will auto-close the quickfix buffer if the execution is successful.
+      },
+      toggleterm = {
+        direction = "float", -- 'vertical' | 'horizontal' | 'tab' | 'float'
+        close_on_exit = false, -- whether close the terminal when exit
+        auto_scroll = true, -- whether auto scroll to the bottom
       },
       overseer = {
         new_task_opts = {

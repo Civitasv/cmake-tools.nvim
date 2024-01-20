@@ -34,5 +34,7 @@ function runner.has_active_job(opts) end
 function runner.stop(opts) end
 
 ---Check if the runner is installed and can be used
+-- if it is installed, return true
+-- else return a diagnostics info string
 ---@return string|boolean
 function runner.is_installed() end

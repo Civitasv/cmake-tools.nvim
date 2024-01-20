@@ -16,7 +16,8 @@ The goal of this plugin is to offer a comprehensive, convenient, and powerful wo
 
 - Require Neovim (>=0.7).
 - Require [plenary](https://github.com/nvim-lua/plenary.nvim).
-- Allow integerating with [overseer](https://github.com/stevearc/overseer.nvim).
+- Allow integerating with [overseer](https://github.com/stevearc/overseer.nvim), optional, if you want this feature, please install it firstly.
+- Allow integerating with [toggleterm](https://github.com/akinsho/toggleterm.nvim), optional, if you want this feature, please install it firstly.
 - Install it like any other Neovim plugin.
   - [lazy.nvim](https://github.com/folke/lazy.nvim): `return { 'Civitasv/cmake-tools.nvim' }`
   - [packer.nvim](https://github.com/wbthomason/packer.nvim): `use 'Civitasv/cmake-tools.nvim'`
@@ -62,6 +63,11 @@ require("cmake-tools").setup {
         encoding = "utf-8", -- if encoding is not "utf-8", it will be converted to "utf-8" using `vim.fn.iconv`
         auto_close_when_success = true, -- typically, you can use it with the "always" option; it will auto-close the quickfix buffer if the execution is successful.
       },
+      toggleterm = {
+        direction = "float", -- 'vertical' | 'horizontal' | 'tab' | 'float'
+        close_on_exit = false, -- whether close the terminal when exit
+        auto_scroll = true, -- whether auto scroll to the bottom
+      },
       overseer = {
         new_task_opts = {
             strategy = {
@@ -105,6 +111,11 @@ require("cmake-tools").setup {
         size = 10,
         encoding = "utf-8",
         auto_close_when_success = true, -- typically, you can use it with the "always" option; it will auto-close the quickfix buffer if the execution is successful.
+      },
+      toggleterm = {
+        direction = "float", -- 'vertical' | 'horizontal' | 'tab' | 'float'
+        close_on_exit = false, -- whether close the terminal when exit
+        auto_scroll = true, -- whether auto scroll to the bottom
       },
       overseer = {
         new_task_opts = {

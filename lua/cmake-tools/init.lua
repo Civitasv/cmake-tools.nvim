@@ -70,10 +70,10 @@ function cmake.setup(values)
 
   local is_executor_installed = utils.get_executor(config.executor.name).is_installed()
   local is_runner_installed = utils.get_runner(config.executor.name).is_installed()
-  if not is_executor_installed then
+  if type(is_executor_installed) == "string" then
     log.error(is_executor_installed)
   end
-  if not is_runner_installed then
+  if type(is_runner_installed) == "string" then
     log.error(is_runner_installed)
   end
 
