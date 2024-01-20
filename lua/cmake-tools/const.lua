@@ -51,9 +51,9 @@ local const = {
         split_size = 11,
 
         -- Window handling
-        single_terminal_per_instance = true, -- Single viewport, multiple windows
-        single_terminal_per_tab = true, -- Single viewport per tab
-        keep_terminal_static_location = true, -- Static location of the viewport if avialable
+        single_terminal_per_instance = true, -- Single instance, multiple windows
+        single_terminal_per_tab = true, -- Single instance per tab
+        keep_terminal_static_location = true, -- Static location of the instance if avialable
 
         -- Running Tasks
         start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
@@ -93,9 +93,9 @@ local const = {
         split_size = 11,
 
         -- Window handling
-        single_terminal_per_instance = true, -- Single viewport, multiple windows
-        single_terminal_per_tab = true, -- Single viewport per tab
-        keep_terminal_static_location = true, -- Static location of the viewport if avialable
+        single_terminal_per_instance = true, -- Single instance, multiple windows
+        single_terminal_per_tab = true, -- Single instance per tab
+        keep_terminal_static_location = true, -- Static location of the instance if avialable
 
         -- Running Tasks
         start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
