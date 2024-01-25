@@ -34,5 +34,6 @@ assignees: ''
 - Desktop environment: <!-- (only for Linux, e.g. KDE, Gnome) -->
 - Plugins commit hash: <!-- (e.g. 4d44aba82748361f522771e8148fd63c5b0dfaf4) -->
 
-**Additional context**
-<!-- Add any other context about the problem here. --
+**Contents in the \*cmake-tools\* buffer**
+
+<!-- Copy the contents in the \*cmake-tools\* here -->

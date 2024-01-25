@@ -162,6 +162,8 @@ Generally, the default is enough.
 
 ## :magic_wand: Docs
 
+*Our plugin will automatically create a buffer named \*cmake-tools\*, all commands executed by this plugin will be dumped in this buffer, so when something goes wrong, you can know excatly what happend.*
+
 1. [basic usage](./docs/basic_usage.md)
 2. [settings](./docs/settings.md)
 3. [executor and runner](./docs/executor_and_runner.md)
