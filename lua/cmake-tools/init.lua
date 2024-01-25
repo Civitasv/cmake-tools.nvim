@@ -14,6 +14,7 @@ local _session = require("cmake-tools.session")
 local window = require("cmake-tools.window")
 local environment = require("cmake-tools.environment")
 local file_picker = require("cmake-tools.file_picker")
+local scratch = require("cmake-tools.scratch")
 
 local ctest = require("cmake-tools.test.ctest")
 
@@ -69,7 +70,7 @@ function cmake.setup(values)
   _session.update(config, old_config)
 
   local is_executor_installed = utils.get_executor(config.executor.name).is_installed()
-  local is_runner_installed = utils.get_runner(config.executor.name).is_installed()
+  local is_runner_installed = utils.get_runner(config.runner.name).is_installed()
   if type(is_executor_installed) == "string" then
     log.error(is_executor_installed)
   end
@@ -79,6 +80,7 @@ function cmake.setup(values)
 
   cmake.register_autocmd()
   cmake.register_autocmd_provided_by_users()
+  cmake.register_scratch_buffer(config.executor.name, config.runner.name)
 end
 
 --- Generate build system for this project.
@@ -1615,6 +1617,12 @@ end
 function cmake.register_autocmd_provided_by_users()
   if cmake.is_cmake_project() then
     vim.api.nvim_exec_autocmds("User", { pattern = "CMakeToolsEnterProject" })
+  end
+end
+
+function cmake.register_scratch_buffer(executor, runner)
+  if cmake.is_cmake_project() then
+    scratch.create(executor, runner)
   end
 end
 

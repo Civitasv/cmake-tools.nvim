@@ -3,6 +3,7 @@ local osys = require("cmake-tools.osys")
 local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
 local notification = require("cmake-tools.notification")
+local scratch = require("cmake-tools.scratch")
 
 ---@alias executor_conf {name:string, opts:table}
 ---@alias runner_conf {name:string, opts:table}
@@ -181,6 +182,9 @@ function utils.run(cmd, env_script, env, args, cwd, runner, on_success, cmake_no
     notification.update_spinner()
   end
 
+  local _mes = { "[RUN]:", cmd, table.concat(args, " ") }
+  scratch.append(table.concat(_mes, " "))
+
   utils.get_runner(runner.name).run(cmd, env_script, env, args, cwd, runner.opts, function(code)
     local msg = "Exited with code " .. code
     local level = cmake_notifications.level
@@ -225,6 +229,9 @@ function utils.execute(cmd, env_script, env, args, cwd, executor, on_success, cm
       notification.notify(cmd, notification.notification.level, { title = "CMakeTools" })
     notification.update_spinner()
   end
+
+  local _mes = { "[EXECUTE]:", cmd, table.concat(args, " ") }
+  scratch.append(table.concat(_mes, " "))
 
   utils
     .get_executor(executor.name)
