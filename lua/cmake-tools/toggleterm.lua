@@ -26,15 +26,12 @@ function _toggleterm.run(cmd, env_script, env, args, cwd, opts, on_exit, on_outp
   _toggleterm.cmd = cmd .. " " .. table.concat(args, " ")
   _toggleterm.term = _terminal.Terminal:new({
     --[[ env = {},             -- key:value table with environmental variables passed to jobstart() ]]
+    cmd = _toggleterm.cmd,
     dir = cwd, -- the directory for the terminal
     direction = opts.direction, -- the layout for the terminal, same as the main config options
     close_on_exit = opts.close_on_exit, -- close the terminal window when the process exits
     auto_scroll = opts.auto_scroll, -- automatically scroll to the bottom on terminal output
     -- callbacks for processing the output
-    on_open = function(t)
-      t:send(_toggleterm.cmd)
-      t:send("exit $?")
-    end,
     on_stdout = function(t, job, data, name)
       on_output(data)
     end, -- callback for processing output on stdout
