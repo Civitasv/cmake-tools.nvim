@@ -145,9 +145,12 @@ function utils.has_active_job(runner_data, executor_data)
 end
 
 local notify_update_line = function(out, err)
+  if not notification.notification.enabled then
+    return
+  end
   local line = err and err or out
   if line ~= nil then
-    if line and line:match("^%[%s*(%d+)%s*%%%]") then -- only show lines containing build progress e.g [ 12%]
+    if line ~= nil and line:match("^%[%s*(%d+)%s*%%%]") then -- only show lines containing build progress e.g [ 12%]
       notification.notification.id = notification.notify( -- notify with percentage and message
         line,
         err and "warn" or notification.notification.level,
