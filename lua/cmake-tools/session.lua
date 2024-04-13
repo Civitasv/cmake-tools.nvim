@@ -16,6 +16,8 @@ local function get_cache_path()
     return session.dir.mac
   elseif osys.iswsl then
     return session.dir.unix
+  elseif osys.isbsd then
+    return session.dir.unix
   elseif osys.iswin32 then
     return session.dir.win
   end
