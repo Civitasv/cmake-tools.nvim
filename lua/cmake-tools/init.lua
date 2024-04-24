@@ -1307,27 +1307,27 @@ function cmake.target_settings(opt)
 end
 
 function cmake.run_test(opt)
-  opt = opt or {}
   if utils.has_active_job(config.runner, config.executor) then
     return
   end
 
   local env = environment.get_build_environment(config, config.executor.name == "terminal")
-  if opt.runAll then
-    ctest.run(const.ctest_command, "'.*'", config:build_directory_path(), env, config)
-  else
   local all_tests = ctest.list_all_tests(config:build_directory_path())
-    vim.ui.select(
-      all_tests,
-      { prompt = "Select test to run" },
-      vim.schedule_wrap(function(_, idx)
-        if not idx then
-          return
-        end
+  all_tests = { "run all", table.unpack(all_tests) }
+  vim.ui.select(
+    all_tests,
+    { prompt = "select test to run" },
+    vim.schedule_wrap(function(_, idx)
+      if not idx then
+        return
+      end
+      if idx == 1 then
+        ctest.run(const.ctest_command, "'.*'", config:build_directory_path(), env, config)
+      else
         ctest.run(const.ctest_command, all_tests[idx], config:build_directory_path(), env, config)
-      end)
-    )
-  end
+      end
+    end)
+  )
 end
 
 --[[ Getters ]]
