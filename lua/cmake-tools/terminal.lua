@@ -556,7 +556,7 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts)
   end
 
   -- Send final cmd to terminal
-  _terminal.send_data_to_terminal(buffer_idx, cmd, {
+  _terminal.send_data_to_terminal(buffer_idx, cmd .. " " .. table.concat(args, " "), {
     win_id = final_win_id,
     prefix = opts.prefix_name,
     split_direction = opts.split_direction,
