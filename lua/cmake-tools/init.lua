@@ -1313,15 +1313,19 @@ function cmake.run_test(opt)
 
   local env = environment.get_build_environment(config, config.executor.name == "terminal")
   local all_tests = ctest.list_all_tests(config:build_directory_path())
-
+  all_tests = { "run all", table.unpack(all_tests) }
   vim.ui.select(
     all_tests,
-    { prompt = "Select test to run" },
+    { prompt = "select test to run" },
     vim.schedule_wrap(function(_, idx)
       if not idx then
         return
       end
-      ctest.run(const.ctest_command, all_tests[idx], config:build_directory_path(), env, config)
+      if idx == 1 then
+        ctest.run(const.ctest_command, "'.*'", config:build_directory_path(), env, config)
+      else
+        ctest.run(const.ctest_command, all_tests[idx], config:build_directory_path(), env, config)
+      end
     end)
   )
 end
