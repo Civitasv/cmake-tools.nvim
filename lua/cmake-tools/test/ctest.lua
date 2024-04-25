@@ -1,6 +1,7 @@
 local Job = require("plenary.job")
 local utils = require("cmake-tools.utils")
 local const = require("cmake-tools.const")
+local terminal = require("cmake-tools.terminal")
 
 local ctest = {}
 
@@ -34,16 +35,30 @@ end
 function ctest.run(ctest_command, test_name, build_dir, env, config)
   local cmd = ctest_command
   local args = { "--test-dir", build_dir, "-R", test_name }
-  utils.run(
-    cmd,
-    config.env_script,
-    env,
-    args,
-    config.cwd,
-    config.runner,
-    nil,
-    const.cmake_notifications
-  )
+  if config.runner.name == "terminal" then
+    cmd = terminal.prepare_cmd_for_run(cmd, args, config.cwd, nil, env)
+    utils.run(
+      cmd,
+      config.env_script,
+      {},
+      {},
+      config.cwd,
+      config.runner,
+      nil,
+      const.cmake_notifications
+    )
+  else
+    utils.run(
+      cmd,
+      config.env_script,
+      env,
+      args,
+      config.cwd,
+      config.runner,
+      nil,
+      const.cmake_notifications
+    )
+  end
 end
 
 return ctest
