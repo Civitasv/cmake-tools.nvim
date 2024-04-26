@@ -143,7 +143,6 @@ function cmake.generate(opt, callback)
     if config.executor.name == "terminal" then
       full_cmd:append(terminal.prepare_cmd_for_execute(const.cmake_command, env, args))
       if type(callback) == "function" then
-        print("IS A FUNCTION", vim.inspect(callback))
         callback()
       else
         utils.execute(
