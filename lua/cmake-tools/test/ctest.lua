@@ -32,9 +32,11 @@ function ctest.list_all_tests(build_dir)
   return tests
 end
 
-function ctest.run(ctest_command, test_name, build_dir, env, config)
+function ctest.run(ctest_command, test_name, build_dir, env, config, opt)
   local cmd = ctest_command
-  local args = { "--test-dir", build_dir, "-R", test_name }
+  opt = opt or {}
+
+  local args = { "--test-dir", build_dir, "-R", test_name, opt.args }
   if config.runner.name == "terminal" then
     cmd = terminal.prepare_cmd_for_run(cmd, args, config.cwd, nil, env)
     utils.run(

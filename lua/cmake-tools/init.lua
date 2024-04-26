@@ -1309,7 +1309,6 @@ function cmake.run_test(opt)
   if utils.has_active_job(config.runner, config.executor) then
     return
   end
-
   local env = environment.get_build_environment(config, config.executor.name == "terminal")
   local all_tests = ctest.list_all_tests(config:build_directory_path())
   all_tests = { "run all", table.unpack(all_tests) }
@@ -1321,9 +1320,9 @@ function cmake.run_test(opt)
         return
       end
       if idx == 1 then
-        ctest.run(const.ctest_command, "'.*'", config:build_directory_path(), env, config)
+        ctest.run(const.ctest_command, "'.*'", config:build_directory_path(), env, config, opt)
       else
-        ctest.run(const.ctest_command, all_tests[idx], config:build_directory_path(), env, config)
+        ctest.run(const.ctest_command, all_tests[idx], config:build_directory_path(), env, config, opt)
       end
     end)
   )
