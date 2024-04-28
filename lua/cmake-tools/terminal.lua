@@ -54,6 +54,40 @@ function _terminal.show(opts)
   end
 end
 
+function _terminal.symmetric_difference(list1, list2)
+  local unique_numbers = {}
+
+  local list1_set = {}
+  local list2_set = {}
+
+  -- Create a set from list1
+  for _, number in ipairs(list1) do
+    list1_set[number] = true
+  end
+
+  -- Create a set from list2 and add numbers to unique_numbers if not in list1
+  for _, number in ipairs(list2) do
+    if not list1_set[number] then
+      table.insert(unique_numbers, number)
+    end
+    list2_set[number] = true
+  end
+
+  -- Add numbers from list1 that are not in list2 to unique_numbers
+  for _, number in ipairs(list1) do
+    if not list2_set[number] then
+      table.insert(unique_numbers, number)
+    end
+  end
+  return unique_numbers
+end
+
+function _terminal.delete_buffer_list(buffer_list)
+  for _, buffer in ipairs(buffer_list) do
+    vim.api.nvim_buf_delete(buffer, { force = 1 })
+  end
+end
+
 -- Matches all the tabs and wins with buffer_idx and retunrs list of winid's indexed with resprect to their tabpages
 -- Set opts.get_unindexed_list = true for getting an iterable list of values that you can use to close windows with. These are returned as a for the current buffer.
 -- Only set opts.get_unindexed_list to false for viewing buffer info... i.e. how they are laid out across tabs and windows
@@ -361,8 +395,16 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
       on_exit(exit_code)
     end, -- function to run when terminal process exits
   })
+  _terminal.id = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_set_option(vim.api.nvim_get_current_buf(), "filetype", "cmake_tools_terminal")
+
+  -- Renamming a terminal buffer creates a new hidden buffer, so duplicate terminals need to be deleted
+  local buffers_before = vim.api.nvim_list_bufs()
   vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), term_name) -- Set the buffer name
+  local new_buffers_list = vim.api.nvim_list_bufs()
+  _terminal.delete_buffer_list(_terminal.symmetric_difference(buffers_before, new_buffers_list))
 end
+
 function _terminal.prepare_launch_path(path)
   if osys.iswin32 then
     path = '"' .. path .. '"' -- The path is kept in double quotes ... Windows Duh!
