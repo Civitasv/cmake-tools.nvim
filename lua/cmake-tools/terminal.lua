@@ -5,25 +5,27 @@ local dump = require("cmake-tools.utils").dump
 local _terminal = {
   id = nil, -- id for the unified terminal
   id_old = nil, -- Old id to keep track of the buffer
+  is_running = false,
 }
 
 function _terminal.has_active_job(opts)
-  if _terminal.id then
-    -- first, check if this buffer is valid
-    if not vim.api.nvim_buf_is_valid(_terminal.id) then
-      return false
-    end
-    local main_pid = vim.api.nvim_buf_get_var(_terminal.id, "terminal_job_pid")
-    local child_procs = vim.api.nvim_get_proc_children(main_pid)
-
-    if next(child_procs) then
-      return true
-    else
-      return false
-    end
-  end
-
-  return false
+  return _terminal.is_running
+  -- if _terminal.id then
+  --   -- first, check if this buffer is valid
+  --   if not vim.api.nvim_buf_is_valid(_terminal.id) then
+  --     return false
+  --   end
+  --   local main_pid = vim.api.nvim_buf_get_var(_terminal.id, "terminal_job_pid")
+  --   local child_procs = vim.api.nvim_get_proc_children(main_pid)
+  --
+  --   if next(child_procs) then
+  --     return true
+  --   else
+  --     return false
+  --   end
+  -- end
+  --
+  -- return false
 end
 
 function _terminal.show(opts)
@@ -339,6 +341,7 @@ function _terminal.delete_if_exists(prefix)
 end
 
 function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
+  _terminal.is_running = true
   local prefix = opts.prefix_name -- [CMakeTools]
   local term_name = prefix .. opts.name
   _terminal.delete_if_exists(prefix)
@@ -354,6 +357,7 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
       on_output(nil, data)
     end, -- callback for processing output on stderr
     on_exit = function(t, exit_code, name)
+      _terminal.is_running = false
       on_exit(exit_code)
     end, -- function to run when terminal process exits
   })
