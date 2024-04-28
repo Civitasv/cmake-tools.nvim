@@ -1,6 +1,6 @@
 local osys = require("cmake-tools.osys")
 local log = require("cmake-tools.log")
-local dump = require("helpers").dump
+local dump = require("cmake-tools.utils").dump
 ---@class terminal2 : executor, runner
 local _terminal2 = {
   id = nil, -- id for the unified terminal
