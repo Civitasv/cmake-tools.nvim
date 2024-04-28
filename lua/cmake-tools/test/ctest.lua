@@ -32,35 +32,19 @@ function ctest.list_all_tests(build_dir)
   return tests
 end
 
-function ctest.run(ctest_command, test_name, build_dir, env, config, opt)
+function ctest.run(ctest_command, test_name, build_dir, env, config, opt, on_success)
   local cmd = ctest_command
   opt = opt or {}
 
   local args = { "--test-dir", build_dir, "-R", test_name, opt.args }
   if config.runner.name == "terminal" then
     cmd = terminal.prepare_cmd_for_run(cmd, args, config.cwd, nil, env)
-    utils.run(
-      cmd,
-      config.env_script,
-      {},
-      {},
-      config.cwd,
-      config.runner,
-      nil,
-      const.cmake_notifications
-    )
-  else
-    utils.run(
-      cmd,
-      config.env_script,
-      env,
-      args,
-      config.cwd,
-      config.runner,
-      nil,
-      const.cmake_notifications
-    )
   end
+  utils.run(cmd, config.env_script, env, args, config.cwd, config.runner, function()
+    if type(on_success) == "function" then
+      on_success()
+    end
+  end, const.cmake_notifications)
 end
 
 return ctest

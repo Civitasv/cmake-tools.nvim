@@ -1150,7 +1150,10 @@ function cmake.target_settings(opt)
   end
 end
 
-function cmake.run_test(opt)
+---Run tests, they won't be compiled automatically
+---@param opt {args:string} args-arguments to be appended to ctest command after te default ones
+---@param callback nil|function a function to be executed on success
+function cmake.run_test(opt, callback)
   if utils.has_active_job(config.runner, config.executor) then
     return
   end
@@ -1165,7 +1168,15 @@ function cmake.run_test(opt)
         return
       end
       if idx == 1 then
-        ctest.run(const.ctest_command, "'.*'", config:build_directory_path(), env, config, opt)
+        ctest.run(
+          const.ctest_command,
+          "'.*'",
+          config:build_directory_path(),
+          env,
+          config,
+          opt,
+          callback
+        )
       else
         ctest.run(
           const.ctest_command,
@@ -1173,7 +1184,8 @@ function cmake.run_test(opt)
           config:build_directory_path(),
           env,
           config,
-          opt
+          opt,
+          callback
         )
       end
     end)
