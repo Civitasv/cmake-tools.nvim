@@ -1,6 +1,6 @@
 local osys = require("cmake-tools.osys")
 local log = require("cmake-tools.log")
-
+local dump = require("cmake-tools.utils").dump
 ---@class terminal : executor, runner
 local _terminal = {
   id = nil, -- id for the unified terminal
@@ -526,10 +526,33 @@ function _terminal.prepare_cmd_for_execute(cmd, env, args)
 
   return full_cmd
 end
-
+local get_lock_file_dir = function()
+  return vim.fn.stdpath("data") .. "/cmake-tools-tmp"
+end
+local get_lock_file_path = function()
+  return get_lock_file_dir() .. "/commandRunning.lock"
+end
+local get_lock_file_rm_command = function()
+  return "rm " .. get_lock_file_path()
+end
+local create_tmp_lock_file = function()
+  os.execute("mkdir " .. get_lock_file_dir())
+  local lock_file = io.open(get_lock_file_path(), "w")
+  lock_file:close()
+end
+local file_exists = function(name)
+  local f = io.open(name, "r")
+  if f ~= nil then
+    io.close(f)
+    return true
+  else
+    return false
+  end
+end
+local on_exit_coroutine
 function _terminal.run(cmd, env_script, env, args, cwd, opts)
   local prefix = opts.prefix_name -- [CMakeTools]
-
+  create_tmp_lock_file()
   -- prefix is added to the terminal name because the reposition_term() function needs to find it
   local terminal_already_exists, buffer_idx = _terminal.create_if_not_exists(
     prefix .. opts.name, -- [CMakeTools]Executor Terminal/Runner Terminal
@@ -556,7 +579,7 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts)
   end
 
   -- Send final cmd to terminal
-  _terminal.send_data_to_terminal(buffer_idx, cmd, {
+  _terminal.send_data_to_terminal(buffer_idx, cmd .. ";sleep 5;" .. get_lock_file_rm_command(), {
     win_id = final_win_id,
     prefix = opts.prefix_name,
     split_direction = opts.split_direction,
@@ -565,6 +588,18 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts)
     focus = opts.focus,
     do_not_add_newline = opts.do_not_add_newline,
   })
+  on_exit_coroutine = coroutine.create(function()
+    print("coroutine start")
+    while file_exists(get_lock_file_path()) do
+      vim.defer_fn(function()
+        coroutine.resume(on_exit_coroutine)
+      end, 25)
+      coroutine.yield()
+    end
+    print("coroutine end")
+    -- if type onexit function then on_exit()
+  end)
+  coroutine.resume(on_exit_coroutine)
 end
 
 function _terminal.prepare_launch_path(path)
