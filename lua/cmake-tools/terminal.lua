@@ -530,6 +530,7 @@ function _terminal.prepare_cmd_for_execute(cmd, env, args)
 
   return full_cmd
 end
+
 local get_lock_file_path = function()
   return utils.get_tmp_file_path("commandRunning.lock")
 end
@@ -542,6 +543,8 @@ local create_tmp_lock_file = function()
   utils.create_tmp_file("commandRunning.lock")
 end
 
+---creates command that handles all of our post command stuff for on_exit handling
+---@return string
 local get_command_handling_on_exit = function()
   return "EXITCODE=$?" --remember the exitcode
     .. ";echo $EXITCODE >"
@@ -551,13 +554,15 @@ local get_command_handling_on_exit = function()
     .. ";return $EXITCODE" -- return out command exitcode
 end
 
+---tries to read the number stored in get_last_exit_code_file_path() file
+---@return number|nil
 local get_last_exit_code = function()
   local file = io.open(get_last_exit_code_file_path(), "r")
   if not file then
     print("Could not find last tmp file conaining exit code")
     return nil
   end
-  return file:read("*n")
+  return tonumber(file:read("*n"))
 end
 
 ---
@@ -565,10 +570,10 @@ end
 ---@param env_script any
 ---@param env any
 ---@param args string[]
----@param cwd any
+---@param cwd string
 ---@param opts any
----@param on_exit function|nil function to be called on exit
----@param on_output any !unused here
+---@param on_exit function|nil function to be called on exit the terminal will pass commands exit code as an argument
+---@param on_output any !unused here added for the sake of unification
 function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
   local prefix = opts.prefix_name -- [CMakeTools]
   create_tmp_lock_file()
@@ -675,8 +680,7 @@ function _terminal.__handle_exit(opts, on_exit, close_on_exit)
     _terminal.close(opts)
   end
   if type(on_exit) == "function" then
-    print(get_last_exit_code())
-    on_exit(tonumber(get_last_exit_code())) -- always return success
+    on_exit(get_last_exit_code()) -- always return success
   end
 end
 return _terminal
