@@ -613,7 +613,6 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
     do_not_add_newline = opts.do_not_add_newline,
   })
   on_exit_coroutine = coroutine.create(function()
-    print("coroutine start")
     while utils.file_exists(get_lock_file_path()) do
       vim.defer_fn(function()
         coroutine.resume(on_exit_coroutine)
@@ -621,7 +620,6 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
       coroutine.yield()
     end
     _terminal.__handle_exit(opts, on_exit, opts.close_on_exit)
-    print("coroutine end")
     -- if type onexit function then on_exit()
   end)
   coroutine.resume(on_exit_coroutine)

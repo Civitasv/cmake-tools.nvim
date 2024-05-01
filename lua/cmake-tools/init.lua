@@ -128,7 +128,6 @@ function cmake.generate(opt, callback)
     end
     return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
       if type(callback) == "function" then
-        print("from callback")
         callback()
       end
       cmake.configure_compile_commands()
@@ -435,8 +434,6 @@ function cmake.run(opt)
   if utils.has_active_job(config.runner, config.executor) then
     return
   end
-  print("cmake run")
-  print(require("cmake-tools.utils").dump(opt))
   if opt.target then
     -- explicit target requested. use that instead of the configured one
     return cmake.build({ target = opt.target }, function()
