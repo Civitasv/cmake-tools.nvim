@@ -65,6 +65,7 @@ require("cmake-tools").setup {
         direction = "float", -- 'vertical' | 'horizontal' | 'tab' | 'float'
         close_on_exit = false, -- whether close the terminal when exit
         auto_scroll = true, -- whether auto scroll to the bottom
+        single_terminal_per_instance = false, -- single instance, autocloses the opend one, if present
       },
       overseer = {
         new_task_opts = {
@@ -114,6 +115,7 @@ require("cmake-tools").setup {
         direction = "float", -- 'vertical' | 'horizontal' | 'tab' | 'float'
         close_on_exit = false, -- whether close the terminal when exit
         auto_scroll = true, -- whether auto scroll to the bottom
+        single_terminal_per_instance = false, -- single instance, autocloses the opend one, if present
       },
       overseer = {
         new_task_opts = {
