@@ -18,7 +18,7 @@ function runner.close(opts) end
 ---@param args table arguments to the executable
 ---@param cwd string the directory to run in
 ---@param opts table options for this adapter
----@param on_exit nil|function extra arguments, f.e on_exit is a callback to be called when the process finishes with the error code
+---@param on_exit nil|function extra arguments, f.e on_exit is a callback to be called when the process finishes
 ---@param on_output nil|function extra arguments, f.e on_output is a callback to be called when the process has new output
 ---@return nil
 function runner.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output) end
