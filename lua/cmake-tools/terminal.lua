@@ -1,6 +1,5 @@
 local osys = require("cmake-tools.osys")
 local log = require("cmake-tools.log")
-local dump = require("cmake-tools.utils").dump
 local utils = require("cmake-tools.utils")
 
 ---@class terminal : executor, runner
