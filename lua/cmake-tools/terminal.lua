@@ -550,7 +550,17 @@ local file_exists = function(name)
   end
 end
 local on_exit_coroutine
-function _terminal.run(cmd, env_script, env, args, cwd, opts)
+
+---
+---@param cmd string command that will be run in the terminal
+---@param env_script any
+---@param env any
+---@param args string[]
+---@param cwd any
+---@param opts any
+---@param on_exit function|nil function to be called on exit
+---@param on_output any !unused here
+function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
   local prefix = opts.prefix_name -- [CMakeTools]
   create_tmp_lock_file()
   -- prefix is added to the terminal name because the reposition_term() function needs to find it
@@ -579,7 +589,7 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts)
   end
 
   -- Send final cmd to terminal
-  _terminal.send_data_to_terminal(buffer_idx, cmd .. ";sleep 5;" .. get_lock_file_rm_command(), {
+  _terminal.send_data_to_terminal(buffer_idx, cmd .. ";" .. get_lock_file_rm_command(), {
     win_id = final_win_id,
     prefix = opts.prefix_name,
     split_direction = opts.split_direction,
@@ -596,6 +606,7 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts)
       end, 25)
       coroutine.yield()
     end
+    _terminal.__handle_exit(opts, on_exit, opts.close_on_exit)
     print("coroutine end")
     -- if type onexit function then on_exit()
   end)
@@ -646,5 +657,16 @@ end
 function _terminal.is_installed()
   return true
 end
-
+--- Handle when a terminal process exists
+---@param opts any
+---@param on_exit function|nil function to be executed on exit
+---@param close_on_exit boolean close the terminal on exit
+function _terminal.__handle_exit(opts, on_exit, close_on_exit)
+  if close_on_exit then
+    _terminal.close(opts)
+  end
+  if type(on_exit) == "function" then
+    on_exit(0) -- always return success
+  end
+end
 return _terminal
