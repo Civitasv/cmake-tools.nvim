@@ -1,11 +1,15 @@
 local osys = require("cmake-tools.osys")
 local log = require("cmake-tools.log")
 local dump = require("cmake-tools.utils").dump
+local utils = require("cmake-tools.utils")
+
 ---@class terminal : executor, runner
 local _terminal = {
   id = nil, -- id for the unified terminal
   id_old = nil, -- Old id to keep track of the buffer
 }
+-- this coroutine will be used to check when command exits and runs on_exit function
+local on_exit_coroutine
 
 function _terminal.has_active_job(opts)
   if _terminal.id then
@@ -526,30 +530,35 @@ function _terminal.prepare_cmd_for_execute(cmd, env, args)
 
   return full_cmd
 end
-local get_lock_file_dir = function()
-  return vim.fn.stdpath("data") .. "/cmake-tools-tmp"
-end
 local get_lock_file_path = function()
-  return get_lock_file_dir() .. "/commandRunning.lock"
+  return utils.get_tmp_file_path("commandRunning.lock")
 end
-local get_lock_file_rm_command = function()
-  return "rm " .. get_lock_file_path()
+
+local get_last_exit_code_file_path = function()
+  return utils.get_tmp_file_path("lastCmdExitCode.txt")
 end
+
 local create_tmp_lock_file = function()
-  os.execute("mkdir " .. get_lock_file_dir())
-  local lock_file = io.open(get_lock_file_path(), "w")
-  lock_file:close()
+  utils.create_tmp_file("commandRunning.lock")
 end
-local file_exists = function(name)
-  local f = io.open(name, "r")
-  if f ~= nil then
-    io.close(f)
-    return true
-  else
-    return false
+
+local get_command_handling_on_exit = function()
+  return "EXITCODE=$?" --remember the exitcode
+    .. ";echo $EXITCODE >"
+    .. get_last_exit_code_file_path() -- write exitcode to file
+    .. ";rm "
+    .. get_lock_file_path() -- remove lock file
+    .. ";return $EXITCODE" -- return out command exitcode
+end
+
+local get_last_exit_code = function()
+  local file = io.open(get_last_exit_code_file_path(), "r")
+  if not file then
+    print("Could not find last tmp file conaining exit code")
+    return nil
   end
+  return file:read("*n")
 end
-local on_exit_coroutine
 
 ---
 ---@param cmd string command that will be run in the terminal
@@ -589,7 +598,7 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   end
 
   -- Send final cmd to terminal
-  _terminal.send_data_to_terminal(buffer_idx, cmd .. ";" .. get_lock_file_rm_command(), {
+  _terminal.send_data_to_terminal(buffer_idx, cmd .. ";" .. get_command_handling_on_exit(), {
     win_id = final_win_id,
     prefix = opts.prefix_name,
     split_direction = opts.split_direction,
@@ -600,7 +609,7 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   })
   on_exit_coroutine = coroutine.create(function()
     print("coroutine start")
-    while file_exists(get_lock_file_path()) do
+    while utils.file_exists(get_lock_file_path()) do
       vim.defer_fn(function()
         coroutine.resume(on_exit_coroutine)
       end, 25)
@@ -666,7 +675,8 @@ function _terminal.__handle_exit(opts, on_exit, close_on_exit)
     _terminal.close(opts)
   end
   if type(on_exit) == "function" then
-    on_exit(0) -- always return success
+    print(get_last_exit_code())
+    on_exit(tonumber(get_last_exit_code())) -- always return success
   end
 end
 return _terminal

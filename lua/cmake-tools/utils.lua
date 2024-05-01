@@ -61,6 +61,22 @@ function utils.file_exists(path)
   end
   return true
 end
+function utils.get_tmp_dir()
+  return vim.fn.stdpath("data") .. "/cmake-tools-tmp"
+end
+
+---function returnds path to the tmp_file
+---@param file_name string name of the file
+---@return string
+function utils.get_tmp_file_path(file_name)
+  return utils.get_tmp_dir() .. "/" .. file_name
+end
+
+function utils.create_tmp_file(file_name)
+  utils.mkdir(utils.get_tmp_dir())
+  local tmp_file = io.open(utils.get_tmp_file_path(file_name), "w")
+  tmp_file:close()
+end
 
 function utils.deepcopy(orig, copies)
   copies = copies or {}
