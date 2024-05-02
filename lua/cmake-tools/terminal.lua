@@ -530,6 +530,24 @@ function _terminal.prepare_cmd_for_execute(cmd, env, args)
   return full_cmd
 end
 
+local get_tmp_dir = function()
+  return vim.fn.stdpath("data") .. "/cmake-tools-tmp"
+end
+
+---@param file_name string name of the file
+---@return string
+local get_tmp_file_path = function(file_name)
+  return get_tmp_dir() .. "/" .. file_name
+end
+
+---@param file_name string
+local create_tmp_file = function(file_name)
+  utils.mkdir(utils.get_tmp_dir())
+  local tmp_file = io.open(utils.get_tmp_file_path(file_name), "w")
+  tmp_file:close()
+end
+
+---@return string
 local get_lock_file_path = function()
   return utils.get_tmp_file_path("commandRunning.lock")
 end
