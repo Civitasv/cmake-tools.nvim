@@ -1,11 +1,14 @@
 local osys = require("cmake-tools.osys")
 local log = require("cmake-tools.log")
+local utils = require("cmake-tools.utils")
 
 ---@class terminal : executor, runner
 local _terminal = {
   id = nil, -- id for the unified terminal
   id_old = nil, -- Old id to keep track of the buffer
 }
+-- this coroutine will be used to check when command exits and runs on_exit function
+local on_exit_coroutine
 
 function _terminal.has_active_job(opts)
   if _terminal.id then
@@ -527,9 +530,71 @@ function _terminal.prepare_cmd_for_execute(cmd, env, args)
   return full_cmd
 end
 
-function _terminal.run(cmd, env_script, env, args, cwd, opts)
-  local prefix = opts.prefix_name -- [CMakeTools]
+local get_tmp_dir = function()
+  return vim.fn.stdpath("data") .. "/cmake-tools-tmp"
+end
 
+---@param file_name string name of the file
+---@return string
+local get_tmp_file_path = function(file_name)
+  return get_tmp_dir() .. "/" .. file_name
+end
+
+---@param file_name string
+local create_tmp_file = function(file_name)
+  utils.mkdir(utils.get_tmp_dir())
+  local tmp_file = io.open(utils.get_tmp_file_path(file_name), "w")
+  tmp_file:close()
+end
+
+---@return string
+local get_lock_file_path = function()
+  return get_tmp_file_path("command_running.lock")
+end
+
+---@return string
+local get_last_exit_code_file_path = function()
+  return get_tmp_file_path("last_cmd_exit_code")
+end
+
+local create_lock_file = function()
+  create_tmp_file("command_running.lock")
+end
+
+---creates command that handles all of our post command stuff for on_exit handling
+---@return string
+local get_command_handling_on_exit = function()
+  return "EXITCODE=$?" --remember the exitcode
+    .. ";echo $EXITCODE >"
+    .. get_last_exit_code_file_path() -- write exitcode to file
+    .. ";rm "
+    .. get_lock_file_path() -- remove lock file
+    .. ";return $EXITCODE" -- return command exitcode
+end
+
+---tries to read the number stored in get_last_exit_code_file_path() file
+---@return number|nil
+local get_last_exit_code = function()
+  local file = io.open(get_last_exit_code_file_path(), "r")
+  if not file then
+    print("Could not find last tmp file conaining exit code")
+    return nil
+  end
+  return tonumber(file:read("*n"))
+end
+
+---
+---@param cmd string command that will be run in the terminal
+---@param env_script any
+---@param env any
+---@param args string[]
+---@param cwd string
+---@param opts any
+---@param on_exit function|nil function to be called on exit the terminal will pass commands exit code as an argument
+---@param on_output any !unused here added for the sake of unification
+function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
+  local prefix = opts.prefix_name -- [CMakeTools]
+  create_lock_file()
   -- prefix is added to the terminal name because the reposition_term() function needs to find it
   local terminal_already_exists, buffer_idx = _terminal.create_if_not_exists(
     prefix .. opts.name, -- [CMakeTools]Executor Terminal/Runner Terminal
@@ -556,7 +621,7 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts)
   end
 
   -- Send final cmd to terminal
-  _terminal.send_data_to_terminal(buffer_idx, cmd, {
+  _terminal.send_data_to_terminal(buffer_idx, cmd .. ";" .. get_command_handling_on_exit(), {
     win_id = final_win_id,
     prefix = opts.prefix_name,
     split_direction = opts.split_direction,
@@ -565,6 +630,17 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts)
     focus = opts.focus,
     do_not_add_newline = opts.do_not_add_newline,
   })
+  on_exit_coroutine = coroutine.create(function()
+    while utils.file_exists(get_lock_file_path()) do
+      vim.defer_fn(function()
+        coroutine.resume(on_exit_coroutine)
+      end, 25)
+      coroutine.yield()
+    end
+    _terminal.handle_exit(opts, on_exit, opts.close_on_exit)
+    -- if type onexit function then on_exit()
+  end)
+  coroutine.resume(on_exit_coroutine)
 end
 
 function _terminal.prepare_launch_path(path)
@@ -611,5 +687,16 @@ end
 function _terminal.is_installed()
   return true
 end
-
+--- Handle when a terminal process exists
+---@param opts any
+---@param on_exit function|nil function to be executed on exit
+---@param close_on_exit boolean close the terminal on exit
+function _terminal.handle_exit(opts, on_exit, close_on_exit)
+  if close_on_exit then
+    _terminal.close(opts)
+  end
+  if type(on_exit) == "function" then
+    on_exit(get_last_exit_code()) -- always return success
+  end
+end
 return _terminal

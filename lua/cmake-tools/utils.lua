@@ -215,7 +215,7 @@ end
 ---@param args table arguments to the executable
 ---@param cwd string the directory to run in
 ---@param executor executor_conf the executor or runner
----@param on_success nil|function extra arguments, f.e on_success is a callback to be called when the process finishes
+---@param on_success nil|function extra arguments, f.e on_success is a callback to be called when the process exits with a 0 exit code
 ---@return nil
 function utils.execute(cmd, env_script, env, args, cwd, executor, on_success, cmake_notifications)
   -- save all
@@ -252,7 +252,7 @@ function utils.execute(cmd, env_script, env, args, cwd, executor, on_success, cm
         { icon = icon, replace = notification.notification.id, timeout = 3000 }
       )
       notification.notification = {} -- reset and stop update_spinner
-      if code == 0 and on_success then
+      if code == 0 and type(on_success) == "function" then
         on_success()
       end
     end, notify_update_line)
