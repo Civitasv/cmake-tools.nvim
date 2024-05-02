@@ -24,7 +24,7 @@ end
 
 function _toggleterm.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
   _toggleterm.cmd = cmd .. " " .. table.concat(args, " ")
-  if opts.single_terminal_per_instance and _toggleterm.term then
+  if opts.singleton and _toggleterm.term then
     _toggleterm.term:close()
   end
   _toggleterm.term = _terminal.Terminal:new({
