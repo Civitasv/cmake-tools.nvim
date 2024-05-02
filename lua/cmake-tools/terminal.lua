@@ -542,9 +542,11 @@ end
 
 ---@param file_name string
 local create_tmp_file = function(file_name)
-  utils.mkdir(utils.get_tmp_dir())
-  local tmp_file = io.open(utils.get_tmp_file_path(file_name), "w")
-  tmp_file:close()
+  utils.mkdir(get_tmp_dir())
+  local tmp_file = io.open(get_tmp_file_path(file_name), "w")
+  if tmp_file then
+    tmp_file:close()
+  end
 end
 
 ---@return string
