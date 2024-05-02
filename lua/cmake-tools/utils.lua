@@ -62,7 +62,6 @@ function utils.file_exists(path)
   return true
 end
 
-
 function utils.deepcopy(orig, copies)
   copies = copies or {}
   local orig_type = type(orig)
