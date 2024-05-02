@@ -569,7 +569,7 @@ local get_command_handling_on_exit = function()
     .. get_last_exit_code_file_path() -- write exitcode to file
     .. ";rm "
     .. get_lock_file_path() -- remove lock file
-    .. ";return $EXITCODE" -- return out command exitcode
+    .. ";return $EXITCODE" -- return command exitcode
 end
 
 ---tries to read the number stored in get_last_exit_code_file_path() file
@@ -594,7 +594,7 @@ end
 ---@param on_output any !unused here added for the sake of unification
 function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
   local prefix = opts.prefix_name -- [CMakeTools]
-  create_tmp_lock_file()
+  create_lock_file()
   -- prefix is added to the terminal name because the reposition_term() function needs to find it
   local terminal_already_exists, buffer_idx = _terminal.create_if_not_exists(
     prefix .. opts.name, -- [CMakeTools]Executor Terminal/Runner Terminal
@@ -637,7 +637,7 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
       end, 25)
       coroutine.yield()
     end
-    _terminal.__handle_exit(opts, on_exit, opts.close_on_exit)
+    _terminal.handle_exit(opts, on_exit, opts.close_on_exit)
     -- if type onexit function then on_exit()
   end)
   coroutine.resume(on_exit_coroutine)
@@ -691,7 +691,7 @@ end
 ---@param opts any
 ---@param on_exit function|nil function to be executed on exit
 ---@param close_on_exit boolean close the terminal on exit
-function _terminal.__handle_exit(opts, on_exit, close_on_exit)
+function _terminal.handle_exit(opts, on_exit, close_on_exit)
   if close_on_exit then
     _terminal.close(opts)
   end
