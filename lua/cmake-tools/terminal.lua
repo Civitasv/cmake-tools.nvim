@@ -549,15 +549,16 @@ end
 
 ---@return string
 local get_lock_file_path = function()
-  return utils.get_tmp_file_path("commandRunning.lock")
+  return get_tmp_file_path("command_running.lock")
 end
 
+---@return string
 local get_last_exit_code_file_path = function()
-  return utils.get_tmp_file_path("lastCmdExitCode.txt")
+  return get_tmp_file_path("last_cmd_exit_code")
 end
 
-local create_tmp_lock_file = function()
-  utils.create_tmp_file("commandRunning.lock")
+local create_lock_file = function()
+  create_tmp_file("command_running.lock")
 end
 
 ---creates command that handles all of our post command stuff for on_exit handling
