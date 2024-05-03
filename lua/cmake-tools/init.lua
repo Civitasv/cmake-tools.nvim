@@ -1095,6 +1095,14 @@ function cmake.get_launch_targets()
   return config:launch_targets()
 end
 
+function cmake.get_generate_options()
+  return config:generate_options()
+end
+
+function cmake.get_build_options()
+  return config:build_options()
+end
+
 --[[ end ]]
 
 function cmake.configure_compile_commands()
