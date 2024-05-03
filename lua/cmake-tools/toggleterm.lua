@@ -92,10 +92,12 @@ function _toggleterm.has_active_job(opts)
 end
 
 function _toggleterm.stop(opts)
-  vim.fn.jobstop(_toggleterm.chan_id)
-  _toggleterm.chan_id = nil
-  _toggleterm.cmd = nil
-  _toggleterm.term:close()
+  if _toggleterm.chan_id then
+    vim.fn.jobstop(_toggleterm.chan_id)
+    _toggleterm.chan_id = nil
+    _toggleterm.cmd = nil
+    _toggleterm.term:close()
+  end
 end
 
 ---Check if the executor is installed and can be used

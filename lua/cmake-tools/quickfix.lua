@@ -101,6 +101,9 @@ end
 ---@param opts quickfix_opts_type options for this adapter
 ---@return nil
 function _quickfix.stop(opts)
+  if not _quickfix.job or _quickfix.job.is_shutdown then
+    return
+  end
   _quickfix.job:shutdown(1, 9)
 
   for _, pid in ipairs(vim.api.nvim_get_proc_children(_quickfix.job.pid)) do

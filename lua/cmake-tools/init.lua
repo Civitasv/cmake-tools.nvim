@@ -305,18 +305,10 @@ function cmake.quick_build(opt, callback)
 end
 
 function cmake.stop_executor()
-  if not utils.has_active_job(config.runner, config.executor) then
-    return
-  end
-
   utils.stop_executor(config.executor)
 end
 
 function cmake.stop_runner()
-  if not utils.has_active_job(config.runner, config.executor) then
-    return
-  end
-
   utils.stop_runner(config.runner)
 end
 

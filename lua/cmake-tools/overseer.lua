@@ -60,7 +60,9 @@ function _overseer.has_active_job(opts)
 end
 
 function _overseer.stop(opts)
-  _overseer.job:stop()
+  if _overseer.job ~= nil and _overseer.job:is_running() then
+    _overseer.job:stop()
+  end
 end
 
 ---Check if the executor is installed and can be used
