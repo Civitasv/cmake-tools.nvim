@@ -1246,7 +1246,7 @@ function cmake.create_regenerate_on_save_autocmd()
       "cmake-presets.json",
       "cmake-user-presets.json",
     }) do
-      table.insert(pattern, config.cwd .. "/" .. item)
+      table.insert(pattern, vim.fs.joinpath(vim.fs.normalize(config.cwd), item))
     end
   else
     for _, item in ipairs({
@@ -1257,7 +1257,7 @@ function cmake.create_regenerate_on_save_autocmd()
       "CMakeKits.json",
       "cmake-kits.json",
     }) do
-      table.insert(pattern, config.cwd .. "/" .. item)
+      table.insert(pattern, vim.fs.joinpath(vim.fs.normalize(config.cwd), item))
     end
   end
 
