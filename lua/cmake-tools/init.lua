@@ -7,7 +7,6 @@ local variants = require("cmake-tools.variants")
 local kits = require("cmake-tools.kits")
 local presets = require("cmake-tools.presets")
 local log = require("cmake-tools.log")
-local terminal = require("cmake-tools.terminal")
 local hints = require("cmake-tools.hints")
 local _session = require("cmake-tools.session")
 local window = require("cmake-tools.window")
@@ -34,13 +33,6 @@ function cmake.setup(values)
     const.cmake_runner.default_opts[const.cmake_runner.name],
     const.cmake_runner.opts or {}
   )
-
-  if const.cmake_executor.name == "terminal" then
-    const.cmake_notifications.executor.enabled = false
-  end
-  if const.cmake_runner.name == "terminal" then
-    const.cmake_notifications.runner.enabled = false
-  end
 
   config = Config:new(const)
 
@@ -121,9 +113,6 @@ function cmake.generate(opt, callback)
 
     local env = environment.get_build_environment(config, config.executor.name == "terminal")
     local cmd = const.cmake_command
-    if config.executor.name == "terminal" then
-      cmd = terminal.prepare_cmd_for_execute(const.cmake_command, env, args)
-    end
     return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
       if type(callback) == "function" then
         callback()
@@ -185,9 +174,6 @@ function cmake.generate(opt, callback)
 
   local env = environment.get_build_environment(config, config.executor.name == "terminal")
   local cmd = const.cmake_command
-  if config.executor.name == "terminal" then
-    cmd = terminal.prepare_cmd_for_execute(const.cmake_command, env, args)
-  end
   env = vim.tbl_extend("keep", env, kit_option.env)
   return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
     if type(callback) == "function" then
@@ -213,9 +199,6 @@ function cmake.clean(callback)
 
   local env = environment.get_build_environment(config, config.executor.name == "terminal")
   local cmd = const.cmake_command
-  if config.executor.name == "terminal" then
-    cmd = terminal.prepare_cmd_for_execute(const.cmake_command, env, args)
-  end
   return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
     if type(callback) == "function" then
       callback()
@@ -281,9 +264,6 @@ function cmake.build(opt, callback)
 
   local env = environment.get_build_environment(config, config.executor.name == "terminal")
   local cmd = const.cmake_command
-  if config.executor.name == "terminal" then
-    cmd = terminal.prepare_cmd_for_execute(const.cmake_command, env, args)
-  end
   return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
     if type(callback) == "function" then
       callback()
@@ -325,7 +305,6 @@ end
 
 function cmake.stop_executor()
   if not utils.has_active_job(config.runner, config.executor) then
-    log.error("CMake Tools isn't running")
     return
   end
 
@@ -334,7 +313,6 @@ end
 
 function cmake.stop_runner()
   if not utils.has_active_job(config.runner, config.executor) then
-    log.error("CMake Tools isn't running")
     return
   end
 
@@ -444,9 +422,6 @@ function cmake.run(opt)
         environment.get_run_environment(config, opt.target, config.runner.name == "terminal")
       local _args = opt.args and opt.args or config.target_settings[opt.target].args
       local cmd = target_path
-      if config.runner.name == "terminal" then
-        cmd = terminal.prepare_cmd_for_run(target_path, _args, launch_path, opt.wrap_call, env)
-      end
       utils.run(
         cmd,
         config.env_script,
@@ -462,15 +437,10 @@ function cmake.run(opt)
     local result = config:get_launch_target()
     local result_code = result.code
     if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
-      if config.executor.name == "terminal" then
-        log.error("You need to firstly invoke CMakeGenerate.")
-        return
-      else
-        -- Configure it
-        return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) }, function()
-          cmake.run(opt)
-        end)
-      end
+      -- Configure it
+      return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) }, function()
+        cmake.run(opt)
+      end)
     elseif
       result_code == Types.NOT_SELECT_LAUNCH_TARGET
       or result_code == Types.NOT_A_LAUNCH_TARGET
@@ -496,15 +466,6 @@ function cmake.run(opt)
             config.runner.name == "terminal"
           )
           local cmd = target_path
-          if config.runner.name == "terminal" then
-            cmd = terminal.prepare_cmd_for_run(
-              target_path,
-              cmake:get_launch_args(),
-              launch_path,
-              opt.wrap_call,
-              env
-            )
-          end
           utils.run(
             cmd,
             config.env_script,
@@ -519,9 +480,6 @@ function cmake.run(opt)
       )
     end
   end
-end
-
-if config.has_telescope then
 end
 
 function cmake.quick_run(opt)
@@ -548,12 +506,12 @@ function cmake.quick_run(opt)
         if not idx then
           return
         end
-        cmake.run({ target = targets[idx], wrap_call = opt.wrap_call })
+        cmake.run({ target = targets[idx] })
       end)
     )
   else
     local target = table.remove(opt.fargs, 1)
-    cmake.run({ target = target, args = opt.fargs, wrap_call = opt.wrap_call })
+    cmake.run({ target = target, args = opt.fargs })
   end
 end
 
@@ -777,12 +735,7 @@ function cmake.select_build_target(callback, regenerate)
   if targets_res.code ~= Types.SUCCESS then
     -- try again
     if not regenerate then
-      if config.executor.name == "terminal" then
-        log.error("You need to firstly invoke CMakeGenerate.")
-        return
-      else
-        return
-      end
+      return
     else
       return cmake.generate({ bang = true, fargs = {} }, function()
         cmake.select_build_target(callback, false)
@@ -831,12 +784,7 @@ function cmake.select_launch_target(callback, regenerate)
   if targets_res.code ~= Types.SUCCESS then
     -- try again
     if not regenerate then
-      if config.executor.name == "terminal" then
-        log.error("You need to firstly invoke CMakeGenerate.")
-        return
-      else
-        return
-      end
+      return
     else
       return cmake.generate({ bang = true, fargs = {} }, function()
         cmake.select_launch_target(callback, false)
@@ -1364,12 +1312,14 @@ function cmake.register_autocmd()
           local targets = {}
           local file = ev.file
           local all_targets = config:build_targets_with_sources()
-          for _, target in ipairs(all_targets.data["sources"]) do
-            if target.path == file then
-              table.insert(targets, { name = target.name, type = target.type })
+          if all_targets and all_targets.data and all_targets.data["sources"] then
+            for _, target in ipairs(all_targets.data["sources"]) do
+              if target.path == file then
+                table.insert(targets, { name = target.name, type = target.type })
+              end
             end
+            hints.show(ev.buf, targets)
           end
-          hints.show(ev.buf, targets)
         end,
       })
     end
@@ -1384,7 +1334,9 @@ end
 
 function cmake.register_scratch_buffer(executor, runner)
   if cmake.is_cmake_project() then
-    scratch.create(executor, runner)
+    vim.schedule(function()
+      scratch.create(executor, runner)
+    end)
   end
 end
 
@@ -1443,15 +1395,10 @@ function cmake.register_dap_function()
         if
           result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE
         then
-          if config.executor.name == "terminal" then
-            log.error("You need to firstly invoke CMakeGenerate.")
-            return
-          else
-            -- Configure it
-            return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) }, function()
-              cmake.debug(opt, callback)
-            end)
-          end
+          -- Configure it
+          return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) }, function()
+            cmake.debug(opt, callback)
+          end)
         elseif
           result_code == Types.NOT_SELECT_LAUNCH_TARGET
           or result_code == Types.NOT_A_LAUNCH_TARGET

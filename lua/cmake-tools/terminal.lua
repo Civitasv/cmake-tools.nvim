@@ -470,12 +470,11 @@ function _terminal.get_buffers_with_prefix(prefix)
   return filtered_buffers
 end
 
-function _terminal.prepare_cmd_for_run(executable, args, launch_path, wrap_call, env)
+function _terminal.prepare_cmd_for_run(cmd, env, args, cwd)
   local full_cmd = ""
-  -- executable = vim.fn.fnamemodify(executable, ":t")
 
   -- Launch form executable's build directory by default
-  full_cmd = 'cd "' .. launch_path .. '" &&'
+  full_cmd = 'cd "' .. cwd .. '" &&'
 
   if osys.iswin32 then
     for _, v in ipairs(env) do
@@ -485,46 +484,19 @@ function _terminal.prepare_cmd_for_run(executable, args, launch_path, wrap_call,
     full_cmd = full_cmd .. " " .. table.concat(env, " ")
   end
 
-  -- prepend wrap_call args
-  if wrap_call then
-    for _, arg in ipairs(wrap_call) do
-      full_cmd = full_cmd .. " " .. arg
-    end
-  end
-
-  full_cmd = full_cmd .. " "
+  full_cmd = full_cmd .. " " .. cmd
 
   if osys.islinux or osys.iswsl or osys.ismac then
     full_cmd = " " .. full_cmd -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
   end
 
-  full_cmd = full_cmd .. '"' .. executable .. '"'
-
   -- Add args to the cmd
-  if args then
-    for _, arg in ipairs(args) do
-      full_cmd = full_cmd .. " " .. arg
-    end
+  for _, arg in ipairs(args) do
+    full_cmd = full_cmd .. " " .. arg
   end
 
   if osys.iswin32 then -- wrap in sub process to prevent env vars from being persited
     full_cmd = 'cmd /C "' .. full_cmd .. '"'
-  end
-
-  return full_cmd
-end
-
-function _terminal.prepare_cmd_for_execute(cmd, env, args)
-  local full_cmd = ""
-  if next(env) then
-    full_cmd = full_cmd .. cmd .. " -E " .. " env " .. table.concat(env, " ") .. " " .. cmd
-  else
-    full_cmd = full_cmd .. cmd
-  end
-
-  -- Add args to the cmd
-  for _, arg in ipairs(args) do
-    full_cmd = full_cmd .. " " .. arg
   end
 
   return full_cmd
@@ -595,6 +567,8 @@ end
 ---@param on_exit function|nil function to be called on exit the terminal will pass commands exit code as an argument
 ---@param on_output any !unused here added for the sake of unification
 function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
+  local full_cmd = _terminal.prepare_cmd_for_run(cmd, env, args, cwd)
+
   local prefix = opts.prefix_name -- [CMakeTools]
   create_lock_file()
   -- prefix is added to the terminal name because the reposition_term() function needs to find it
@@ -623,7 +597,7 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   end
 
   -- Send final cmd to terminal
-  _terminal.send_data_to_terminal(buffer_idx, cmd .. ";" .. get_command_handling_on_exit(), {
+  _terminal.send_data_to_terminal(buffer_idx, full_cmd .. ";" .. get_command_handling_on_exit(), {
     win_id = final_win_id,
     prefix = opts.prefix_name,
     split_direction = opts.split_direction,
@@ -689,6 +663,7 @@ end
 function _terminal.is_installed()
   return true
 end
+
 --- Handle when a terminal process exists
 ---@param opts any
 ---@param on_exit function|nil function to be executed on exit
@@ -701,4 +676,5 @@ function _terminal.handle_exit(opts, on_exit, close_on_exit)
     on_exit(get_last_exit_code()) -- always return success
   end
 end
+
 return _terminal

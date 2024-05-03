@@ -43,6 +43,8 @@ function _toggleterm.run(cmd, env_script, env, args, cwd, opts, on_exit, on_outp
     end, -- callback for processing output on stderr
     on_exit = function(t, job, exit_code, name)
       on_exit(exit_code)
+      _toggleterm.chan_id = nil
+      _toggleterm.cmd = nil
     end, -- function to run when terminal process exits
   })
   _toggleterm.term:toggle()
