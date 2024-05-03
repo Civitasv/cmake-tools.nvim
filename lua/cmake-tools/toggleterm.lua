@@ -46,7 +46,7 @@ function _toggleterm.run(cmd, env_script, env, args, cwd, opts, on_exit, on_outp
     end, -- function to run when terminal process exits
   })
   _toggleterm.term:toggle()
-  _toggleterm.chan_id = _toggleterm.term.chan_id
+  _toggleterm.chan_id = _toggleterm.term.job_id
 end
 
 function _toggleterm.has_active_job(opts)
