@@ -20,7 +20,7 @@ jobs:
         uses: JohnnyMorganz/stylua-action@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          version: latest # NOTE: we recommend pinning to a specific version in case of formatting changes
+          version: v0.17.1 # NOTE: we recommend pinning to a specific version in case of formatting changes
           args: --check -f ./stylua.toml .
   tests:
     runs-on: ubuntu-latest
