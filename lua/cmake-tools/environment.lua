@@ -59,7 +59,8 @@ function environment.get_build_environment_table(config)
 end
 
 function environment.get_build_environment(config, escape)
-  return unroll(environment.get_build_environment_table(config), escape)
+  local env = environment.get_build_environment_table(config)
+  return env
 end
 
 -- parse and merge configured environment variables
@@ -88,7 +89,7 @@ function environment.get_run_environment_table(config, target)
 end
 
 function environment.get_run_environment(config, target, escape)
-  return unroll(environment.get_run_environment_table(config, target), escape)
+  return environment.get_run_environment_table(config, target)
 end
 
 return environment

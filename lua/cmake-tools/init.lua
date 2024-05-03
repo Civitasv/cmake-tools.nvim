@@ -163,7 +163,7 @@ function cmake.generate(opt, callback)
 
   local args = {
     "-B",
-    config:build_directory_path(),
+    utils.transform_path(config:build_directory_path()),
     "-S",
     ".",
   }
@@ -195,7 +195,8 @@ function cmake.clean(callback)
     return log.error(result.message)
   end
 
-  local args = { "--build", config:build_directory_path(), "--target", "clean" }
+  local args =
+    { "--build", utils.transform_path(config:build_directory_path()), "--target", "clean" }
 
   local env = environment.get_build_environment(config, config.executor.name == "terminal")
   local cmd = const.cmake_command
@@ -246,7 +247,7 @@ function cmake.build(opt, callback)
   if presets_file and config.build_preset then
     args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
   else
-    args = { "--build", config:build_directory_path() }
+    args = { "--build", utils.transform_path(config:build_directory_path()) }
   end
 
   vim.list_extend(args, config:build_options())

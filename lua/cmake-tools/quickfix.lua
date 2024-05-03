@@ -44,26 +44,13 @@ function _quickfix.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
 
   -- NOTE: Unused env_script for quickfix.run() as plenary does not yet support running scripts
 
-  local job_args = {}
-
-  if next(env) then
-    table.insert(job_args, "-E")
-    table.insert(job_args, "env")
-    for _, v in ipairs(env) do
-      table.insert(job_args, v)
-    end
-    table.insert(job_args, "cmake")
-    for _, v in ipairs(args) do
-      table.insert(job_args, v)
-    end
-  else
-    job_args = args
-  end
+  env = vim.tbl_deep_extend("keep", env, vim.fn.environ())
 
   _quickfix.job = Job:new({
     command = cmd,
-    args = job_args,
+    args = args,
     cwd = cwd,
+    env = env,
     on_stdout = vim.schedule_wrap(function(err, data)
       append_to_quickfix(opts.encoding, err, data)
       on_output(data, err)

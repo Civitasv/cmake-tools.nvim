@@ -91,6 +91,14 @@ function utils.softlink(src, target)
   end
 end
 
+function utils.transform_path(path)
+  if path[1] ~= '"' and string.find(path, " ") then
+    return '"' .. path .. '"'
+  else
+    return path
+  end
+end
+
 --- Get the appropriate executor by name
 ---@param name string
 ---@return executor
@@ -150,7 +158,7 @@ local notify_update_line = function(out, err)
   end
   local line = err and err or out
   if line ~= nil then
-    if line ~= nil and line:match("^%[%s*(%d+)%s*%%%]") then -- only show lines containing build progress e.g [ 12%]
+    if line and vim.fn.match(line, "^%[%s*(%d+)%s*%%%]") then -- only show lines containing build progress e.g [ 12%]
       notification.notification.id = notification.notify( -- notify with percentage and message
         line,
         err and "warn" or notification.notification.level,
@@ -185,7 +193,8 @@ function utils.run(cmd, env_script, env, args, cwd, runner, on_success, cmake_no
     notification.update_spinner()
   end
 
-  local _mes = { "[RUN]:", cmd, table.concat(args, " ") }
+  local _mes =
+    { "[RUN]:", cmd, table.concat(args, " "), "<ENV>", table.concat(env, " "), "{CWD}", cwd }
   scratch.append(table.concat(_mes, " "))
 
   utils.get_runner(runner.name).run(cmd, env_script, env, args, cwd, runner.opts, function(code)
@@ -233,7 +242,8 @@ function utils.execute(cmd, env_script, env, args, cwd, executor, on_success, cm
     notification.update_spinner()
   end
 
-  local _mes = { "[EXECUTE]:", cmd, table.concat(args, " ") }
+  local _mes =
+    { "[EXECUTE]:", cmd, table.concat(args, " "), "<ENV>", table.concat(env, " "), "{CWD}", cwd }
   scratch.append(table.concat(_mes, " "))
 
   utils

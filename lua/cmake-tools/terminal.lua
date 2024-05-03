@@ -474,17 +474,19 @@ function _terminal.prepare_cmd_for_run(cmd, env, args, cwd)
   local full_cmd = ""
 
   -- Launch form executable's build directory by default
-  full_cmd = 'cd "' .. cwd .. '" &&'
+  full_cmd = "cd " .. utils.transform_path(cwd) .. " &&"
 
   if osys.iswin32 then
-    for _, v in ipairs(env) do
-      full_cmd = full_cmd .. " set " .. v .. " &&"
+    for k, v in pairs(env) do
+      full_cmd = full_cmd .. " set " .. k .. "=" .. v .. "&&"
     end
   else
-    full_cmd = full_cmd .. " " .. table.concat(env, " ")
+    for k, v in pairs(env) do
+      full_cmd = full_cmd .. " " .. k .. "=" .. v .. ""
+    end
   end
 
-  full_cmd = full_cmd .. " " .. cmd
+  full_cmd = full_cmd .. " " .. utils.transform_path(cmd)
 
   if osys.islinux or osys.iswsl or osys.ismac then
     full_cmd = " " .. full_cmd -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
