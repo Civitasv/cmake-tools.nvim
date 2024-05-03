@@ -1,6 +1,4 @@
 -- cmake-tools's API
-local has_nvim_dap, dap = pcall(require, "dap")
-local has_telescope, telescope = pcall(require, "telescope")
 local utils = require("cmake-tools.utils")
 local Types = require("cmake-tools.types")
 local const = require("cmake-tools.const")
@@ -25,9 +23,6 @@ local cmake = {}
 
 --- Setup cmake-tools
 function cmake.setup(values)
-  if has_telescope then
-    telescope.load_extension("cmake_tools")
-  end
   const = vim.tbl_deep_extend("force", const, values)
   const.cmake_executor.opts = vim.tbl_deep_extend(
     "force",
@@ -62,6 +57,8 @@ function cmake.setup(values)
     log.error(is_runner_installed)
   end
 
+  cmake.register_telescope_function()
+  cmake.register_dap_function()
   cmake.register_autocmd()
   cmake.register_autocmd_provided_by_users()
   cmake.register_scratch_buffer(config.executor.name, config.runner.name)
@@ -524,45 +521,7 @@ function cmake.run(opt)
   end
 end
 
-if has_telescope then
-  function cmake.show_target_files(opt)
-    -- if no target was supplied, query via ui select
-    if opt.fargs[1] == nil then
-      if utils.has_active_job(config.runner, config.executor) then
-        return
-      end
-
-      if not (config:has_build_directory()) then
-        -- configure it
-        return cmake.generate({ bang = false, fargs = {} }, function()
-          cmake.show(opt)
-        end)
-      end
-
-      local targets_res = config:build_targets()
-      local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
-
-      for idx, v in ipairs(targets) do
-        if v == "all" then -- this default target does not exist in the code model
-          table.remove(targets, idx)
-          table.remove(display_targets, idx)
-        end
-      end
-
-      vim.ui.select(
-        display_targets,
-        { prompt = "Select target to run" },
-        vim.schedule_wrap(function(_, idx)
-          if not idx then
-            return
-          end
-          file_picker.show_target_files(targets[idx])
-        end)
-      )
-    else
-      file_picker.show_target_files(opt.fargs[1])
-    end
-  end
+if config.has_telescope then
 end
 
 function cmake.quick_run(opt)
@@ -610,135 +569,6 @@ function cmake.launch_args(opt)
     end
 
     config.target_settings[cmake.get_launch_target()].args = utils.deepcopy(opt.fargs)
-  end
-end
-
-if has_nvim_dap then
-  -- Debug execuable targets
-  function cmake.debug(opt, callback)
-    if utils.has_active_job(config.runner, config.executor) then
-      return
-    end
-
-    local env = environment.get_run_environment_table(
-      config,
-      opt.target and opt.target or config.launch_target
-    )
-
-    -- nvim.dap expects all env vars as string
-    for index, value in pairs(env) do
-      env[index] = tostring(value)
-    end
-
-    if next(env) == nil then -- dap complains on empty list (env = {})
-      env = nil
-    end
-
-    local can_debug_result = config:validate_for_debugging()
-    if can_debug_result.code == Types.CANNOT_DEBUG_LAUNCH_TARGET then
-      -- Select build type to debug
-      log.info("Reselect build type to ensure it contains debug information!")
-      return cmake.select_build_type(function()
-        cmake.debug(opt, callback)
-      end)
-    end
-
-    if opt.target then
-      -- explicit target requested. use that instead of the configured one
-      return cmake.build({ target = opt.target }, function()
-        local model = config:get_code_model_info()[opt.target]
-        local result = config:get_launch_target_from_info(model)
-        local dap_config = {
-          name = opt.target,
-          program = result.data,
-          cwd = cmake.get_launch_path(opt.target),
-          args = opt.args and opt.args or config.target_settings[opt.target].args,
-          env = env,
-        }
-        -- close cmake console
-        cmake.close_executor()
-        dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
-      end)
-    else
-      local result = config:get_launch_target()
-      local result_code = result.code
-
-      if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
-        if config.executor.name == "terminal" then
-          log.error("You need to firstly invoke CMakeGenerate.")
-          return
-        else
-          -- Configure it
-          return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) }, function()
-            cmake.debug(opt, callback)
-          end)
-        end
-      elseif
-        result_code == Types.NOT_SELECT_LAUNCH_TARGET
-        or result_code == Types.NOT_A_LAUNCH_TARGET
-        or result_code == Types.NOT_EXECUTABLE
-      then
-        -- Re Select a target that could launch
-        return cmake.select_launch_target(function()
-          cmake.debug(opt, callback)
-        end),
-          true
-      else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
-        -- Build select launch target every time
-        return cmake.build(
-          { target = config.launch_target, fargs = utils.deepcopy(opt.fargs) },
-          function()
-            result = config:get_launch_target()
-            local target_path = result.data
-            local dap_config = {
-              name = config.launch_target,
-              program = target_path,
-              cwd = cmake.get_launch_path(cmake.get_launch_target()),
-              args = cmake:get_launch_args(),
-              env = env,
-            }
-            -- close cmake console
-            cmake.close_executor()
-            dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
-          end
-        )
-      end
-    end
-  end
-
-  if has_nvim_dap then
-    function cmake.quick_debug(opt, callback)
-      -- if no target was supplied, query via ui select
-      if opt.fargs[1] == nil then
-        if utils.has_active_job(config.runner, config.executor) then
-          return
-        end
-
-        if not (config:has_build_directory()) then
-          -- configure it
-          return cmake.generate({ bang = false, fargs = {} }, function()
-            cmake.quick_debug(opt, callback)
-          end)
-        end
-
-        local targets_res = config:launch_targets()
-        local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
-
-        vim.ui.select(
-          display_targets,
-          { prompt = "Select target to debug" },
-          vim.schedule_wrap(function(_, idx)
-            if not idx then
-              return
-            end
-            cmake.debug({ target = targets[idx] }, callback)
-          end)
-        )
-      else
-        local target = table.remove(opt.fargs, 1)
-        cmake.debug({ target = target, args = opt.fargs }, callback)
-      end
-    end
   end
 end
 
@@ -1211,35 +1041,6 @@ function cmake.run_current_file(opt)
   end
 end
 
-if has_nvim_dap then
-  function cmake.debug_current_file(opt)
-    local targets = {}
-    local display_targets = {}
-    local file = vim.fn.expand("%:p")
-    local all_targets = config:launch_targets_with_sources()
-    for _, target in ipairs(all_targets.data["sources"]) do
-      if target.path == file then
-        table.insert(targets, target.name)
-        table.insert(display_targets, target.display_name)
-      end
-    end
-    if #targets == 1 then
-      return cmake.debug({ target = targets[1], args = opt.fargs })
-    else
-      vim.ui.select(
-        display_targets,
-        { prompt = "Select launch target" },
-        vim.schedule_wrap(function(_, idx)
-          if not idx then
-            return
-          end
-          return cmake.debug({ target = targets[idx], args = opt.fargs })
-        end)
-      )
-    end
-  end
-end
-
 function cmake.build_current_file(opt)
   local targets = {}
   local display_targets = {}
@@ -1584,6 +1385,251 @@ end
 function cmake.register_scratch_buffer(executor, runner)
   if cmake.is_cmake_project() then
     scratch.create(executor, runner)
+  end
+end
+
+function cmake.register_dap_function()
+  local has_nvim_dap, dap = pcall(require, "dap")
+  if has_nvim_dap then
+    -- Debug execuable targets
+    function cmake.debug(opt, callback)
+      if utils.has_active_job(config.runner, config.executor) then
+        return
+      end
+
+      local env = environment.get_run_environment_table(
+        config,
+        opt.target and opt.target or config.launch_target
+      )
+
+      -- nvim.dap expects all env vars as string
+      for index, value in pairs(env) do
+        env[index] = tostring(value)
+      end
+
+      if next(env) == nil then -- dap complains on empty list (env = {})
+        env = nil
+      end
+
+      local can_debug_result = config:validate_for_debugging()
+      if can_debug_result.code == Types.CANNOT_DEBUG_LAUNCH_TARGET then
+        -- Select build type to debug
+        log.info("Reselect build type to ensure it contains debug information!")
+        return cmake.select_build_type(function()
+          cmake.debug(opt, callback)
+        end)
+      end
+
+      if opt.target then
+        -- explicit target requested. use that instead of the configured one
+        return cmake.build({ target = opt.target }, function()
+          local model = config:get_code_model_info()[opt.target]
+          local result = config:get_launch_target_from_info(model)
+          local dap_config = {
+            name = opt.target,
+            program = result.data,
+            cwd = cmake.get_launch_path(opt.target),
+            args = opt.args and opt.args or config.target_settings[opt.target].args,
+            env = env,
+          }
+          -- close cmake console
+          cmake.close_executor()
+          dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
+        end)
+      else
+        local result = config:get_launch_target()
+        local result_code = result.code
+
+        if
+          result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE
+        then
+          if config.executor.name == "terminal" then
+            log.error("You need to firstly invoke CMakeGenerate.")
+            return
+          else
+            -- Configure it
+            return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) }, function()
+              cmake.debug(opt, callback)
+            end)
+          end
+        elseif
+          result_code == Types.NOT_SELECT_LAUNCH_TARGET
+          or result_code == Types.NOT_A_LAUNCH_TARGET
+          or result_code == Types.NOT_EXECUTABLE
+        then
+          -- Re Select a target that could launch
+          return cmake.select_launch_target(function()
+            cmake.debug(opt, callback)
+          end),
+            true
+        else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT then
+          -- Build select launch target every time
+          return cmake.build(
+            { target = config.launch_target, fargs = utils.deepcopy(opt.fargs) },
+            function()
+              result = config:get_launch_target()
+              local target_path = result.data
+              local dap_config = {
+                name = config.launch_target,
+                program = target_path,
+                cwd = cmake.get_launch_path(cmake.get_launch_target()),
+                args = cmake:get_launch_args(),
+                env = env,
+              }
+              -- close cmake console
+              cmake.close_executor()
+              dap.run(vim.tbl_extend("force", dap_config, const.cmake_dap_configuration))
+            end
+          )
+        end
+      end
+    end
+
+    function cmake.quick_debug(opt, callback)
+      -- if no target was supplied, query via ui select
+      if opt.fargs[1] == nil then
+        if utils.has_active_job(config.runner, config.executor) then
+          return
+        end
+
+        if not (config:has_build_directory()) then
+          -- configure it
+          return cmake.generate({ bang = false, fargs = {} }, function()
+            cmake.quick_debug(opt, callback)
+          end)
+        end
+
+        local targets_res = config:launch_targets()
+        local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
+
+        vim.ui.select(
+          display_targets,
+          { prompt = "Select target to debug" },
+          vim.schedule_wrap(function(_, idx)
+            if not idx then
+              return
+            end
+            cmake.debug({ target = targets[idx] }, callback)
+          end)
+        )
+      else
+        local target = table.remove(opt.fargs, 1)
+        cmake.debug({ target = target, args = opt.fargs }, callback)
+      end
+    end
+
+    function cmake.debug_current_file(opt)
+      local targets = {}
+      local display_targets = {}
+      local file = vim.fn.expand("%:p")
+      local all_targets = config:launch_targets_with_sources()
+      for _, target in ipairs(all_targets.data["sources"]) do
+        if target.path == file then
+          table.insert(targets, target.name)
+          table.insert(display_targets, target.display_name)
+        end
+      end
+      if #targets == 1 then
+        return cmake.debug({ target = targets[1], args = opt.fargs })
+      else
+        vim.ui.select(
+          display_targets,
+          { prompt = "Select launch target" },
+          vim.schedule_wrap(function(_, idx)
+            if not idx then
+              return
+            end
+            return cmake.debug({ target = targets[idx], args = opt.fargs })
+          end)
+        )
+      end
+    end
+
+    --- CMake debug
+    vim.api.nvim_create_user_command(
+      "CMakeDebug", -- name
+      cmake.debug, -- command
+      { -- opts
+        nargs = "*",
+        desc = "CMake debug",
+      }
+    )
+
+    --- CMake quick debug
+    vim.api.nvim_create_user_command(
+      "CMakeQuickDebug", -- name
+      cmake.quick_debug, -- command
+      { -- opts
+        nargs = "*",
+        desc = "CMake quick debug",
+      }
+    )
+
+    --- CMake debug current file
+    vim.api.nvim_create_user_command(
+      "CMakeDebugCurrentFile", -- name
+      cmake.debug_current_file, -- command
+      { -- opts
+        nargs = "*",
+        desc = "CMake debug current file",
+      }
+    )
+  end
+end
+
+function cmake.register_telescope_function()
+  local has_telescope, telescope = pcall(require, "telescope")
+  if has_telescope then
+    telescope.load_extension("cmake_tools")
+
+    function cmake.show_target_files(opt)
+      -- if no target was supplied, query via ui select
+      if opt.fargs[1] == nil then
+        if utils.has_active_job(config.runner, config.executor) then
+          return
+        end
+
+        if not (config:has_build_directory()) then
+          -- configure it
+          return cmake.generate({ bang = false, fargs = {} }, function()
+            cmake.show(opt)
+          end)
+        end
+
+        local targets_res = config:build_targets()
+        local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
+
+        for idx, v in ipairs(targets) do
+          if v == "all" then -- this default target does not exist in the code model
+            table.remove(targets, idx)
+            table.remove(display_targets, idx)
+          end
+        end
+
+        vim.ui.select(
+          display_targets,
+          { prompt = "Select target to inspect" },
+          vim.schedule_wrap(function(_, idx)
+            if not idx then
+              return
+            end
+            file_picker.show_target_files(targets[idx])
+          end)
+        )
+      else
+        file_picker.show_target_files(opt.fargs[1])
+      end
+    end
+
+    --- CMake show files
+    vim.api.nvim_create_user_command(
+      "CMakeShowTargetFiles", -- name
+      cmake.show_target_files, -- command
+      { -- opts
+        nargs = "*",
+        desc = "CMake show cmake model files or target",
+      }
+    )
   end
 end
 

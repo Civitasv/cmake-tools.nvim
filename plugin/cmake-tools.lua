@@ -2,8 +2,6 @@
 -- This plugin is intended to support cmake integration in neovim.
 
 local cmake_tools = require("cmake-tools")
-local has_nvim_dap, _ = pcall(require, "dap")
-local has_telescope, _ = pcall(require, "telescope")
 
 ---------------- Commands ------------------
 
@@ -160,38 +158,6 @@ vim.api.nvim_create_user_command(
   }
 )
 
-if has_nvim_dap then
-  --- CMake debug
-  vim.api.nvim_create_user_command(
-    "CMakeDebug", -- name
-    cmake_tools.debug, -- command
-    { -- opts
-      nargs = "*",
-      desc = "CMake debug",
-    }
-  )
-
-  --- CMake quick debug
-  vim.api.nvim_create_user_command(
-    "CMakeQuickDebug", -- name
-    cmake_tools.quick_debug, -- command
-    { -- opts
-      nargs = "*",
-      desc = "CMake quick debug",
-    }
-  )
-
-  --- CMake debug current file
-  vim.api.nvim_create_user_command(
-    "CMakeDebugCurrentFile", -- name
-    cmake_tools.debug_current_file, -- command
-    { -- opts
-      nargs = "*",
-      desc = "CMake debug current file",
-    }
-  )
-end
-
 --- CMake select build type
 vim.api.nvim_create_user_command(
   "CMakeSelectBuildType", -- name
@@ -270,18 +236,6 @@ vim.api.nvim_create_user_command(
     desc = "configure base settings",
   }
 )
-
-if has_telescope then
-  --- CMake show files
-  vim.api.nvim_create_user_command(
-    "CMakeShowTargetFiles", -- name
-    cmake_tools.show_target_files, -- command
-    { -- opts
-      nargs = "*",
-      desc = "CMake show cmake model files or target",
-    }
-  )
-end
 
 --- CMake select cwd (source dir)
 vim.api.nvim_create_user_command(
