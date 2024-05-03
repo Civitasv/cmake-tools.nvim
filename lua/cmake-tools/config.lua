@@ -337,6 +337,7 @@ end
 
 local function get_targets(config, opt)
   local targets, display_targets, paths, abs_paths = {}, {}, {}, {}
+  local sources = {}
   if opt.has_all then
     table.insert(targets, "all")
     table.insert(display_targets, "all")
@@ -375,14 +376,30 @@ local function get_targets(config, opt)
           table.insert(abs_paths, abs_path)
         end
       end
+      if opt.query_sources then -- get all source files related to this target
+        for _, source in ipairs(target_info["sources"]) do
+          local source_abs_path = config.cwd .. "/" .. source["path"]
+          table.insert(sources, { path = source_abs_path, type = type, name = target_name })
+        end
+      end
     end
   end
 
-  return Result:new(
-    Types.SUCCESS,
-    { targets = targets, display_targets = display_targets, paths = paths, abs_paths = abs_paths },
-    "Success!"
-  )
+  if opt.query_sources then
+    return Result:new(Types.SUCCESS, {
+      targets = targets,
+      display_targets = display_targets,
+      paths = paths,
+      abs_paths = abs_paths,
+      sources = sources,
+    }, "Success!")
+  else
+    return Result:new(
+      Types.SUCCESS,
+      { targets = targets, display_targets = display_targets, paths = paths, abs_paths = abs_paths },
+      "Success!"
+    )
+  end
 end
 
 function Config:get_code_model_info()
@@ -408,6 +425,14 @@ end
 
 function Config:build_targets()
   return get_targets(self, { has_all = true, only_executable = false })
+end
+
+function Config:launch_targets_with_sources()
+  return get_targets(self, { has_all = false, only_executable = true, query_sources = true })
+end
+
+function Config:build_targets_with_sources()
+  return get_targets(self, { has_all = false, only_executable = false, query_sources = true })
 end
 
 return Config

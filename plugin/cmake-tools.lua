@@ -130,6 +130,26 @@ vim.api.nvim_create_user_command(
   }
 )
 
+--- CMake run current file
+vim.api.nvim_create_user_command(
+  "CMakeRunCurrentFile", -- name
+  cmake_tools.run_current_file, -- command
+  { -- opts
+    nargs = "*",
+    desc = "CMake run current file",
+  }
+)
+
+--- CMake build current file
+vim.api.nvim_create_user_command(
+  "CMakeBuildCurrentFile", -- name
+  cmake_tools.build_current_file, -- command
+  { -- opts
+    nargs = "*",
+    desc = "CMake build current file",
+  }
+)
+
 --- CMake launch args
 vim.api.nvim_create_user_command(
   "CMakeLaunchArgs", -- name

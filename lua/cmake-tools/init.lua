@@ -10,6 +10,7 @@ local kits = require("cmake-tools.kits")
 local presets = require("cmake-tools.presets")
 local log = require("cmake-tools.log")
 local terminal = require("cmake-tools.terminal")
+local hints = require("cmake-tools.hints")
 local _session = require("cmake-tools.session")
 local window = require("cmake-tools.window")
 local environment = require("cmake-tools.environment")
@@ -1177,6 +1178,38 @@ function cmake.run_test(opt)
   )
 end
 
+function cmake.run_current_file(opt)
+  local name
+  local file = vim.fn.expand("%:p")
+  local all_targets = config:launch_targets_with_sources()
+  for _, target in ipairs(all_targets.data["sources"]) do
+    if target.path == file then
+      name = target.name
+      break
+    end
+  end
+  if name == nil then
+    return log.error("Current file is not belong to any executable.")
+  end
+  return cmake.run({ target = name, args = opt.fargs })
+end
+
+function cmake.build_current_file(opt)
+  local name
+  local file = vim.fn.expand("%:p")
+  local all_targets = config:build_targets_with_sources()
+  for _, target in ipairs(all_targets.data["sources"]) do
+    if target.path == file then
+      name = target.name
+      break
+    end
+  end
+  if name == nil then
+    return log.error("Current file is not belong to any library.")
+  end
+  return cmake.build({ target = name, args = opt.fargs })
+end
+
 --[[ Getters ]]
 function cmake.get_config()
   return config
@@ -1460,6 +1493,25 @@ function cmake.register_autocmd()
       callback = function()
         _session.save(config)
         vim.api.nvim_del_augroup_by_id(group)
+      end,
+    })
+
+    vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+      group = group,
+      callback = function(ev)
+        local name, type
+        local file = ev.file
+        local all_targets = config:build_targets_with_sources()
+        for _, target in ipairs(all_targets.data["sources"]) do
+          if target.path == file then
+            name = target.name
+            type = target.type
+            break
+          end
+        end
+        if name and type and config.build_type then
+          hints.show(ev.buf, 0, type, name)
+        end
       end,
     })
   end
