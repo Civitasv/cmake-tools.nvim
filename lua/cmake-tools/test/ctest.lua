@@ -37,7 +37,6 @@ function ctest.run(ctest_command, test_name, build_dir, env, config, opt)
   opt = opt or {}
 
   local args = { "--test-dir", build_dir, "-R", test_name, opt.args }
-  print(config.cwd)
   if config.runner.name == "terminal" then
     cmd = terminal.prepare_cmd_for_run(cmd, env, args, config.cwd)
     utils.run(
