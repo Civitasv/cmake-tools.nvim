@@ -706,36 +706,38 @@ if has_nvim_dap then
     end
   end
 
-  function cmake.quick_debug(opt, callback)
-    -- if no target was supplied, query via ui select
-    if opt.fargs[1] == nil then
-      if utils.has_active_job(config.runner, config.executor) then
-        return
+  if has_nvim_dap then
+    function cmake.quick_debug(opt, callback)
+      -- if no target was supplied, query via ui select
+      if opt.fargs[1] == nil then
+        if utils.has_active_job(config.runner, config.executor) then
+          return
+        end
+
+        if not (config:has_build_directory()) then
+          -- configure it
+          return cmake.generate({ bang = false, fargs = {} }, function()
+            cmake.quick_debug(opt, callback)
+          end)
+        end
+
+        local targets_res = config:launch_targets()
+        local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
+
+        vim.ui.select(
+          display_targets,
+          { prompt = "Select target to debug" },
+          vim.schedule_wrap(function(_, idx)
+            if not idx then
+              return
+            end
+            cmake.debug({ target = targets[idx] }, callback)
+          end)
+        )
+      else
+        local target = table.remove(opt.fargs, 1)
+        cmake.debug({ target = target, args = opt.fargs }, callback)
       end
-
-      if not (config:has_build_directory()) then
-        -- configure it
-        return cmake.generate({ bang = false, fargs = {} }, function()
-          cmake.quick_debug(opt, callback)
-        end)
-      end
-
-      local targets_res = config:launch_targets()
-      local targets, display_targets = targets_res.data.targets, targets_res.data.display_targets
-
-      vim.ui.select(
-        display_targets,
-        { prompt = "Select target to debug" },
-        vim.schedule_wrap(function(_, idx)
-          if not idx then
-            return
-          end
-          cmake.debug({ target = targets[idx] }, callback)
-        end)
-      )
-    else
-      local target = table.remove(opt.fargs, 1)
-      cmake.debug({ target = target, args = opt.fargs }, callback)
     end
   end
 end
@@ -1179,35 +1181,93 @@ function cmake.run_test(opt)
 end
 
 function cmake.run_current_file(opt)
-  local name
+  local targets = {}
+  local display_targets = {}
   local file = vim.fn.expand("%:p")
   local all_targets = config:launch_targets_with_sources()
-  for _, target in ipairs(all_targets.data["sources"]) do
+  for i, target in ipairs(all_targets.data["sources"]) do
     if target.path == file then
-      name = target.name
-      break
+      table.insert(targets, target.name)
+      table.insert(display_targets, target.display_name)
     end
   end
-  if name == nil then
+  if #targets == 0 then
     return log.error("Current file is not belong to any executable.")
   end
-  return cmake.run({ target = name, args = opt.fargs })
+
+  if #targets == 1 then
+    return cmake.run({ target = targets[1], args = opt.fargs })
+  else
+    vim.ui.select(
+      display_targets,
+      { prompt = "Select launch target" },
+      vim.schedule_wrap(function(_, idx)
+        if not idx then
+          return
+        end
+        return cmake.run({ target = targets[idx], args = opt.fargs })
+      end)
+    )
+  end
+end
+
+if has_nvim_dap then
+  function cmake.debug_current_file(opt)
+    local targets = {}
+    local display_targets = {}
+    local file = vim.fn.expand("%:p")
+    local all_targets = config:launch_targets_with_sources()
+    for _, target in ipairs(all_targets.data["sources"]) do
+      if target.path == file then
+        table.insert(targets, target.name)
+        table.insert(display_targets, target.display_name)
+      end
+    end
+    if #targets == 1 then
+      return cmake.debug({ target = targets[1], args = opt.fargs })
+    else
+      vim.ui.select(
+        display_targets,
+        { prompt = "Select launch target" },
+        vim.schedule_wrap(function(_, idx)
+          if not idx then
+            return
+          end
+          return cmake.debug({ target = targets[idx], args = opt.fargs })
+        end)
+      )
+    end
+  end
 end
 
 function cmake.build_current_file(opt)
-  local name
+  local targets = {}
+  local display_targets = {}
   local file = vim.fn.expand("%:p")
   local all_targets = config:build_targets_with_sources()
   for _, target in ipairs(all_targets.data["sources"]) do
     if target.path == file then
-      name = target.name
-      break
+      table.insert(targets, target.name)
+      table.insert(display_targets, target.display_name)
     end
   end
-  if name == nil then
+  if #targets == 0 then
     return log.error("Current file is not belong to any library.")
   end
-  return cmake.build({ target = name, args = opt.fargs })
+  if #targets == 1 then
+    return cmake.build({ target = targets[1], args = opt.fargs })
+  else
+    vim.ui.select(
+      display_targets,
+      { prompt = "Select build target" },
+      vim.schedule_wrap(function(_, idx)
+        if not idx then
+          return
+        end
+        return cmake.build({ target = targets[idx], args = opt.fargs })
+      end)
+    )
+  end
 end
 
 --[[ Getters ]]
@@ -1496,24 +1556,22 @@ function cmake.register_autocmd()
       end,
     })
 
-    vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
-      group = group,
-      callback = function(ev)
-        local name, type
-        local file = ev.file
-        local all_targets = config:build_targets_with_sources()
-        for _, target in ipairs(all_targets.data["sources"]) do
-          if target.path == file then
-            name = target.name
-            type = target.type
-            break
+    if const.cmake_virtual_text_support then
+      vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+        group = group,
+        callback = function(ev)
+          local targets = {}
+          local file = ev.file
+          local all_targets = config:build_targets_with_sources()
+          for _, target in ipairs(all_targets.data["sources"]) do
+            if target.path == file then
+              table.insert(targets, { name = target.name, type = target.type })
+            end
           end
-        end
-        if name and type and config.build_type then
-          hints.show(ev.buf, 0, type, name)
-        end
-      end,
-    })
+          hints.show(ev.buf, targets)
+        end,
+      })
+    end
   end
 end
 

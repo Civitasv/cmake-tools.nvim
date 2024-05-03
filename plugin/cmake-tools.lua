@@ -180,6 +180,16 @@ if has_nvim_dap then
       desc = "CMake quick debug",
     }
   )
+
+  --- CMake debug current file
+  vim.api.nvim_create_user_command(
+    "CMakeDebugCurrentFile", -- name
+    cmake_tools.debug_current_file, -- command
+    { -- opts
+      nargs = "*",
+      desc = "CMake debug current file",
+    }
+  )
 end
 
 --- CMake select build type

@@ -379,7 +379,10 @@ local function get_targets(config, opt)
       if opt.query_sources then -- get all source files related to this target
         for _, source in ipairs(target_info["sources"]) do
           local source_abs_path = config.cwd .. "/" .. source["path"]
-          table.insert(sources, { path = source_abs_path, type = type, name = target_name })
+          table.insert(
+            sources,
+            { path = source_abs_path, type = type, name = target_name, display_name = display_name }
+          )
         end
       end
     end
