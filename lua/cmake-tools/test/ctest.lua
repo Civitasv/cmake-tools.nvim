@@ -36,31 +36,17 @@ function ctest.run(ctest_command, test_name, build_dir, env, config, opt)
   local cmd = ctest_command
   opt = opt or {}
 
-  local args = { "--test-dir", build_dir, "-R", test_name, opt.args }
-  if config.runner.name == "terminal" then
-    cmd = terminal.prepare_cmd_for_run(cmd, args, config.cwd, nil, env)
-    utils.run(
-      cmd,
-      config.env_script,
-      {},
-      {},
-      config.cwd,
-      config.runner,
-      nil,
-      const.cmake_notifications
-    )
-  else
-    utils.run(
-      cmd,
-      config.env_script,
-      env,
-      args,
-      config.cwd,
-      config.runner,
-      nil,
-      const.cmake_notifications
-    )
-  end
+  local args = { "--test-dir", utils.transform_path(build_dir), "-R", test_name, opt.args }
+  utils.run(
+    cmd,
+    config.env_script,
+    env,
+    args,
+    config.cwd,
+    config.runner,
+    nil,
+    const.cmake_notifications
+  )
 end
 
 return ctest
