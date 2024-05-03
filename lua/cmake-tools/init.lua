@@ -1280,16 +1280,6 @@ function cmake.register_autocmd()
 
     cmake.create_regenerate_on_save_autocmd()
 
-    -- We have a command to escape insert mode after proccess extis
-    -- because, we want to scroll the buffer output after completion of execution
-    termclose_id = vim.api.nvim_create_autocmd("TermClose", {
-      group = group,
-      callback = function()
-        vim.cmd.stopinsert()
-        vim.api.nvim_feedkeys("<C-\\><C-n><CR>", "n", false)
-      end,
-    })
-
     vim_leave_pre_id = vim.api.nvim_create_autocmd("VimLeavePre", {
       group = group,
       callback = function()
