@@ -927,7 +927,10 @@ function cmake.run_test(opt)
   end
   local env = environment.get_build_environment(config, config.executor.name == "terminal")
   local all_tests = ctest.list_all_tests(config:build_directory_path())
-  all_tests = { "run all", table.unpack(all_tests) }
+  if #all_tests == 0 then
+    return
+  end
+  table.insert(all_tests, 1, "all")
   vim.ui.select(
     all_tests,
     { prompt = "select test to run" },
