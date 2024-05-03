@@ -210,7 +210,7 @@ function _terminal.send_data_to_terminal(buffer_idx, cmd, opts)
       buf = buffer_idx,
     })
     if type == "terminal" then
-      vim.cmd("execute feedkeys('G', 't')")
+      vim.cmd("normal! G")
     end
   end)
 
@@ -525,27 +525,25 @@ end
 
 ---@return string
 local get_lock_file_path = function()
-  return get_tmp_file_path("command_running.lock")
+  return get_tmp_file_path(".lock")
 end
 
 ---@return string
 local get_last_exit_code_file_path = function()
-  return get_tmp_file_path("last_cmd_exit_code")
+  return get_tmp_file_path("exit_code")
 end
 
 local create_lock_file = function()
-  create_tmp_file("command_running.lock")
+  create_tmp_file(".lock")
 end
 
 ---creates command that handles all of our post command stuff for on_exit handling
 ---@return string
 local get_command_handling_on_exit = function()
-  return "EXITCODE=$?" --remember the exitcode
-    .. ";echo $EXITCODE >"
+  return "echo $? > "
     .. get_last_exit_code_file_path() -- write exitcode to file
-    .. ";rm "
+    .. " && rm "
     .. get_lock_file_path() -- remove lock file
-    .. ";return $EXITCODE" -- return command exitcode
 end
 
 ---tries to read the number stored in get_last_exit_code_file_path() file
@@ -599,7 +597,7 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   end
 
   -- Send final cmd to terminal
-  _terminal.send_data_to_terminal(buffer_idx, full_cmd .. ";" .. get_command_handling_on_exit(), {
+  _terminal.send_data_to_terminal(buffer_idx, full_cmd .. " && " .. get_command_handling_on_exit(), {
     win_id = final_win_id,
     prefix = opts.prefix_name,
     split_direction = opts.split_direction,
