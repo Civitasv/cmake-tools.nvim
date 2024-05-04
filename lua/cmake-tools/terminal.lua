@@ -597,7 +597,7 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   end
 
   -- Send final cmd to terminal
-  _terminal.send_data_to_terminal(buffer_idx, full_cmd .. " && " .. get_command_handling_on_exit(), {
+  _terminal.send_data_to_terminal(buffer_idx, full_cmd .. " ; " .. get_command_handling_on_exit(), {
     win_id = final_win_id,
     prefix = opts.prefix_name,
     split_direction = opts.split_direction,
