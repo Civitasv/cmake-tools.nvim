@@ -266,3 +266,12 @@ vim.api.nvim_create_user_command(
     desc = "CMake run test",
   }
 )
+--- CMake run tests
+vim.api.nvim_create_user_command(
+  "CMakeQuickStart", -- name
+  require("cmake-tools.quickstart").quick_start, -- command
+  { -- opts
+    nargs = "*",
+    desc = "CMake run quickstart",
+  }
+)
