@@ -114,5 +114,8 @@ local const = {
   },
   cmake_virtual_text_support = true, -- Show the target related to current file using virtual text (at right corner)
 }
-
+local osys = require("cmake-tools.osys")
+if osys.iswin32 then
+  const.cmake_build_directory = "out\\${variant:buildType}"
+end
 return const
