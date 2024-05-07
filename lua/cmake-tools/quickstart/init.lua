@@ -19,9 +19,7 @@ end
 
 local base_path = string.sub(debug.getinfo(1).source, 2, string.len("/init.lua") * -1)
 -- local base_path = debug.getinfo(2, "S").source:sub(2)
-print(dump(base_path))
 local generate_cmakelists_file = function()
-  print(dump(locals))
   local file_name = base_path
     .. "templates/"
     .. locals.type
@@ -71,7 +69,6 @@ local generate_main_file = function()
 end
 
 local choose_language_type = function()
-  print(dump(locals))
   vim.ui.select(
     languages_list,
     { prompt = "Select language" },
@@ -87,7 +84,6 @@ local choose_language_type = function()
 end
 
 local choose_template_type = function()
-  print(dump(locals))
   vim.ui.select(
     types_list,
     { prompt = "Select project type" },
