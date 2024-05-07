@@ -34,7 +34,11 @@ local generate_cmakelists_file = function()
     return
   end
   local template = etlua.compile(file:read("*a"))
-  local file = io.open(vim.loop.cwd() .. "/CMakeLists.txt", "w")
+  local main_file_path = vim.loop.cmd() .. "/CMakeLists.txt"
+  file = io.open(main_file_path, "w")
+  if not file then
+    error("could not create the file: " .. main_file_path)
+  end
   file:write(template(locals))
   file:close()
 end
@@ -56,8 +60,12 @@ local generate_main_file = function()
   if locals.type == "lib" then
     main_file_name = locals.project_name -- TODO: maybe needs to deal with spaces
   end
-  main_file_name = main_file_name .. "." .. locals.language
-  local file = io.open(vim.loop.cwd() .. main_file_name, "w")
+  local main_file_path = vim.loop.cwd() .. main_file_name .. "." .. locals.language
+
+  file = io.open(main_file_path, "w")
+  if not file then
+    error("could not create the file: " .. main_file_path)
+  end
   file:write(template(locals))
   file:close()
 end
@@ -106,4 +114,5 @@ local quick_start = function(opt)
   )
 end
 -- TODO: should add guards for overwriting cmakeproject
+-- TODO: possible handling of windows paths
 return { quick_start = quick_start }
