@@ -2,7 +2,7 @@ local cmake = require("cmake-tools")
 local etlua = require("cmake-tools.quickstart.etlua")
 local dump = require("cmake-tools.utils").dump
 local locals = {
-  project_version = "0.0.1",
+  project_version = "0.0.1", -- TODO: removie version?
   project_name = "project",
   type = "exec",
   language = "cpp",
@@ -98,7 +98,9 @@ local choose_template_type = function()
   )
 end
 
-local quick_start = function(opt)
+---comment
+---@param _ any params passed from calling command from vim user command
+local quick_start = function(_) -- TODO: maybe pass project name
   if cmake.is_cmake_project() then
     print("Project already contains CMakeLists.txt")
     return
