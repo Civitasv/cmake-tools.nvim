@@ -1,22 +1,98 @@
 local etlua = require("cmake-tools.quickstart.etlua")
+local dump = require("cmake-tools.utils").dump
 local locals = {
-  project_name = "",
+  project_version = "0.0.1",
+  project_name = "project",
   type = "exec",
+  language = "cpp",
 }
-local get_template_type = function()
-  local types = { "exec", "lib" }
+local types = { executable = "exec", library = "lib" }
+local types_list = {}
+local languages = { Cpp = "cpp", C = "c" }
+local languages_list = {}
+for k, _ in pairs(types) do
+  table.insert(types_list, k)
+end
+for k, _ in pairs(languages) do
+  table.insert(languages_list, k)
+end
+
+local base_path = string.sub(debug.getinfo(1).source, 2, string.len("/init.lua") * -1)
+-- local base_path = debug.getinfo(2, "S").source:sub(2)
+print(dump(base_path))
+local generate_cmakelists_file = function()
+  print(dump(locals))
+  local file_name = base_path
+    .. "templates/"
+    .. locals.type
+    .. "/"
+    .. locals.language
+    .. "/CMakeLists.txt.etlua"
+  local file = io.open(file_name, "r")
+  if not file then
+    error("could not find file: " .. file_name) -- TODO: notification here?
+    return
+  end
+  local template = etlua.compile(file:read("*a"))
+  local file = io.open(vim.loop.cwd() .. "/CMakeLists.txt", "w")
+  file:write(template(locals))
+  file:close()
+end
+
+local generate_main_file = function()
+  local file_name = base_path
+    .. "templates/"
+    .. locals.type
+    .. "/"
+    .. locals.language
+    .. "/main.etlua"
+  local file = io.open(file_name, "r")
+  if not file then
+    error("could not find file: " .. file_name) -- TODO: notification here?
+    return
+  end
+  local template = etlua.compile(file:read("*a"))
+  local main_file_name = "main"
+  if locals.type == "lib" then
+    main_file_name = locals.project_name -- TODO: maybe needs to deal with spaces
+  end
+  main_file_name = main_file_name .. "." .. locals.language
+  local file = io.open(vim.loop.cwd() .. main_file_name, "w")
+  file:write(template(locals))
+  file:close()
+end
+
+local choose_language_type = function()
+  print(dump(locals))
   vim.ui.select(
-    types,
-    { prompt = "select test to run" },
+    languages_list,
+    { prompt = "Select language" },
     vim.schedule_wrap(function(_, idx)
       if not idx then
         return
       end
-      locals.type = types[idx]
-      print(locals)
+      locals["language"] = languages[languages_list[idx]]
+      generate_cmakelists_file()
+      generate_main_file()
     end)
   )
 end
+
+local choose_template_type = function()
+  print(dump(locals))
+  vim.ui.select(
+    types_list,
+    { prompt = "Select project type" },
+    vim.schedule_wrap(function(_, idx)
+      if not idx then
+        return
+      end
+      locals.type = types[types_list[idx]]
+      choose_language_type()
+    end)
+  )
+end
+
 local quick_start = function(opt)
   vim.ui.input(
     { prompt = "Enter the name of the project" },
@@ -25,18 +101,9 @@ local quick_start = function(opt)
         return
       end
       locals.project_name = input
-      get_template_type()
+      choose_template_type()
     end)
   )
 end
-
-local generate = function()
-  local file = io.open("templates/exec/cxx/CMakeLists.txt.etlua", "r")
-  local template = etlua.compile(file:read("*a"))
-  file:close()
-  print(template({
-    project_name = "leafo",
-    project_version = "0.1.0",
-  }))
-end
+-- TODO: should add guards for overwriting cmakeproject
 return { quick_start = quick_start }
