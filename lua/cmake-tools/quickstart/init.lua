@@ -1,3 +1,4 @@
+local cmake = require("cmake-tools")
 local etlua = require("cmake-tools.quickstart.etlua")
 local dump = require("cmake-tools.utils").dump
 local locals = {
@@ -98,6 +99,10 @@ local choose_template_type = function()
 end
 
 local quick_start = function(opt)
+  if cmake.is_cmake_project() then
+    print("Project already contains CMakeLists.txt")
+    return
+  end
   vim.ui.input(
     { prompt = "Enter the name of the project" },
     vim.schedule_wrap(function(input)
