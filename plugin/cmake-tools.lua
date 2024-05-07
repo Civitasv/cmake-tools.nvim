@@ -271,7 +271,7 @@ vim.api.nvim_create_user_command(
   "CMakeQuickStart", -- name
   require("cmake-tools.quickstart").quick_start, -- command
   { -- opts
-    nargs = "0",
+    nargs = 0,
     desc = "CMake run quickstart",
   }
 )
