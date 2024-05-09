@@ -116,6 +116,5 @@ local quick_start = function(_) -- TODO: maybe pass project name
     end)
   )
 end
--- TODO: should add guards for overwriting cmakeproject
 -- TODO: possible handling of windows paths
 return { quick_start = quick_start }
