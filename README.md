@@ -39,7 +39,7 @@ require("cmake-tools").setup {
       return "out\\${variant:buildType}"
     end
     return "out/${variant:buildType}"
-  end, -- this is used to specify generate directory for cmake, allows macro expansion, can be a string or a function returning the string, relative to vim.loop.cwd().
+  end, -- this is used to specify generate directory for cmake, allows macro expansion, can be a string or a function returning the string, relative to cwd.
   cmake_soft_link_compile_commands = true, -- this will automatically make a soft link from compile commands file to project root dir
   cmake_compile_commands_from_lsp = false, -- this will automatically set compile commands file location using lsp, to use it, please set `cmake_soft_link_compile_commands` to false
   cmake_kits_path = nil, -- this is used to specify global cmake kits path, see CMakeKits for detailed usage
