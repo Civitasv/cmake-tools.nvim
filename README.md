@@ -24,6 +24,7 @@ The goal of this plugin is to offer a comprehensive, convenient, and powerful wo
 ## :balloon: Configuration
 
 ```lua
+local osys = require("cmake-tools.osys")
 require("cmake-tools").setup {
   cmake_command = "cmake", -- this is used to specify cmake command path
   ctest_command = "ctest", -- this is used to specify ctest command path
