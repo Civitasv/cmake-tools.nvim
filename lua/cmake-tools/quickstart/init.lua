@@ -1,8 +1,7 @@
 local cmake = require("cmake-tools")
 local etlua = require("cmake-tools.quickstart.etlua")
-local dump = require("cmake-tools.utils").dump
 local locals = {
-  project_version = "0.0.1", -- TODO: removie version?
+  project_version = "0.0.1",
   project_name = "project",
   type = "exec",
   language = "cpp",
@@ -29,7 +28,7 @@ local generate_cmakelists_file = function()
     .. "/CMakeLists.txt.etlua"
   local file = io.open(file_name, "r")
   if not file then
-    error("could not find file: " .. file_name) -- TODO: notification here?
+    error("could not find file: " .. file_name)
     return
   end
   local template = etlua.compile(file:read("*a"))
@@ -51,13 +50,13 @@ local generate_main_file = function()
     .. "/main.etlua"
   local file = io.open(file_name, "r")
   if not file then
-    error("could not find file: " .. file_name) -- TODO: notification here?
+    error("could not find file: " .. file_name)
     return
   end
   local template = etlua.compile(file:read("*a"))
   local main_file_name = "main"
   if locals.type == "lib" then
-    main_file_name = locals.project_name -- TODO: maybe needs to deal with spaces
+    main_file_name = locals.project_name
   end
   local main_file_path = vim.loop.cwd() .. main_file_name .. "." .. locals.language
 
@@ -100,7 +99,7 @@ end
 
 ---comment
 ---@param _ any params passed from calling command from vim user command
-local quick_start = function(_) -- TODO: maybe pass project name
+local quick_start = function(_)
   if cmake.is_cmake_project() then
     print("Project already contains CMakeLists.txt")
     return
