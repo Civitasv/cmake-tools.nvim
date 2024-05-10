@@ -87,10 +87,7 @@ function Config:update_build_dir(build_dir, no_expand_build_dir)
     self.reply_directory = Path:new(self.cwd, build_dir, ".cmake", "api", "v1", "reply")
   end
 
-  print(build_dir)
-  print(no_expand_build_dir)
   self.base_settings.build_dir = Path:new(no_expand_build_dir):absolute()
-  print(build_dir)
 end
 
 ---Prepare build directory. Which allows macro expansion.
