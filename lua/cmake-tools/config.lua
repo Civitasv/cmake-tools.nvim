@@ -72,7 +72,9 @@ function Config:update_build_dir(build_dir, no_expand_build_dir)
     no_expand_build_dir = no_expand_build_dir()
   end
   if type(no_expand_build_dir) ~= "string" then
-    error("no_expand_build_dir needs to be a string or function returning string path to the build_directory")
+    error(
+      "no_expand_build_dir needs to be a string or function returning string path to the build_directory"
+    )
   end
   local build_path = Path:new(build_dir)
   if build_path:is_absolute() then
