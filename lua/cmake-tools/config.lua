@@ -58,7 +58,24 @@ function Config:no_expand_build_directory_path()
   return self.base_settings.build_dir
 end
 
+---comment
+---@param build_dir string|function string or a function returning string containing path to the build dir
+---@param no_expand_build_dir string|function
 function Config:update_build_dir(build_dir, no_expand_build_dir)
+  if type(build_dir) == "function" then
+    build_dir = build_dir()
+  end
+  if type(build_dir) ~= "string" then
+    error("build_dir needs to be a string or function returning string path to the build_directory")
+  end
+  if type(no_expand_build_dir) == "function" then
+    no_expand_build_dir = no_expand_build_dir()
+  end
+  if type(no_expand_build_dir) ~= "string" then
+    error(
+      "no_expand_build_dir needs to be a string or function returning string path to the build_directory"
+    )
+  end
   local build_path = Path:new(build_dir)
   if build_path:is_absolute() then
     self.build_directory = Path:new(build_dir)
