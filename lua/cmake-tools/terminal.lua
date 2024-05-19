@@ -542,7 +542,7 @@ end
 local get_command_handling_on_exit = function()
   return "echo $? > "
     .. get_last_exit_code_file_path() -- write exitcode to file
-    .. " && rm "
+    .. " && \\rm -f "
     .. get_lock_file_path() -- remove lock file
 end
 
