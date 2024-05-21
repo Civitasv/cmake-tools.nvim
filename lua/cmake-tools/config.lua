@@ -20,6 +20,7 @@ local Config = {
     env = {},
     build_dir = "",
     working_dir = "${dir.binary}",
+    use_preset = true,
     generate_options = {},
     build_options = {},
   }, -- general config
@@ -39,6 +40,7 @@ function Config:new(const)
 
   self.base_settings.generate_options = const.cmake_generate_options
   self.base_settings.build_options = const.cmake_build_options
+  self.base_settings.use_preset = const.cmake_use_preset
 
   self.executor = const.cmake_executor
   self.runner = const.cmake_runner

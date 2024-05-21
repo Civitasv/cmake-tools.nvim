@@ -83,7 +83,7 @@ function cmake.generate(opt, callback)
   -- if exists presets, preset include all info that cmake
   -- needed to execute, so we don't use cmake-kits.json and
   -- cmake-variants.[json|yaml] event they exist.
-  local presets_file = presets.check(config.cwd)
+  local presets_file = config.base_settings.use_preset and presets.check(config.cwd)
   if presets_file and not config.configure_preset then
     -- this will also set value for build type from preset.
     -- default to be "Debug"
@@ -242,7 +242,7 @@ function cmake.build(opt, callback)
   end
 
   local args
-  local presets_file = presets.check(config.cwd)
+  local presets_file = config.base_settings.use_preset and presets.check(config.cwd)
 
   if presets_file and config.build_preset then
     args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
@@ -1238,7 +1238,7 @@ function cmake.create_regenerate_on_save_autocmd()
     table.insert(pattern, ss)
   end
 
-  local presets_file = presets.check(config.cwd)
+  local presets_file = config.base_settings.use_preset and presets.check(config.cwd)
   if presets_file then
     for _, item in ipairs({
       "CMakePresets.json",
