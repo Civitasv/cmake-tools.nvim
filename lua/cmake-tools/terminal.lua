@@ -540,10 +540,23 @@ end
 ---creates command that handles all of our post command stuff for on_exit handling
 ---@return string
 local get_command_handling_on_exit = function()
-  return "echo $? > "
-    .. get_last_exit_code_file_path() -- write exitcode to file
-    .. " && \\rm -f "
-    .. get_lock_file_path() -- remove lock file
+  -- Set commands to Windows or Unix version
+  local echo_cmd = osys.iswin32 and "echo %errorlevel% " or "echo $? > "
+  local rm_cmd = osys.iswin32 and " && cmd /C del /Q " or "&& \\rm -f "
+
+  local exit_code_file_path = get_last_exit_code_file_path()
+  local lock_file_path = get_lock_file_path()
+
+  -- Normalize paths for Windows
+  if osys.iswin32 then
+    exit_code_file_path = exit_code_file_path:gsub("/", "\\")
+    lock_file_path = lock_file_path:gsub("/", "\\")
+  end
+
+  return echo_cmd
+    .. exit_code_file_path -- write exit code to file
+    .. rm_cmd
+    .. lock_file_path
 end
 
 ---tries to read the number stored in get_last_exit_code_file_path() file
