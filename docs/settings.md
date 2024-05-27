@@ -20,6 +20,7 @@ return {
   },
   build_dir = nil,
   working_dir = "${dir.binary}"
+  use_preset = true,
   generate_options = {},
   build_options = {},
 }
@@ -109,6 +110,19 @@ Specify the working directory in which run and debug commands are executed. Supp
 |--------------         | --------------     |  --------------         |
 | `CMakeSettings`       | :white_check_mark: | Defines the working directory for all targets unless overwritten. |
 | `CMakeTargetSettings` | :white_check_mark: | Sets the working directory just for this target. No default value - Has to be added manually. |
+
+### `use_preset`
+
+Specify if the `--presets` argument should be used on `cmake` commands. This is useful when you want to control all of the `cmake` options with the `generate_options` and the `build_options`.
+
+```lua
+  use_preset = true
+```
+
+| Command               | Supported          | Details                 |
+|--------------         | --------------     |  --------------         |
+| `CMakeSettings`       | :white_check_mark: | Flag controlling if the `--presets` argument should be passed to the `cmake` commands |
+| `CMakeTargetSettings` | :x: | |
 
 ### `build_directory`
 
