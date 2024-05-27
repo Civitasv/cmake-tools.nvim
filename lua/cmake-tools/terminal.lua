@@ -604,10 +604,10 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   end
 
   -- Send final cmd to terminal
-  local split_symb = osys.iswin32 and " && " or " ; "
+  local chain_symb = osys.iswin32 and " & " or " ; "
   _terminal.send_data_to_terminal(
     buffer_idx,
-    full_cmd .. split_symb .. get_command_handling_on_exit(),
+    full_cmd .. chain_symb .. get_command_handling_on_exit(),
     {
       win_id = final_win_id,
       prefix = opts.prefix_name,
