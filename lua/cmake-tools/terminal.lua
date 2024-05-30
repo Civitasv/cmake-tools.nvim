@@ -540,10 +540,17 @@ end
 ---creates command that handles all of our post command stuff for on_exit handling
 ---@return string
 local get_command_handling_on_exit = function()
-  return "echo $? > "
-    .. get_last_exit_code_file_path() -- write exitcode to file
-    .. " && \\rm -f "
-    .. get_lock_file_path() -- remove lock file
+  local exit_code_file_path = get_last_exit_code_file_path()
+  local lock_file_path = get_lock_file_path()
+
+  if osys.iswin32 then
+    -- Normalize paths for Windows
+    exit_code_file_path = exit_code_file_path:gsub("/", "\\")
+    lock_file_path = lock_file_path:gsub("/", "\\")
+    return "echo %errorlevel% > " .. exit_code_file_path .. " && del /Q " .. lock_file_path
+  else
+    return "echo $? > " .. exit_code_file_path .. "&& \\rm -f " .. lock_file_path
+  end
 end
 
 ---tries to read the number stored in get_last_exit_code_file_path() file
@@ -597,15 +604,20 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   end
 
   -- Send final cmd to terminal
-  _terminal.send_data_to_terminal(buffer_idx, full_cmd .. " ; " .. get_command_handling_on_exit(), {
-    win_id = final_win_id,
-    prefix = opts.prefix_name,
-    split_direction = opts.split_direction,
-    split_size = opts.split_size,
-    start_insert = opts.start_insert,
-    focus = opts.focus,
-    do_not_add_newline = opts.do_not_add_newline,
-  })
+  local chain_symb = osys.iswin32 and " & " or " ; "
+  _terminal.send_data_to_terminal(
+    buffer_idx,
+    full_cmd .. chain_symb .. get_command_handling_on_exit(),
+    {
+      win_id = final_win_id,
+      prefix = opts.prefix_name,
+      split_direction = opts.split_direction,
+      split_size = opts.split_size,
+      start_insert = opts.start_insert,
+      focus = opts.focus,
+      do_not_add_newline = opts.do_not_add_newline,
+    }
+  )
   on_exit_coroutine = coroutine.create(function()
     while utils.file_exists(get_lock_file_path()) do
       vim.defer_fn(function()
