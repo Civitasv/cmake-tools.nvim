@@ -453,8 +453,17 @@ function Config:launch_targets_with_sources()
   return get_targets(self, { has_all = false, only_executable = true, query_sources = true })
 end
 
+local _virtual_targets = nil
+function Config:update_targets()
+  _virtual_targets =
+    get_targets(self, { has_all = false, only_executable = false, query_sources = true })
+end
+
 function Config:build_targets_with_sources()
-  return get_targets(self, { has_all = false, only_executable = false, query_sources = true })
+  if not _virtual_targets then
+    self:update_targets()
+  end
+  return _virtual_targets
 end
 
 return Config

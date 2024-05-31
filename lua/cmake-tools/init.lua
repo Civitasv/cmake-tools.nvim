@@ -1273,6 +1273,7 @@ function cmake.create_regenerate_on_save_autocmd()
         local buf_modified = vim.api.nvim_buf_get_option(buf, "modified")
         if buf_modified then
           cmake.generate({ bang = false, fargs = {} }, nil)
+          config:update_targets()
         end
       end,
     })
