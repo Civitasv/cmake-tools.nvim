@@ -96,7 +96,10 @@ function utils.softlink(src, target)
   end
 end
 
-function utils.transform_path(path)
+function utils.transform_path(path, keep)
+  if keep then
+    return path
+  end
   if path[1] ~= '"' and string.find(path, " ") then
     return '"' .. path .. '"'
   else

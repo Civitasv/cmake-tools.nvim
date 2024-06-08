@@ -111,7 +111,7 @@ function cmake.generate(opt, callback)
     vim.list_extend(args, config:generate_options())
     vim.list_extend(args, fargs)
 
-    local env = environment.get_build_environment(config, config.executor.name == "terminal")
+    local env = environment.get_build_environment(config)
     local cmd = const.cmake_command
     return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
       if type(callback) == "function" then
@@ -163,7 +163,7 @@ function cmake.generate(opt, callback)
 
   local args = {
     "-B",
-    utils.transform_path(config:build_directory_path()),
+    utils.transform_path(config:build_directory_path(), config.executor.name == "quickfix"),
     "-S",
     ".",
   }
@@ -172,7 +172,7 @@ function cmake.generate(opt, callback)
   vim.list_extend(args, config:generate_options())
   vim.list_extend(args, fargs)
 
-  local env = environment.get_build_environment(config, config.executor.name == "terminal")
+  local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
   env = vim.tbl_extend("keep", env, kit_option.env)
   return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
@@ -195,10 +195,14 @@ function cmake.clean(callback)
     return log.error(result.message)
   end
 
-  local args =
-    { "--build", utils.transform_path(config:build_directory_path()), "--target", "clean" }
+  local args = {
+    "--build",
+    utils.transform_path(config:build_directory_path(), config.executor.name == "quickfix"),
+    "--target",
+    "clean",
+  }
 
-  local env = environment.get_build_environment(config, config.executor.name == "terminal")
+  local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
   return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
     if type(callback) == "function" then
@@ -247,7 +251,10 @@ function cmake.build(opt, callback)
   if presets_file and config.build_preset then
     args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
   else
-    args = { "--build", utils.transform_path(config:build_directory_path()) }
+    args = {
+      "--build",
+      utils.transform_path(config:build_directory_path(), config.executor.name == "quickfix"),
+    }
   end
 
   vim.list_extend(args, config:build_options())
@@ -263,7 +270,7 @@ function cmake.build(opt, callback)
     vim.list_extend(args, fargs)
   end
 
-  local env = environment.get_build_environment(config, config.executor.name == "terminal")
+  local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
   return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
     if type(callback) == "function" then
@@ -411,8 +418,7 @@ function cmake.run(opt)
       local target_path = result.data
 
       local launch_path = cmake.get_launch_path(opt.target)
-      local env =
-        environment.get_run_environment(config, opt.target, config.runner.name == "terminal")
+      local env = environment.get_run_environment(config, opt.target)
       local _args = opt.args and opt.args or config.target_settings[opt.target].args
       local cmd = target_path
       utils.run(
@@ -453,11 +459,7 @@ function cmake.run(opt)
 
           local launch_path = cmake.get_launch_path(cmake.get_launch_target())
 
-          local env = environment.get_run_environment(
-            config,
-            config.launch_target,
-            config.runner.name == "terminal"
-          )
+          local env = environment.get_run_environment(config, config.launch_target)
           local cmd = target_path
           utils.run(
             cmd,
@@ -925,7 +927,7 @@ function cmake.run_test(opt)
   if utils.has_active_job(config.runner, config.executor) then
     return
   end
-  local env = environment.get_build_environment(config, config.executor.name == "terminal")
+  local env = environment.get_build_environment(config)
   local all_tests = ctest.list_all_tests(config:build_directory_path())
   if #all_tests == 0 then
     return
@@ -1307,6 +1309,7 @@ function cmake.register_autocmd()
           local targets = {}
           local file = ev.file
           local all_targets = config:build_targets_with_sources()
+          vim.print(all_targets)
           if all_targets and all_targets.data and all_targets.data["sources"] then
             for _, target in ipairs(all_targets.data["sources"]) do
               if target.path == file then
