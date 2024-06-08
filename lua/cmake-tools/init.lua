@@ -1309,7 +1309,6 @@ function cmake.register_autocmd()
           local targets = {}
           local file = ev.file
           local all_targets = config:build_targets_with_sources()
-          vim.print(all_targets)
           if all_targets and all_targets.data and all_targets.data["sources"] then
             for _, target in ipairs(all_targets.data["sources"]) do
               if target.path == file then
