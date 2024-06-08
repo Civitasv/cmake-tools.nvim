@@ -549,19 +549,21 @@ local get_command_handling_on_exit = function()
   local lock_file_path = get_lock_file_path()
 
   local exit_op = "$?"
+  local escape_rm = " \\rm -f "
 
   if is_fish_shell() then
     exit_op = "$status"
+    escape_rm = " command rm -f "
   end
 
   if osys.iswin32 then
-    -- Normalize paths for Windows
+    exit_op = "%errorlevel%"
+    escape_rm = " del /Q "
     exit_code_file_path = exit_code_file_path:gsub("/", "\\")
     lock_file_path = lock_file_path:gsub("/", "\\")
-    return "echo %errorlevel% > " .. exit_code_file_path .. " && del /Q " .. lock_file_path
-  else
-    return "echo " .. exit_op(" > ") .. exit_code_file_path .. "&& \\rm -f " .. lock_file_path
   end
+
+  return "echo " .. exit_op .. ">" .. exit_code_file_path .. "&&" .. escape_rm .. lock_file_path
 end
 
 ---tries to read the number stored in get_last_exit_code_file_path() file
