@@ -28,11 +28,16 @@ cmake.is_cmake_project() -- return if current project is a cmake project
 cmake.has_cmake_preset() -- return if there exists cmake presets configuration
 cmake.get_build_target() -- return current build target
 cmake.get_launch_target() -- return current launch target
+cmake.get_launch_args() -- return args used by current launch target
 cmake.get_build_type() -- return current build type
 cmake.get_kit() -- return current using kit
 cmake.get_configure_preset() -- return current using configure preset
 cmake.get_build_preset() -- return current using build preset
 cmake.get_build_directory() -- return current using build directory
+cmake.get_launch_targets() -- return all launch targets
+cmake.get_build_targets() -- return all build targets
+cmake.get_generate_options() -- return generate options used by cmake
+cmake.get_build_options() -- return build options used by cmake
 ```
 
 With these helper functions, I've mimic the UI using lualine.
