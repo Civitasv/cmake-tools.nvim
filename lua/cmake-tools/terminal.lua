@@ -537,11 +537,22 @@ local create_lock_file = function()
   create_tmp_file(".lock")
 end
 
+local is_fish_shell = function()
+  local shell = vim.o.shell
+  return string.find(shell, "fish")
+end
+
 ---creates command that handles all of our post command stuff for on_exit handling
 ---@return string
 local get_command_handling_on_exit = function()
   local exit_code_file_path = get_last_exit_code_file_path()
   local lock_file_path = get_lock_file_path()
+
+  local exit_op = "$?"
+
+  if is_fish_shell() then
+    exit_op = "$status"
+  end
 
   if osys.iswin32 then
     -- Normalize paths for Windows
@@ -549,7 +560,7 @@ local get_command_handling_on_exit = function()
     lock_file_path = lock_file_path:gsub("/", "\\")
     return "echo %errorlevel% > " .. exit_code_file_path .. " && del /Q " .. lock_file_path
   else
-    return "echo $? > " .. exit_code_file_path .. "&& \\rm -f " .. lock_file_path
+    return "echo " .. exit_op(" > ") .. exit_code_file_path .. "&& \\rm -f " .. lock_file_path
   end
 end
 
