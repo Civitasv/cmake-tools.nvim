@@ -563,7 +563,7 @@ local get_command_handling_on_exit = function()
     lock_file_path = lock_file_path:gsub("/", "\\")
   end
 
-  return "echo " .. exit_op .. ">" .. exit_code_file_path .. "&&" .. escape_rm .. lock_file_path
+  return "echo " .. exit_op .. " > " .. exit_code_file_path .. " &&" .. escape_rm .. lock_file_path
 end
 
 ---tries to read the number stored in get_last_exit_code_file_path() file
