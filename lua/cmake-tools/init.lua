@@ -95,12 +95,12 @@ function cmake.generate(opt, callback)
   if presets_file and config.configure_preset then
     -- if exsist preset file and set configure preset, then
     -- set build directory to the `binaryDir` option of `configurePresets`
-    local build_directory = presets.get_build_dir(
+    local build_directory, no_expand_build_directory = presets.get_build_dir(
       presets.get_preset_by_name(config.configure_preset, "configurePresets", config.cwd),
       config.cwd
     )
     if build_directory ~= "" then
-      config:update_build_dir(build_directory, build_directory)
+      config:update_build_dir(build_directory, no_expand_build_directory)
     end
     config:generate_build_directory()
 

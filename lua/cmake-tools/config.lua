@@ -56,6 +56,8 @@ function Config:has_build_directory()
   return self.build_directory and self.build_directory:exists()
 end
 
+---comment
+---The reason for storing no expand build directory is to make cwd selecting easier
 function Config:no_expand_build_directory_path()
   return self.base_settings.build_dir
 end

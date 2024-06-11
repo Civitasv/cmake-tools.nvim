@@ -226,6 +226,7 @@ function presets.get_build_dir(preset, cwd)
   end
 
   local build_dir = helper(preset)
+  local no_expand_build_dir = build_dir
 
   -- macro expansion
   local source_path = Path:new(cwd)
@@ -245,7 +246,7 @@ function presets.get_build_dir(preset, cwd)
 
   build_dir = vim.fn.fnamemodify(build_dir, ":.")
 
-  return build_dir
+  return build_dir, no_expand_build_dir
 end
 
 return presets
