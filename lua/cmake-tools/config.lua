@@ -33,8 +33,7 @@ local Config = {
 
 function Config:new(const)
   local obj = {}
-  setmetatable(obj, self)
-  self.__index = self
+  setmetatable(obj, { __index = self }) -- when obj cannot find key in its table, it will try to find it from its __index value
 
   obj:update_build_dir(const.cmake_build_directory, const.cmake_build_directory)
 
