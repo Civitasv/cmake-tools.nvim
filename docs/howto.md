@@ -27,7 +27,9 @@ We provide a list of getters for you.
 cmake.is_cmake_project() -- return if current project is a cmake project
 cmake.has_cmake_preset() -- return if there exists cmake presets configuration
 cmake.get_build_target() -- return current build target
+cmake.get_build_target_path() -- reurn full path of current build target
 cmake.get_launch_target() -- return current launch target
+cmake.get_launch_target_path() -- return full path of current launch target
 cmake.get_launch_args() -- return args used by current launch target
 cmake.get_build_type() -- return current build type
 cmake.get_kit() -- return current using kit

@@ -1026,8 +1026,20 @@ function cmake.get_build_target()
   return config.build_target
 end
 
+function cmake.get_build_target_path()
+  local result = config:get_build_target()
+  local target_path = result.data
+  return target_path
+end
+
 function cmake.get_launch_target()
   return config.launch_target
+end
+
+function cmake.get_launch_target_path()
+  local result = config:get_launch_target()
+  local target_path = result.data
+  return target_path
 end
 
 function cmake.get_model_info()
