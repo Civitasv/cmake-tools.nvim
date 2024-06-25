@@ -36,16 +36,16 @@ function Config:new(const)
   setmetatable(obj, self)
   self.__index = self
 
-  self:update_build_dir(const.cmake_build_directory, const.cmake_build_directory)
+  obj:update_build_dir(const.cmake_build_directory, const.cmake_build_directory)
 
-  self.base_settings.generate_options = const.cmake_generate_options
-  self.base_settings.build_options = const.cmake_build_options
-  self.base_settings.use_preset = const.cmake_use_preset
+  obj.base_settings.generate_options = const.cmake_generate_options
+  obj.base_settings.build_options = const.cmake_build_options
+  obj.base_settings.use_preset = const.cmake_use_preset
 
-  self.executor = const.cmake_executor
-  self.runner = const.cmake_runner
+  obj.executor = const.cmake_executor
+  obj.runner = const.cmake_runner
 
-  return self
+  return obj
 end
 
 function Config:build_directory_path()
@@ -280,7 +280,7 @@ function Config:get_launch_target()
   end
   local target_info = check_result.data
 
-  return Config:get_launch_target_from_info(target_info)
+  return self:get_launch_target_from_info(target_info)
 end
 
 -- Check if build target exists
