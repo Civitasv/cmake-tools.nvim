@@ -183,9 +183,9 @@ end
 ---@param args table arguments to the executable
 ---@param cwd string the directory to run in
 ---@param runner runner_conf the executor or runner
----@param on_success nil|function extra arguments, f.e on_success is a callback to be called when the process finishes
+---@param callback nil|function extra arguments, f.e on_success is a callback to be called when the process finishes
 ---@return nil
-function utils.run(cmd, env_script, env, args, cwd, runner, on_success, cmake_notifications)
+function utils.run(cmd, env_script, env, args, cwd, runner, callback, cmake_notifications)
   -- save all
   vim.cmd("silent exec " .. '"wall"')
 
@@ -219,8 +219,12 @@ function utils.run(cmd, env_script, env, args, cwd, runner, on_success, cmake_no
       { icon = icon, replace = notification.notification.id, timeout = 3000 }
     )
     notification.notification = {} -- reset and stop update_spinner
-    if code == 0 and on_success then
-      on_success()
+    if type(callback) == "function" then
+      if code == 0 then
+        callback(Result:new(Types.SUCCESS, nil, nil))
+      else
+        callback(Result:new(Types.CMAKE_RUN_FAILED, nil, "Process exited with code " .. code))
+      end
     end
   end, notify_update_line)
 end
@@ -232,9 +236,9 @@ end
 ---@param args table arguments to the executable
 ---@param cwd string the directory to run in
 ---@param executor executor_conf the executor or runner
----@param on_success nil|function extra arguments, f.e on_success is a callback to be called when the process exits with a 0 exit code
+---@param callback nil|fun(cmake.Result) extra arguments, f.e on_success is a callback to be called when the process exits with a 0 exit code
 ---@return nil
-function utils.execute(cmd, env_script, env, args, cwd, executor, on_success, cmake_notifications)
+function utils.execute(cmd, env_script, env, args, cwd, executor, callback, cmake_notifications)
   -- save all
   vim.cmd("silent exec " .. '"wall"')
 
@@ -270,8 +274,12 @@ function utils.execute(cmd, env_script, env, args, cwd, executor, on_success, cm
         { icon = icon, replace = notification.notification.id, timeout = 3000 }
       )
       notification.notification = {} -- reset and stop update_spinner
-      if code == 0 and type(on_success) == "function" then
-        on_success()
+      if type(callback) == "function" then
+        if code == 0 then
+          callback(Result:new(Types.SUCCESS, nil, nil))
+        else
+          callback(Result:new(Types.ANOTHER_JOB_RUNNING, nil, "Process exited with code " .. code))
+        end
       end
     end, notify_update_line)
 end
