@@ -278,7 +278,19 @@ function utils.execute(cmd, env_script, env, args, cwd, executor, callback, cmak
         if code == 0 then
           callback(Result:new(Types.SUCCESS, nil, nil))
         else
-          callback(Result:new(Types.ANOTHER_JOB_RUNNING, nil, "Process exited with code " .. code))
+          callback(
+            Result:new(
+              Types.CMAKE_RUN_FAILED,
+              nil,
+              string.format(
+                "Process %s %s (cwd=%s) exited with code %d",
+                cmd,
+                table.concat(args, " "),
+                cwd,
+                code
+              )
+            )
+          )
         end
       end
     end, notify_update_line)

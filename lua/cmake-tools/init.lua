@@ -81,10 +81,10 @@ end
 ---@return nil
 function cmake.generate(opt, callback)
   callback = callback or function() end
-  callback(Result:new(Types.SUCCESS, nil, nil))
   if check_active_job_and_notify(callback) then
     return
   end
+
   if get_cmake_configuration_or_notify(callback) == nil then
     return
   end
@@ -898,7 +898,7 @@ function cmake.get_cmake_launch_targets(callback)
     end)
   end
 
-  callback(Result:new(Types.SUCCESS, config:launch_targets(), nil))
+  callback(config:launch_targets())
 end
 
 function cmake.select_launch_target(regenerate, callback)
