@@ -83,7 +83,13 @@ function _toggleterm.run(cmd, env_script, env, args, cwd, opts, on_exit, on_outp
       _toggleterm.cmd = nil
     end, -- function to run when terminal process exits
   })
-  _toggleterm.term:toggle()
+  if not _toggleterm.term:is_open() then
+    _toggleterm.term:open()
+    if not opts.auto_focus then -- focus back on editor
+      vim.cmd("wincmd p")
+      vim.cmd("stopinsert!")
+    end
+  end
   _toggleterm.chan_id = _toggleterm.term.job_id
 end
 

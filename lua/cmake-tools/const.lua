@@ -43,6 +43,7 @@ local const = {
         close_on_exit = false, -- whether close the terminal when exit
         auto_scroll = true, -- auto scroll on new input
         scroll_on_error = false, -- scroll to bottom on error
+        auto_focus = true, -- auto focus the terminal on activation
         singleton = true, -- single instance, autocloses the opened one, if present
       },
       overseer = {
@@ -88,6 +89,7 @@ local const = {
         close_on_exit = false, -- whether close the terminal when exit
         auto_scroll = true, -- auto scroll on new input
         scroll_on_error = false, -- scroll to bottom on error
+        auto_focus = true, -- auto focus the terminal on activation
         singleton = true, -- single instance, autocloses the opened one, if present
       },
       overseer = {
