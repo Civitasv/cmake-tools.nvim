@@ -67,10 +67,18 @@ function _toggleterm.run(cmd, env_script, env, args, cwd, opts, on_exit, on_outp
       on_output(data)
     end, -- callback for processing output on stdout
     on_stderr = function(t, job, data, name)
+      if opts.scroll_on_error then
+        _toggleterm.term:scroll_bottom()
+      end
       on_output(nil, data)
     end, -- callback for processing output on stderr
     on_exit = function(t, job, exit_code, name)
       on_exit(exit_code)
+      if exit_code ~= 0 then -- operation failed
+        if opts.scroll_on_error then
+          _toggleterm.term:scroll_bottom()
+        end
+      end
       _toggleterm.chan_id = nil
       _toggleterm.cmd = nil
     end, -- function to run when terminal process exits
