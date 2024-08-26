@@ -78,6 +78,9 @@ function _toggleterm.run(cmd, env_script, env, args, cwd, opts, on_exit, on_outp
         if opts.scroll_on_error then
           _toggleterm.term:scroll_bottom()
         end
+        if opts.focus_on_error then
+          vim.cmd("wincmd p")
+        end
       end
       _toggleterm.chan_id = nil
       _toggleterm.cmd = nil
