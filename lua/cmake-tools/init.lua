@@ -923,6 +923,27 @@ function cmake.target_settings(opt)
   end
 end
 
+function cmake.get_launch_args()
+  if utils.has_active_job(config.runner, config.executor) then
+    return
+  end
+
+  local result = utils.get_cmake_configuration(config.cwd)
+  if result.code ~= Types.SUCCESS then
+    log.error(result.message)
+    return
+  end
+
+  local target = cmake.get_launch_target()
+
+  if target == nil then
+    log.warn("No launch target selected!")
+    return
+  end
+
+  return utils.deepcopy(config.target_settings[target].args or {})
+end
+
 function cmake.run_test(opt)
   if utils.has_active_job(config.runner, config.executor) then
     return
