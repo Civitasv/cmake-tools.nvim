@@ -1386,6 +1386,20 @@ function cmake.register_dap_function()
         end)
       end
 
+      local initCmds = function()
+        local commands = {}
+        local sources = { vim.env.HOME .. "/.lldbinit", vim.fn.getcwd() .. "/.lldbinit" }
+        for idx, source in ipairs(sources) do
+          local file = io.open(source, "r")
+          if file then
+            local command = "command source " .. source
+            table.insert(commands, command)
+            file:close()
+          end
+        end
+        return commands
+      end
+
       if opt.target then
         -- explicit target requested. use that instead of the configured one
         return cmake.build({ target = opt.target }, function()
@@ -1397,6 +1411,7 @@ function cmake.register_dap_function()
             cwd = cmake.get_launch_path(opt.target),
             args = opt.args and opt.args or config.target_settings[opt.target].args,
             env = env,
+            initCommands = initCmds,
           }
           -- close cmake console
           cmake.close_executor()
@@ -1436,6 +1451,7 @@ function cmake.register_dap_function()
                 cwd = cmake.get_launch_path(cmake.get_launch_target()),
                 args = cmake:get_launch_args(),
                 env = env,
+                initCommands = initCmds,
               }
               -- close cmake console
               cmake.close_executor()
