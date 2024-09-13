@@ -216,7 +216,16 @@ end
 -- Retrieve build directory from preset
 function presets.get_build_dir(preset, cwd)
   -- check if this preset is extended
+  local configurePresets = get_preset_data(cwd)["configurePresets"]
+
   local function helper(p_preset)
+    local function findPreset(name)
+      for _, entry in pairs(configurePresets) do
+        if entry.name == name then
+          return entry
+        end
+      end
+    end
     if not p_preset then
       return ""
     end
@@ -229,7 +238,7 @@ function presets.get_build_dir(preset, cwd)
     local inherits = p_preset.inherits
     if inherits then
       local set_dir_by_parent = function(parent)
-        local ppreset = presets.get_preset_by_name(parent, "configurePresets", cwd)
+        local ppreset = findPreset(parent)
         if ppreset ~= nil then
           local ppreset_build_dir = helper(ppreset)
           if ppreset_build_dir ~= "" then
