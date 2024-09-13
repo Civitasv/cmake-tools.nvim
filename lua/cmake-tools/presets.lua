@@ -2,39 +2,24 @@ local Path = require("plenary.path")
 
 local presets = {}
 
--- Checks if there is a CMakePresets.json or CMakeUserPresets.json file
--- in the current directory, a CMakeUserPresets.json is
--- preferred over CMakePresets.json as CMakePresets.json
--- is implicitly included by CMakeUserPresets.json
 function presets.check(cwd)
-  -- helper function to find the config file
-  -- returns file path if found, nil otherwise
-  local function findcfg()
-    local files = vim.fn.readdir(cwd)
-    local file = nil
-    local presetFiles = {}
-    for _, f in ipairs(files) do -- iterate over files in current directory
-      if
-        f == "CMakePresets.json"
-        or f == "CMakeUserPresets.json"
-        or f == "cmake-presets.json"
-        or f == "cmake-user-presets.json"
-      then -- if a preset file is found
-        presetFiles[#presetFiles + 1] = tostring(Path:new(cwd, f))
-      end
+  local files = vim.fn.readdir(cwd)
+  local presetFiles = {}
+  for _, f in ipairs(files) do -- iterate over files in current directory
+    if
+      f == "CMakePresets.json"
+      or f == "CMakeUserPresets.json"
+      or f == "cmake-presets.json"
+      or f == "cmake-user-presets.json"
+    then -- if a preset file is found
+      table.insert(presetFiles, tostring(Path:new(cwd, f)))
     end
-    table.sort(presetFiles, function(a, b)
-      return a < b
-    end)
-    if #presetFiles > 0 then
-      file = presetFiles[#presetFiles]
-    end
-    return file
   end
+  table.sort(presetFiles, function(a, b)
+    return a > b
+  end)
 
-  local file = findcfg() -- check for config file
-
-  return file
+  return unpack(presetFiles)
 end
 
 -- Extends (or creates a new) key-value pair in [dest] in which the
@@ -102,22 +87,69 @@ local function decode(file)
   return data
 end
 
+-- Reads the CMakePresets.json and CMakeUserPresets.json and merges them
+-- if both are found
+local function get_preset_data(cwd)
+  local function merge_presets(lhs, rhs)
+    local ret = vim.deepcopy(lhs)
+    for k, v2 in pairs(rhs) do
+      local v1 = ret[k]
+
+      if v1 == nil then
+        ret[k] = vim.deepcopy(v2)
+      else
+        if type(v1) == "table" and type(v2) == "table" then
+          if vim.isarray(v1) and vim.isarray(v2) then
+            for _, v in ipairs(v2) do
+              table.insert(v1, v)
+            end
+          else
+            merge_presets(v1, v2)
+          end
+        else
+          -- If not tables or arrays, keep lhs
+        end
+      end
+    end
+
+    return ret
+  end
+
+  local userPresetFile, presetFile = presets.check(cwd)
+  if not userPresetFile then
+    return nil
+  end
+  local data = decode(userPresetFile)
+  if data == nil then
+    -- this can not happen as decode will error out
+    return nil
+  end
+
+  if presetFile then
+    local presetData = decode(presetFile)
+    if presetData then
+      return merge_presets(data, presetData)
+    end
+  end
+
+  return data
+end
+
 -- Retrieve all presets with type
 -- @param type: `buildPresets` or `configurePresets`
 -- @param {opts}: include_hidden(bool|nil).
 --                If true, hidden preset will be included in result.
 -- @returns : list with all preset names
 function presets.parse(type, opts, cwd)
-  local file = presets.check(cwd)
   local options = {}
-  if not file then
+  local data = get_preset_data(cwd)
+
+  if data == nil then
     return options
   end
+
   local include_hidden = opts and opts.include_hidden
-  local data = decode(file)
-  if not data then
-    error("Error when parsing the presets file")
-  end
+
   if data[type] then
     for _, v in pairs(data[type]) do
       if include_hidden or not v["hidden"] then
@@ -134,16 +166,15 @@ end
 --                If true, hidden preset will be included in result.
 -- @returns : table with preset name as key and preset content as value
 function presets.parse_name_mapped(type, opts, cwd)
-  local file = presets.check(cwd)
   local options = {}
-  if not file then
+  local data = get_preset_data(cwd)
+
+  if data == nil then
     return options
   end
+
   local include_hidden = opts and opts.include_hidden
-  local data = decode(file)
-  if not data then
-    error("Error when parsing the presets file")
-  end
+
   if data[type] then
     for _, v in pairs(data[type]) do
       if include_hidden or not v["hidden"] then
@@ -158,11 +189,12 @@ end
 -- @param name: from `name` option
 -- @param type: `buildPresets` or `configurePresets`
 function presets.get_preset_by_name(name, type, cwd)
-  local file = presets.check(cwd)
-  if not file then
+  local data = get_preset_data(cwd)
+
+  if not data then
     return nil
   end
-  local data = decode(file)
+
   if data[type] then
     for _, v in pairs(data[type]) do
       if v.name == name then
