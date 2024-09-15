@@ -30,7 +30,7 @@ local function createInstance(self, obj, get_preset)
   return instance
 end
 
-local function resolveEnviroment(self)
+local function buildEnvironment(self)
   local function build(bPreset)
     local env = bPreset.environment or {}
     for _, inherited in ipairs(bPreset.inheritedPresets) do
@@ -93,43 +93,39 @@ local function envLookup(str, env)
   end)
 end
 
-local function resolveBuildDir(self)
+local function resolveBuildDir(self, cwd)
   if not self.binaryDir then
     return
   end
-  self.buildDir = envLookup(self.binaryDir, self.environment)
+  self.binaryDirExpanded = envLookup(self.binaryDir, self.environment)
 
   -- macro expansion
-  local source_path = Path:new(self.cwd)
-  local source_relative = vim.fn.fnamemodify(self.cwd, ":t")
-  self.buildDir = self.buildDir:gsub("${sourceDir}", ".") -- sourceDir is relative to the CMakePresests.json file, and should be relative
-  self.buildDir = self.buildDir:gsub("${sourceParentDir}", source_path:parent().filename)
-  self.buildDir = self.buildDir:gsub("${sourceDirName}", source_relative)
-  self.buildDir = self.buildDir:gsub("${selfName}", self.name)
+  local source_path = Path:new(cwd)
+  local source_relative = vim.fn.fnamemodify(cwd, ":t")
+  self.binaryDirExpanded = self.binaryDirExpanded:gsub("${sourceDir}", ".") -- sourceDir is relative to the CMakePresests.json file, and should be relative
+  self.binaryDirExpanded =
+    self.binaryDirExpanded:gsub("${sourceParentDir}", source_path:parent().filename)
+  self.binaryDirExpanded = self.binaryDirExpanded:gsub("${sourceDirName}", source_relative)
+  self.binaryDirExpanded = self.binaryDirExpanded:gsub("${selfName}", self.name)
   if self.generator then
-    self.buildDir = self.buildDir:gsub("${generator}", self.generator)
+    self.binaryDirExpanded = self.binaryDirExpanded:gsub("${generator}", self.generator)
   end
-  self.buildDir = self.buildDir:gsub("${hostSystemName}", vim.loop.os_uname().sysname)
-  self.buildDir = self.buildDir:gsub("${fileDir}", source_path.filename)
-  self.buildDir = self.buildDir:gsub("${dollar}", "$")
-  self.buildDir = self.buildDir:gsub("${pathListSep}", "/")
+  self.binaryDirExpanded =
+    self.binaryDirExpanded:gsub("${hostSystemName}", vim.loop.os_uname().sysname)
+  self.binaryDirExpanded = self.binaryDirExpanded:gsub("${fileDir}", source_path.filename)
+  self.binaryDirExpanded = self.binaryDirExpanded:gsub("${dollar}", "$")
+  self.binaryDirExpanded = self.binaryDirExpanded:gsub("${pathListSep}", "/")
 
-  self.buildDir = vim.fn.fnamemodify(self.buildDir, ":.")
-end
-
-local function resolveCacheVariables(self)
-  for _, var in pairs(self.cacheVariables) do
-    var = envLookup(var, self.environment)
-  end
+  self.binaryDirExpanded = vim.fn.fnamemodify(self.binaryDirExpanded, ":.")
 end
 
 function Preset:new(cwd, obj, get_preset)
   local instance = createInstance(self, obj, get_preset)
-  instance.cwd = cwd
 
-  resolveEnviroment(instance)
-  resolveBuildDir(instance)
-  resolveCacheVariables(instance)
+  -- gather all environment variables in the top preset
+  buildEnvironment(instance)
+
+  resolveBuildDir(instance, cwd)
 
   return instance
 end

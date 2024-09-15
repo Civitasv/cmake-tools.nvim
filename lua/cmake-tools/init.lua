@@ -128,8 +128,11 @@ function cmake.generate(opt, callback)
     -- set build directory to the `binaryDir` option of `configurePresets`
     local presets = Presets:parse(config.cwd)
     local preset = presets:get_configure_preset(config.configure_preset)
-    )
-    local build_directory, no_expand_build_directory = preset.buildDir, preset.binaryDir
+    if not preset then
+      config.configure_preset = nil
+      return
+    end
+    local build_directory, no_expand_build_directory = preset.binaryDirExpanded, preset.binaryDir
     if build_directory ~= "" then
       config:update_build_dir(build_directory, no_expand_build_directory)
     end
@@ -736,10 +739,9 @@ function cmake.select_configure_preset(callback)
   -- if exists presets
   if Presets.exists(config.cwd) then
     local presets = Presets:parse(config.cwd)
-    local configure_preset_names = presets:get_preset_names("configurePresets")
-    local configure_presets = presets:get_presets_by_name("configurePresets")
+    local configure_preset_names = presets:get_configure_preset_names()
     local format_preset_name = function(p_name)
-      local p = configure_presets[p_name]
+      local p = presets:get_configure_preset(p_name)
       return p.displayName or p.name
     end
     vim.ui.select(
@@ -755,8 +757,7 @@ function cmake.select_configure_preset(callback)
         end
         if config.configure_preset ~= choice then
           config.configure_preset = choice
-          config.build_type =
-            presets:get_preset_by_name(choice, "configurePresets"):get_build_type()
+          config.build_type = presets:get_configure_preset(choice):get_build_type()
         end
         callback(Result:new(Types.SUCCESS, nil, nil))
       end)
@@ -787,12 +788,13 @@ function cmake.select_build_preset(callback)
   -- if exists presets
   if Presets.exists(config.cwd) then
     local presets = Presets:parse(config.cwd)
-    local build_preset_names = presets:get_preset_names("buildPresets")
-    local build_presets = presets:get_presets_by_name("buildPresets")
+    local build_preset_names = presets:get_build_preset_names()
     build_preset_names = vim.list_extend(build_preset_names, { "None" })
-    build_presets = vim.tbl_extend("keep", build_presets, { None = { displayName = "None" } })
     local format_preset_name = function(p_name)
-      local p = build_presets[p_name]
+      if p_name == "None" then
+        return p_name
+      end
+      local p = presets:get_build_preset(p_name)
       return p.displayName or p.name
     end
     vim.ui.select(
@@ -809,8 +811,7 @@ function cmake.select_build_preset(callback)
         if config.build_preset ~= choice then
           config.build_preset = choice
         end
-        local associated_configure_preset =
-          presets:get_preset_by_name(choice, "buildPresets")["configurePreset"]
+        local associated_configure_preset = presets:get_build_preset(choice).configurePreset
         local configure_preset_updated = false
 
         if

@@ -95,23 +95,18 @@ function Presets:parse(cwd)
   end
 
   local userPresetFile, presetFile = self.find_preset_files(cwd)
-  local instance = setmetatable({}, self)
 
-  self.__index = self
-
-  -- TODO: make data the base of our metatable
-  instance.data = decode(userPresetFile)
-  if instance.data == nil then
-    -- this can not happen as decode will error out
-    return instance
-  end
+  local data = decode(userPresetFile)
 
   if presetFile then
     local presetData = decode(presetFile)
     if presetData then
-      instance.data = merge_presets(instance.data, presetData)
+      data = merge_presets(data, presetData)
     end
   end
+
+  local instance = setmetatable(data, self)
+  self.__index = self
 
   local function createPreset(obj)
     local function getPreset(name)
@@ -120,7 +115,7 @@ function Presets:parse(cwd)
     return Preset:new(cwd, obj, getPreset)
   end
 
-  for _, preset in ipairs(instance.data.configurePresets) do
+  for _, preset in ipairs(instance.configurePresets) do
     preset = createPreset(preset)
   end
 
@@ -132,12 +127,12 @@ end
 -- @param {opts}: include_hidden(bool|nil).
 --                If true, hidden preset will be included in result.
 -- @returns : list with all preset names
-function Presets:get_preset_names(type, opts)
+local function get_preset_names(presets, opts)
   local options = {}
   local include_hidden = opts and opts.include_hidden
 
-  if self.data[type] then
-    for _, v in pairs(self.data[type]) do
+  if presets then
+    for _, v in pairs(presets) do
       if include_hidden or not v.hidden then
         table.insert(options, v.name)
       end
@@ -146,23 +141,12 @@ function Presets:get_preset_names(type, opts)
   return options
 end
 
--- Retrieve all presets mapped to their name for the given type
--- @param type: `buildPresets` or `configurePresets`
--- @param {opts}: include_hidden(bool|nil).
---                If true, hidden preset will be included in result.
--- @returns : table with preset name as key and preset content as value
-function Presets:get_presets_by_name(type, opts)
-  local options = {}
-  local include_hidden = opts and opts.include_hidden
+function Presets:get_configure_preset_names(opts)
+  return get_preset_names(self.configurePresets, opts)
+end
 
-  if self.data[type] then
-    for _, v in pairs(self.data[type]) do
-      if include_hidden or not v.hidden then
-        options[v.name] = v
-      end
-    end
-  end
-  return options
+function Presets:get_build_preset_names(opts)
+  return get_preset_names(self.buildPresets, opts)
 end
 
 local function get_preset(name, tbl, opts)
@@ -179,11 +163,11 @@ local function get_preset(name, tbl, opts)
 end
 
 function Presets:get_configure_preset(name, opts)
-  return get_preset(name, self.data.configurePresets, opts)
+  return get_preset(name, self.configurePresets, opts)
 end
 
 function Presets:get_build_preset(name, opts)
-  return get_preset(name, self.data.buildPresets, opts)
+  return get_preset(name, self.buildPresets, opts)
 end
 
 function Presets.find_preset_files(cwd)
