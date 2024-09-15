@@ -119,13 +119,35 @@ local function resolveBuildDir(self, cwd)
   self.binaryDirExpanded = vim.fn.fnamemodify(self.binaryDirExpanded, ":.")
 end
 
+local function buildCacheVariables(self)
+  local function build(bPreset)
+    local env = bPreset.cacheVariables or {}
+    for _, inherited in ipairs(bPreset.inheritedPresets) do
+      env = vim.tbl_deep_extend("keep", env, build(inherited))
+    end
+
+    return env
+  end
+
+  self.cacheVariables = build(self)
+end
+
+local function resolveCacheVariables(self)
+  for key, var in pairs(self.cacheVariables or {}) do
+    self.cacheVariables[key] = envLookup(var, self.environment)
+  end
+end
+
 function Preset:new(cwd, obj, get_preset)
   local instance = createInstance(self, obj, get_preset)
 
   -- gather all environment variables in the top preset
   buildEnvironment(instance)
+  -- gather all cache variables in the top preset
+  buildCacheVariables(instance)
 
   resolveBuildDir(instance, cwd)
+  resolveCacheVariables(instance)
 
   return instance
 end
