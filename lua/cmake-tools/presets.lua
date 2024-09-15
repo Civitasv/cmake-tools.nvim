@@ -217,15 +217,68 @@ end
 function presets.get_build_dir(preset, cwd)
   -- check if this preset is extended
   local configurePresets = get_preset_data(cwd)["configurePresets"]
-
-  local function helper(p_preset)
-    local function findPreset(name)
-      for _, entry in pairs(configurePresets) do
-        if entry.name == name then
-          return entry
-        end
+  local function findPreset(name)
+    for _, entry in pairs(configurePresets) do
+      if entry.name == name then
+        return entry
       end
     end
+  end
+
+  -- Interates through all inherited presets and builds the environment table
+  local function buildEnvTable(p_preset)
+    local env = p_preset.environment or {}
+    if p_preset.inherits then
+      if type(p_preset.inherits) == "table" then
+        for _, parent in ipairs(p_preset.inherits) do
+          -- retrieve its parent preset, keep already seend variables
+          env = vim.tbl_deep_extend("keep", env, buildEnvTable(findPreset(parent)))
+        end
+      elseif type(p_preset.inherits) == "string" then
+        env = vim.tbl_deep_extend("keep", env, buildEnvTable(findPreset(p_preset.inherits)))
+      end
+    end
+    return env
+  end
+
+  -- Resolves dependend environment variables and replaces $env{<var>} with
+  -- the value for <var>
+  local function resolveEnvVars(tbl)
+    local function resolve(value, visitedKeys)
+      if type(value) ~= "string" then
+        return value -- Only resolve string values
+      end
+
+      -- Resolve placeholders in the format $env{key}
+      return value:gsub("%$env{(.-)}", function(envVar)
+        -- Prevent infinite recursion: a key should not refer to itself
+        if visitedKeys[envVar] then
+          error("Circular reference detected for key: " .. envVar)
+        end
+
+        local envValue = tbl[envVar]
+        if envValue == nil then
+          return vim.env[envVar] or ""
+        end
+
+        -- Mark this key as visited to detect circular references
+        visitedKeys[envVar] = true
+        local ret = resolve(envValue, visitedKeys)
+        visitedKeys[envVar] = nil -- Unmark the key after resolving
+
+        return ret
+      end)
+    end
+
+    local result = {}
+    for key, value in pairs(tbl) do
+      result[key] = resolve(value, { [key] = true })
+    end
+
+    return result
+  end
+
+  local function helper(p_preset)
     if not p_preset then
       return ""
     end
@@ -272,6 +325,14 @@ function presets.get_build_dir(preset, cwd)
   -- macro expansion
   local source_path = Path:new(cwd)
   local source_relative = vim.fn.fnamemodify(cwd, ":t")
+
+  -- environment variables
+  local env = resolveEnvVars(buildEnvTable(preset))
+
+  -- resolve environment variables first as they might contain other macros
+  build_dir = build_dir:gsub("%$env{(.-)}", function(envVar)
+    return env[envVar] or vim.env[envVar] or ""
+  end)
 
   build_dir = build_dir:gsub("${sourceDir}", ".") -- sourceDir is relative to the CMakePresests.json file, and should be relative
   build_dir = build_dir:gsub("${sourceParentDir}", source_path:parent().filename)
