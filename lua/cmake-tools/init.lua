@@ -1408,10 +1408,16 @@ function cmake.create_regenerate_on_save_autocmd()
         local buf = vim.api.nvim_get_current_buf()
         -- Check if buffer is actually modified, and only if it is modified,
         -- execute the :CMakeGenerate, otherwise return. This is to avoid unnecessary regenerattion
-        local buf_modified = vim.api.nvim_buf_get_option(buf, "modified")
-        if buf_modified then
-          cmake.generate({ bang = false, fargs = {} }, nil)
-          config:update_targets()
+        if vim.api.nvim_buf_get_option(buf, "modified") then
+          vim.api.nvim_create_autocmd("BufWritePost", {
+            group = group,
+            once = true,
+            buffer = buf,
+            callback = function()
+              cmake.generate({ bang = false, fargs = {} }, nil)
+              config:update_targets()
+            end,
+          })
         end
       end,
     })
