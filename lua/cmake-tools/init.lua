@@ -13,6 +13,7 @@ local window = require("cmake-tools.window")
 local environment = require("cmake-tools.environment")
 local file_picker = require("cmake-tools.file_picker")
 local scratch = require("cmake-tools.scratch")
+local Path = require("plenary.path")
 
 local ctest = require("cmake-tools.test.ctest")
 
@@ -692,13 +693,17 @@ function cmake.select_build_preset(callback)
         if config.build_preset ~= choice then
           config.build_preset = choice
         end
-        local associated_configure_preset = presets:get_build_preset(choice).configurePreset
+        local associated_configure_preset = presets:get_configure_preset(
+          presets:get_build_preset(choice).configurePreset,
+          { include_hidden = true }
+        )
+        local associated_configure_preset_name = associated_configure_preset
+            and associated_configure_preset.name
+          or nil
         local configure_preset_updated = false
 
-        if
-          associated_configure_preset and config.configure_preset ~= associated_configure_preset
-        then
-          config.configure_preset = associated_configure_preset
+        if config.configure_preset ~= associated_configure_preset_name then
+          config.configure_preset = associated_configure_preset_name
           configure_preset_updated = true
         end
 
