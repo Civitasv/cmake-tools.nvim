@@ -133,8 +133,10 @@ local function get_preset_names(presets, opts)
 
   if presets then
     for _, v in pairs(presets) do
-      if include_hidden or not v.hidden then
-        table.insert(options, v.name)
+      if not v.disabled then
+        if include_hidden or not v.hidden then
+          table.insert(options, v.name)
+        end
       end
     end
   end
@@ -154,8 +156,10 @@ local function get_preset(name, tbl, opts)
   if tbl then
     for _, v in pairs(tbl) do
       if v.name == name then
-        if include_hidden or not v.hidden then
-          return v
+        if not v.disabled then
+          if include_hidden or not v.hidden then
+            return v
+          end
         end
       end
     end

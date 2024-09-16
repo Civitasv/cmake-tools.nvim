@@ -14,6 +14,7 @@ local environment = require("cmake-tools.environment")
 local file_picker = require("cmake-tools.file_picker")
 local scratch = require("cmake-tools.scratch")
 local Result = require("cmake-tools.result")
+local Path = require("plenary.path")
 
 local ctest = require("cmake-tools.test.ctest")
 
@@ -259,15 +260,7 @@ function cmake.clean(callback)
 
   local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
-  return utils.execute(
-    cmd,
-    config.env_script,
-    env,
-    args,
-    config.cwd,
-    config.executor,
-    callback
-  )
+  return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, callback)
 end
 
 --- Build this project using the make toolchain of target platform
@@ -343,15 +336,7 @@ function cmake.build(opt, callback)
 
   local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
-  return utils.execute(
-    cmd,
-    config.env_script,
-    env,
-    args,
-    config.cwd,
-    config.executor,
-    callback
-  )
+  return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, callback)
 end
 
 function cmake.quick_build(opt, callback)
@@ -506,15 +491,7 @@ function cmake.run(opt, callback)
       local env = environment.get_run_environment(config, opt.target)
       local _args = opt.args and opt.args or config.target_settings[opt.target].args
       local cmd = target_path
-      utils.run(
-        cmd,
-        config.env_script,
-        env,
-        _args,
-        launch_path,
-        config.runner,
-        callback
-      )
+      utils.run(cmd, config.env_script, env, _args, launch_path, config.runner, callback)
     end)
   else
     local result = config:get_launch_target()
@@ -811,13 +788,17 @@ function cmake.select_build_preset(callback)
         if config.build_preset ~= choice then
           config.build_preset = choice
         end
-        local associated_configure_preset = presets:get_build_preset(choice).configurePreset
+        local associated_configure_preset = presets:get_configure_preset(
+          presets:get_build_preset(choice).configurePreset,
+          { include_hidden = true }
+        )
+        local associated_configure_preset_name = associated_configure_preset
+            and associated_configure_preset.name
+          or nil
         local configure_preset_updated = false
 
-        if
-          associated_configure_preset and config.configure_preset ~= associated_configure_preset
-        then
-          config.configure_preset = associated_configure_preset
+        if config.configure_preset ~= associated_configure_preset_name then
+          config.configure_preset = associated_configure_preset_name
           configure_preset_updated = true
         end
 
