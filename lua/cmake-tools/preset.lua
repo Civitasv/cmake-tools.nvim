@@ -6,85 +6,35 @@ local function createInstance(self, obj, get_preset)
   local instance = setmetatable(obj or {}, self)
   self.__index = self
   instance.inheritedPresets = {}
+  instance.environment = instance.environment or {}
+  instance.cacheVariables = instance.cacheVariables or {}
+
+  local function updateInstance(newInstance)
+    instance.environment =
+      vim.tbl_deep_extend("keep", instance.environment, newInstance.environment)
+    instance.cacheVariables =
+      vim.tbl_deep_extend("keep", instance.cacheVariables, newInstance.cacheVariables)
+    instance.binaryDir = instance.binaryDir or newInstance.binaryDir
+    table.insert(instance.inheritedPresets, newInstance)
+  end
 
   if type(instance.inherits) == "string" then
     local nextPreset = get_preset(instance.inherits)
     if nextPreset then
-      local p = createInstance(self, nextPreset, get_preset)
-      instance.binaryDir = instance.binaryDir or p.binaryDir
-      table.insert(instance.inheritedPresets, p)
+      updateInstance(createInstance(self, nextPreset, get_preset))
     end
   else
     if type(instance.inherits) == "table" then
       for _, inherited in ipairs(instance.inherits) do
         local nextPreset = get_preset(inherited)
         if nextPreset then
-          local p = createInstance(self, nextPreset, get_preset)
-          instance.binaryDir = instance.binaryDir or p.binaryDir
-          table.insert(instance.inheritedPresets, p)
+          updateInstance(createInstance(self, nextPreset, get_preset))
         end
       end
     end
   end
 
   return instance
-end
-
-local function buildEnvironment(self)
-  local function build(bPreset)
-    local env = bPreset.environment or {}
-    for _, inherited in ipairs(bPreset.inheritedPresets) do
-      env = vim.tbl_deep_extend("keep", env, build(inherited))
-    end
-
-  -- macro expansion
-  local source_path = Path:new(self.cwd)
-  local source_relative = vim.fn.fnamemodify(self.cwd, ":t")
-  str = str:gsub("${sourceDir}", ".") -- sourceDir is relative to the CMakePresests.json file, and should be relative
-  str = str:gsub("${sourceParentDir}", source_path:parent().filename)
-  str = str:gsub("${sourceDirName}", source_relative)
-  str = str:gsub("${presetName}", self.name)
-  if self.generator then
-    str = str:gsub("${generator}", self.generator)
-  end
-
-  local function resolveEnvVars(tbl)
-    local function resolve(value, visitedKeys)
-      if type(value) ~= "string" then
-        return value -- Only resolve string values
-      end
-
-      -- Resolve placeholders in the format $env{key}
-      return value:gsub("%$env{(.-)}", function(envVar)
-        -- Prevent infinite recursion: a key should not refer to itself
-        if visitedKeys[envVar] then
-          error("Circular reference detected for key: " .. envVar)
-        end
-
-        local envValue = tbl[envVar]
-        if envValue == nil then
-          return vim.env[envVar] or ""
-        end
-
-        -- Mark this key as visited to detect circular references
-        visitedKeys[envVar] = true
-        local ret = resolve(envValue, visitedKeys)
-        visitedKeys[envVar] = nil -- Unmark the key after resolving
-
-        return ret
-      end)
-    end
-
-    -- Loop through all the keys in the table and resolve their values
-    local result = {}
-    for key, value in pairs(tbl) do
-      result[key] = resolve(value, { [key] = true })
-    end
-
-    return result
-  end
-
-  self.environment = resolveEnvVars(build(self))
 end
 
 local function expandMacro(self, str)
@@ -120,19 +70,6 @@ local function resolveBuildDir(self)
   end
   self.binaryDirExpanded = expandMacro(self, self.binaryDir)
   self.binaryDirExpanded = vim.fn.fnamemodify(self.binaryDirExpanded, ":.")
-end
-
-local function buildCacheVariables(self)
-  local function build(bPreset)
-    local env = bPreset.cacheVariables or {}
-    for _, inherited in ipairs(bPreset.inheritedPresets) do
-      env = vim.tbl_deep_extend("keep", env, build(inherited))
-    end
-
-    return env
-  end
-
-  self.cacheVariables = build(self)
 end
 
 local function resolveCacheVariables(self)
@@ -260,16 +197,47 @@ local function resolveConditions(self)
 end
 
 function Preset:new(cwd, obj, get_preset)
+  local function resolveEnvVars(tbl)
+    local function resolve(value, visitedKeys)
+      if type(value) ~= "string" then
+        return value -- Only resolve string values
+      end
+
+      -- Resolve placeholders in the format $env{key}
+      return value:gsub("%$env{(.-)}", function(envVar)
+        -- Prevent infinite recursion: a key should not refer to itself
+        if visitedKeys[envVar] then
+          error("Circular reference detected for key: " .. envVar)
+        end
+
+        local envValue = tbl[envVar]
+        if envValue == nil then
+          return vim.env[envVar] or ""
+        end
+
+        -- Mark this key as visited to detect circular references
+        visitedKeys[envVar] = true
+        local ret = resolve(envValue, visitedKeys)
+        visitedKeys[envVar] = nil -- Unmark the key after resolving
+
+        return ret
+      end)
+    end
+
+    -- Loop through all the keys in the table and resolve their values
+    local result = {}
+    for key, value in pairs(tbl) do
+      result[key] = resolve(value, { [key] = true })
+    end
+
+    return result
+  end
+
   local instance = createInstance(self, obj, get_preset)
   instance.environment = resolveEnvVars(instance.environment)
   instance.cwd = cwd
 
-  -- gather all environment variables in the top preset
-  buildEnvironment(instance)
-  -- gather all cache variables in the top preset
-  buildCacheVariables(instance)
-
-  resolveBuildDir(instance, cwd)
+  resolveBuildDir(instance)
   resolveCacheVariables(instance)
 
   -- We have to resolve the environment first as the condition might depend on envVars
