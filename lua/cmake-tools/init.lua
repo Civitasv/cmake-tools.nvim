@@ -251,9 +251,17 @@ function cmake.clean(callback)
     return
   end
 
+  local path = Path:new(
+    utils.transform_path(config:build_directory_path(), config.executor.name == "quickfix")
+  )
+  if not (path / "CMakeCache.txt"):exists() then
+    -- no need to clean up as we do not have a cache
+    return
+  end
+
   local args = {
     "--build",
-    utils.transform_path(config:build_directory_path(), config.executor.name == "quickfix"),
+    path.filename,
     "--target",
     "clean",
   }
