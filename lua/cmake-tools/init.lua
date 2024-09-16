@@ -112,58 +112,82 @@ function cmake.generate(opt, callback)
   -- needed to execute, so we don't use cmake-kits.json and
   -- cmake-variants.[json|yaml] event they exist.
   local presets_exists = config.base_settings.use_preset and Presets.exists(config.cwd)
-  if presets_exists and not config.configure_preset then
-    -- this will also set value for build type from preset.
-    -- default to be "Debug"
-    return cmake.select_configure_preset(function(result)
-      if not result:is_ok() then
-        callback(result)
-        return
-      end
-      cmake.generate(opt, callback)
-    end)
-  end
-
-  if presets_exists and config.configure_preset then
-    -- if exsist preset file and set configure preset, then
-    -- set build directory to the `binaryDir` option of `configurePresets`
+  if presets_exists then
     local presets = Presets:parse(config.cwd)
-    local preset = presets:get_configure_preset(config.configure_preset)
-    if not preset then
-      config.configure_preset = nil
-      return
-    end
-    local build_directory, no_expand_build_directory = preset.binaryDirExpanded, preset.binaryDir
-    if build_directory ~= "" then
-      config:update_build_dir(build_directory, no_expand_build_directory)
-    end
-    config:generate_build_directory()
 
-    local args = {
-      "--preset",
-      config.configure_preset,
-    }
-    vim.list_extend(args, config:generate_options())
-    vim.list_extend(args, fargs)
-
-    local env = environment.get_build_environment(config)
-    local cmd = const.cmake_command
-    return utils.execute(
-      cmd,
-      config.env_script,
-      env,
-      args,
-      config.cwd,
-      config.executor,
-      ---@param result cmake.Result
-      function(result)
-        callback(result)
-        if result:is_ok() then
-          cmake.configure_compile_commands()
-          cmake.create_regenerate_on_save_autocmd()
+    if not config.configure_preset then
+      -- try to determine the confiure preset based on the build preset
+      if config.build_preset then
+        local build_preset = presets:get_build_preset(config.build_preset)
+        if build_preset then
+          local preset =
+            presets:get_configure_preset(build_preset.configurePreset, { include_hidden = true })
+          if preset then
+            config.configure_preset = preset.name
+          end
         end
       end
-    )
+
+      if not config.configure_preset then
+        -- this will also set value for build type from preset.
+        -- default to be "Debug"
+        return cmake.select_configure_preset(function(result)
+          if not result:is_ok() then
+            callback(result)
+            return
+          end
+          cmake.generate(opt, callback)
+        end)
+      end
+      return
+    end
+
+    if config.configure_preset then
+      -- if exsist preset file and set configure preset, then
+      -- set build directory to the `binaryDir` option of `configurePresets`
+      local preset = presets:get_configure_preset(config.configure_preset)
+      if not preset then
+        config.configure_preset = nil
+        if config.build_preset then
+          local build_preset = presets:get_build_preset(config.build_preset)
+          if not build_preset then
+            config.build_preset = nil
+          end
+        end
+        return
+      end
+      local build_directory, no_expand_build_directory = preset.binaryDirExpanded, preset.binaryDir
+      if build_directory ~= "" then
+        config:update_build_dir(build_directory, no_expand_build_directory)
+      end
+      config:generate_build_directory()
+
+      local args = {
+        "--preset",
+        config.configure_preset,
+      }
+      vim.list_extend(args, config:generate_options())
+      vim.list_extend(args, fargs)
+
+      local env = environment.get_build_environment(config)
+      local cmd = const.cmake_command
+      return utils.execute(
+        cmd,
+        config.env_script,
+        env,
+        args,
+        config.cwd,
+        config.executor,
+        ---@param result cmake.Result
+        function(result)
+          callback(result)
+          if result:is_ok() then
+            cmake.configure_compile_commands()
+            cmake.create_regenerate_on_save_autocmd()
+          end
+        end
+      )
+    end
   end
 
   -- if exists cmake-kits.json, kit is used to set
