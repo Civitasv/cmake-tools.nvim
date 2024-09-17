@@ -797,7 +797,8 @@ function cmake.select_build_preset(callback)
   -- if exists presets
   if Presets.exists(config.cwd) then
     local presets = Presets:parse(config.cwd)
-    local build_preset_names = presets:get_build_preset_names()
+    local build_preset_names =
+      presets:get_build_preset_names({ include_disabled = config:show_disabled_build_presets() })
     build_preset_names = vim.list_extend(build_preset_names, { "None" })
     local format_preset_name = function(p_name)
       if p_name == "None" then

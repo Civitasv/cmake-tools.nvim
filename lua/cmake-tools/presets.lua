@@ -110,7 +110,7 @@ function Presets:parse(cwd)
 
   local function createPreset(obj)
     local function getPreset(name)
-      return instance:get_configure_preset(name, { include_hidden = true })
+      return instance:get_configure_preset(name, { include_hidden = true, include_disabled = true })
     end
     return Preset:new(cwd, obj, getPreset)
   end
@@ -130,10 +130,11 @@ end
 local function get_preset_names(presets, opts)
   local options = {}
   local include_hidden = opts and opts.include_hidden
+  local include_disabled = opts and opts.include_disabled
 
   if presets then
     for _, v in pairs(presets) do
-      if not v.disabled then
+      if include_disabled or not v.disabled then
         if include_hidden or not v.hidden then
           table.insert(options, v.name)
         end
@@ -148,15 +149,34 @@ function Presets:get_configure_preset_names(opts)
 end
 
 function Presets:get_build_preset_names(opts)
-  return get_preset_names(self.buildPresets, opts)
+  local presets = get_preset_names(self.buildPresets, opts)
+  local ret = {}
+  for _, bpreset in ipairs(presets) do
+    local cpresetName = self:get_build_preset(bpreset, opts).configurePreset
+
+    if not cpresetName then
+      table.insert(ret, bpreset)
+    else
+      local cpreset = self:get_configure_preset(
+        cpresetName,
+        { include_hidden = true, include_disabled = opts.include_disabled }
+      )
+      if cpreset and (opts.include_disabled or not cpreset.disabled) then
+        table.insert(ret, bpreset)
+      end
+    end
+  end
+
+  return ret
 end
 
 local function get_preset(name, tbl, opts)
   local include_hidden = opts and opts.include_hidden
+  local include_disabled = opts and opts.include_disabled
   if tbl then
     for _, v in pairs(tbl) do
       if v.name == name then
-        if not v.disabled then
+        if include_disabled or not v.disabled then
           if include_hidden or not v.hidden then
             return v
           end
