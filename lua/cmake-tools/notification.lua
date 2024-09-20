@@ -1,33 +1,87 @@
 local has_notify, notify = pcall(require, "notify")
 
-local notification = {
-  notification = {},
-}
-
-function notification.update_spinner() -- update spinner helper function to defer
-  if notification.notification.spinner_idx then
-    local new_spinner = (notification.notification.spinner_idx + 1)
-      % #notification.notification.spinner
-    notification.notification.spinner_idx = new_spinner
-
-    notification.notification.id = notification.notify(nil, notification.notification.level, {
-      title = "CMakeTools",
-      hide_from_history = true,
-      icon = notification.notification.spinner[new_spinner],
-      replace = notification.notification.id,
-    })
-
-    vim.defer_fn(function()
-      notification.update_spinner()
-    end, notification.notification.refresh_rate_ms)
+local function render(self)
+  if self.closed then
+    self.opts.replace = nil
+  else
+    self.opts.replace = self.id
   end
+
+  self.id = notify(self.msg, self.level, self.opts)
+  self.opts.replace = nil
+  self.closed = false
 end
 
-function notification.notify(msg, lvl, opts)
-  if notification.notification.enabled and has_notify then
-    opts.hide_from_history = true
-    return notify(msg, lvl, opts)
-  end
+local config = {}
+local Notification = {}
+
+function Notification.setup(cfg)
+  config = cfg
 end
 
-return notification
+function Notification:new(type)
+  local instance = setmetatable({}, self)
+  self.__index = self
+
+  instance.spinner_idx = 1
+  instance.closed = true
+  instance.enabled = has_notify and config[type].enabled
+
+  instance.spinnerTimer = vim.loop.new_timer()
+
+  return instance
+end
+
+function Notification:startSpinner()
+  if not self.enabled or self.spinnerRunning then
+    return
+  end
+  self.spinnerRunning = true
+  self.spinnerTimer:start(
+    config.refresh_rate_ms,
+    config.refresh_rate_ms,
+    vim.schedule_wrap(function()
+      self.spinner_idx = (self.spinner_idx + 1) % #config.spinner
+
+      self.opts.replace = self.id
+      self.opts.icon = config.spinner[self.spinner_idx]
+      render(self)
+    end)
+  )
+end
+
+function Notification:stopSpinner()
+  self.spinnerRunning = false
+  self.spinnerTimer:stop()
+end
+
+function Notification:notify(msg, level, opts)
+  if not self.enabled then
+    return
+  end
+
+  self.msg = msg or ""
+  self.level = level
+  self.opts = opts or {}
+
+  local on_close = self.opts.on_close
+  local on_open = self.opts.on_open
+
+  self.opts.hide_from_history = true
+  self.opts.title = "CMakeTools"
+  self.opts.on_close = function(win)
+    self.closed = true
+    if on_close then
+      on_close(win)
+    end
+  end
+  self.opts.on_open = function(win)
+    if on_open then
+      on_open(win)
+    end
+  end
+
+  render(self)
+end
+
+return Notification
