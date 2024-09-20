@@ -76,12 +76,25 @@ function Notification:notify(msg, level, opts)
     end
   end
   self.opts.on_open = function(win)
+    self.win = win
+    self.width = vim.api.nvim_win_get_width(win)
     if on_open then
       on_open(win)
     end
   end
 
   render(self)
+
+  -- update the notification width when the message was updated
+  local timeDigits = 8
+  local headlineLength = (self.opts.icon and (#self.opts.icon + 1) or 0)
+    + #self.opts.title
+    + 3 -- padding between title and time
+    + timeDigits
+
+  if self.width then
+    vim.api.nvim_win_set_width(self.win, math.max(#self.msg + 1, headlineLength))
+  end
 end
 
 return Notification
