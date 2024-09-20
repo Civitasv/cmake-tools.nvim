@@ -99,6 +99,7 @@ require("cmake-tools").setup {
         single_terminal_per_instance = true, -- Single viewport, multiple windows
         single_terminal_per_tab = true, -- Single viewport per tab
         keep_terminal_static_location = true, -- Static location of the viewport if avialable
+        auto_resize = true, -- Resize the terminal if it already exists
 
         -- Running Tasks
         start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
@@ -146,6 +147,7 @@ require("cmake-tools").setup {
         single_terminal_per_instance = true, -- Single viewport, multiple windows
         single_terminal_per_tab = true, -- Single viewport per tab
         keep_terminal_static_location = true, -- Static location of the viewport if avialable
+        auto_resize = true, -- Resize the terminal if it already exists
 
         -- Running Tasks
         start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
