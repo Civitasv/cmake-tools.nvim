@@ -14,6 +14,7 @@ end
 function _vimux.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
   local full_cmd = terminal.prepare_cmd_for_run(cmd, env, args, cwd)
   vim.fn.VimuxRunCommand(full_cmd)
+  terminal.handle_exit(opts, on_exit, opts.close_on_exit)
 end
 
 function _vimux.has_active_job(opts)
