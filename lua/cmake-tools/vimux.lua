@@ -5,7 +5,9 @@ local _vimux = {
   id = nil,
 }
 
-function _vimux.show(opts) end
+function _vimux.show(opts)
+  vim.fn.VimuxInspectRunner()
+end
 
 function _vimux.close(opts)
   vim.fn.VimuxCloseRunner()
