@@ -52,6 +52,7 @@ local const = {
         }, -- options to pass into the `overseer.new_task` command
         on_new_task = function(task) end, -- a function that gets overseer.Task when it is created, before calling `task:start`
       },
+      vimux = {},
       terminal = {
         name = "Executor Terminal",
         prefix_name = "[CMakeTools]: ", -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
@@ -96,6 +97,7 @@ local const = {
         }, -- options to pass into the `overseer.new_task` command
         on_new_task = function(task) end, -- a function that gets overseer.Task when it is created, before calling `task:start`
       },
+      vimux = {},
       terminal = {
         name = "Runner Terminal",
         prefix_name = "[CMakeTools]: ", -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
