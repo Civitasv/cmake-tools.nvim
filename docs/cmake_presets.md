@@ -12,4 +12,4 @@ Read more about CMake presets from [CMake docs](https://cmake.org/cmake/help/lat
 2. [Package Preset](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html#package-preset) is not supported.
 3. [Workflow Preset](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html#workflow-preset) is not supported.
 4. [Condition](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html#condition) mostly supported. Types `matches` and `notMatches` currently not supported due to lua's differences in regex capabilities
-5. Some macros not supported yet: `$penv{<variable-name>}`, `$vendor{<macro-name>}`
+5. Some macros not supported yet: `$vendor{<macro-name>}`

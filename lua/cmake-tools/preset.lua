@@ -11,6 +11,10 @@ local function expandMacro(self, str)
     return self.environment[envVar] or vim.env[envVar] or ""
   end)
 
+  str = str:gsub("%$penv{(.-)}", function(envVar)
+    return vim.env[envVar] or ""
+  end)
+
   -- macro expansion
   local source_path = Path:new(self.cwd)
   local source_relative = vim.fn.fnamemodify(self.cwd, ":t")
@@ -185,6 +189,10 @@ local function resolveEnvVars(self)
       visitedKeys[envVar] = nil -- Unmark the key after resolving
 
       return ret
+    end)
+
+    return value:gsub("%$penv{(.-)}", function(envVar)
+      return vim.env[envVar] or ""
     end)
   end
 
