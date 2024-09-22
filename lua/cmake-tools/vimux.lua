@@ -8,7 +8,7 @@ local _vimux = {
 function _vimux.show(opts) end
 
 function _vimux.close(opts)
-  VimuxCloseRunner()
+  vim.fn.VimuxCloseRunner()
 end
 
 function _vimux.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
