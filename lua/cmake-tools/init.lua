@@ -5,7 +5,7 @@ local const = require("cmake-tools.const")
 local Config = require("cmake-tools.config")
 local variants = require("cmake-tools.variants")
 local kits = require("cmake-tools.kits")
-local presets = require("cmake-tools.presets")
+local Presets = require("cmake-tools.presets")
 local log = require("cmake-tools.log")
 local hints = require("cmake-tools.hints")
 local _session = require("cmake-tools.session")
@@ -13,6 +13,7 @@ local window = require("cmake-tools.window")
 local environment = require("cmake-tools.environment")
 local file_picker = require("cmake-tools.file_picker")
 local scratch = require("cmake-tools.scratch")
+local Path = require("plenary.path")
 
 local ctest = require("cmake-tools.test.ctest")
 
@@ -83,43 +84,79 @@ function cmake.generate(opt, callback)
   -- if exists presets, preset include all info that cmake
   -- needed to execute, so we don't use cmake-kits.json and
   -- cmake-variants.[json|yaml] event they exist.
-  local presets_file = config.base_settings.use_preset and presets.check(config.cwd)
-  if presets_file and not config.configure_preset then
-    -- this will also set value for build type from preset.
-    -- default to be "Debug"
-    return cmake.select_configure_preset(function()
-      cmake.generate(opt, callback)
-    end)
-  end
+  local presets_exists = config.base_settings.use_preset and Presets.exists(config.cwd)
+  if presets_exists then
+    local presets = Presets:parse(config.cwd)
 
-  if presets_file and config.configure_preset then
-    -- if exsist preset file and set configure preset, then
-    -- set build directory to the `binaryDir` option of `configurePresets`
-    local build_directory, no_expand_build_directory = presets.get_build_dir(
-      presets.get_preset_by_name(config.configure_preset, "configurePresets", config.cwd),
-      config.cwd
-    )
-    if build_directory ~= "" then
-      config:update_build_dir(build_directory, no_expand_build_directory)
-    end
-    config:generate_build_directory()
-
-    local args = {
-      "--preset",
-      config.configure_preset,
-    }
-    vim.list_extend(args, config:generate_options())
-    vim.list_extend(args, fargs)
-
-    local env = environment.get_build_environment(config)
-    local cmd = const.cmake_command
-    return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
-      if type(callback) == "function" then
-        callback()
+    if not config.configure_preset then
+      -- try to determine the confiure preset based on the build preset
+      if config.build_preset then
+        local build_preset = presets:get_build_preset(config.build_preset)
+        if build_preset then
+          local preset =
+            presets:get_configure_preset(build_preset.configurePreset, { include_hidden = true })
+          if preset then
+            config.configure_preset = preset.name
+          end
+        end
       end
-      cmake.configure_compile_commands()
-      cmake.create_regenerate_on_save_autocmd()
-    end, const.cmake_notifications)
+
+      if not config.configure_preset then
+        -- this will also set value for build type from preset.
+        -- default to be "Debug"
+        cmake.select_configure_preset(function()
+          cmake.generate(opt, callback)
+        end)
+      end
+      return
+    end
+
+    if config.configure_preset then
+      -- if exsist preset file and set configure preset, then
+      -- set build directory to the `binaryDir` option of `configurePresets`
+      local preset = presets:get_configure_preset(config.configure_preset)
+      if not preset then
+        config.configure_preset = nil
+        if config.build_preset then
+          local build_preset = presets:get_build_preset(config.build_preset)
+          if not build_preset then
+            config.build_preset = nil
+          end
+        end
+        return
+      end
+      local build_directory, no_expand_build_directory = preset.binaryDirExpanded, preset.binaryDir
+      if build_directory ~= "" then
+        config:update_build_dir(build_directory, no_expand_build_directory)
+      end
+      config:generate_build_directory()
+
+      local args = {
+        "--preset",
+        config.configure_preset,
+      }
+      vim.list_extend(args, config:generate_options())
+      vim.list_extend(args, fargs)
+
+      local env = environment.get_build_environment(config)
+      local cmd = const.cmake_command
+      return utils.execute(
+        cmd,
+        config.env_script,
+        env,
+        args,
+        config.cwd,
+        config.executor,
+        function()
+          if type(callback) == "function" then
+            callback()
+          end
+          cmake.configure_compile_commands()
+          cmake.create_regenerate_on_save_autocmd()
+        end,
+        const.cmake_notifications
+      )
+    end
   end
 
   -- if exists cmake-kits.json, kit is used to set
@@ -195,9 +232,17 @@ function cmake.clean(callback)
     return log.error(result.message)
   end
 
+  local path = Path:new(
+    utils.transform_path(config:build_directory_path(), config.executor.name == "quickfix")
+  )
+  if not (path / "CMakeCache.txt"):exists() then
+    -- no need to clean up as we do not have a cache
+    return
+  end
+
   local args = {
     "--build",
-    utils.transform_path(config:build_directory_path(), config.executor.name == "quickfix"),
+    path.filename,
     "--target",
     "clean",
   }
@@ -246,9 +291,9 @@ function cmake.build(opt, callback)
   end
 
   local args
-  local presets_file = config.base_settings.use_preset and presets.check(config.cwd)
+  local presets_exists = config.base_settings.use_preset and Presets.exists(config.cwd)
 
-  if presets_file and config.build_preset then
+  if presets_exists and config.build_preset then
     args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
   else
     args = {
@@ -620,14 +665,11 @@ function cmake.select_configure_preset(callback)
   end
 
   -- if exists presets
-  local presets_file = presets.check(config.cwd)
-  if presets_file then
-    local configure_preset_names =
-      presets.parse("configurePresets", { include_hidden = false }, config.cwd)
-    local configure_presets =
-      presets.parse_name_mapped("configurePresets", { include_hidden = false }, config.cwd)
+  if Presets.exists(config.cwd) then
+    local presets = Presets:parse(config.cwd)
+    local configure_preset_names = presets:get_configure_preset_names()
     local format_preset_name = function(p_name)
-      local p = configure_presets[p_name]
+      local p = presets:get_configure_preset(p_name)
       return p.displayName or p.name
     end
     vim.ui.select(
@@ -642,9 +684,7 @@ function cmake.select_configure_preset(callback)
         end
         if config.configure_preset ~= choice then
           config.configure_preset = choice
-          config.build_type = presets.get_build_type(
-            presets.get_preset_by_name(choice, "configurePresets", config.cwd)
-          )
+          config.build_type = presets:get_configure_preset(choice):get_build_type()
         end
         if type(callback) == "function" then
           callback()
@@ -669,15 +709,16 @@ function cmake.select_build_preset(callback)
   end
 
   -- if exists presets
-  local presets_file = presets.check(config.cwd)
-  if presets_file then
-    local build_preset_names = presets.parse("buildPresets", { include_hidden = false }, config.cwd)
-    local build_presets =
-      presets.parse_name_mapped("buildPresets", { include_hidden = false }, config.cwd)
+  if Presets.exists(config.cwd) then
+    local presets = Presets:parse(config.cwd)
+    local build_preset_names =
+      presets:get_build_preset_names({ include_disabled = config:show_disabled_build_presets() })
     build_preset_names = vim.list_extend(build_preset_names, { "None" })
-    build_presets = vim.tbl_extend("keep", build_presets, { None = { displayName = "None" } })
     local format_preset_name = function(p_name)
-      local p = build_presets[p_name]
+      if p_name == "None" then
+        return p_name
+      end
+      local p = presets:get_build_preset(p_name)
       return p.displayName or p.name
     end
     vim.ui.select(
@@ -694,14 +735,17 @@ function cmake.select_build_preset(callback)
         if config.build_preset ~= choice then
           config.build_preset = choice
         end
-        local associated_configure_preset =
-          presets.get_preset_by_name(choice, "buildPresets", config.cwd)["configurePreset"]
+        local associated_configure_preset = presets:get_configure_preset(
+          presets:get_build_preset(choice).configurePreset,
+          { include_hidden = true }
+        )
+        local associated_configure_preset_name = associated_configure_preset
+            and associated_configure_preset.name
+          or nil
         local configure_preset_updated = false
 
-        if
-          associated_configure_preset and config.configure_preset ~= associated_configure_preset
-        then
-          config.configure_preset = associated_configure_preset
+        if config.configure_preset ~= associated_configure_preset_name then
+          config.configure_preset = associated_configure_preset_name
           configure_preset_updated = true
         end
 
@@ -1097,8 +1141,7 @@ function cmake.is_cmake_project()
 end
 
 function cmake.has_cmake_preset()
-  local presets_file = presets.check(config.cwd)
-  return presets_file ~= nil
+  return Presets.exists(config.cwd)
 end
 
 function cmake.get_build_targets()
@@ -1252,8 +1295,8 @@ function cmake.create_regenerate_on_save_autocmd()
     table.insert(pattern, ss)
   end
 
-  local presets_file = config.base_settings.use_preset and presets.check(config.cwd)
-  if presets_file then
+  local presets_exists = config.base_settings.use_preset and Presets.exists(config.cwd)
+  if presets_exists then
     for _, item in ipairs({
       "CMakePresets.json",
       "CMakeUserPresets.json",
@@ -1284,10 +1327,16 @@ function cmake.create_regenerate_on_save_autocmd()
         local buf = vim.api.nvim_get_current_buf()
         -- Check if buffer is actually modified, and only if it is modified,
         -- execute the :CMakeGenerate, otherwise return. This is to avoid unnecessary regenerattion
-        local buf_modified = vim.api.nvim_buf_get_option(buf, "modified")
-        if buf_modified then
-          cmake.generate({ bang = false, fargs = {} }, nil)
-          config:update_targets()
+        if vim.api.nvim_buf_get_option(buf, "modified") then
+          vim.api.nvim_create_autocmd("BufWritePost", {
+            group = group,
+            once = true,
+            buffer = buf,
+            callback = function()
+              cmake.generate({ bang = false, fargs = {} }, nil)
+              config:update_targets()
+            end,
+          })
         end
       end,
     })
