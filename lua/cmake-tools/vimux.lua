@@ -21,7 +21,9 @@ function _vimux.has_active_job(opts)
   return false
 end
 
-function _vimux.stop(opts) end
+function _vimux.stop(opts)
+  vim.fn.VimuxSendKeys("C-c")
+end
 
 ---Check if the executor is installed and can be used
 ---@return string|boolean
