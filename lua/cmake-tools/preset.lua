@@ -2,41 +2,6 @@ local Path = require("plenary.path")
 
 local Preset = {}
 
-local function createInstance(self, obj, get_preset)
-  local instance = setmetatable(obj or {}, self)
-  self.__index = self
-  instance.inheritedPresets = {}
-  instance.environment = instance.environment or {}
-  instance.cacheVariables = instance.cacheVariables or {}
-
-  local function updateInstance(newInstance)
-    instance.environment =
-      vim.tbl_deep_extend("keep", instance.environment, newInstance.environment)
-    instance.cacheVariables =
-      vim.tbl_deep_extend("keep", instance.cacheVariables, newInstance.cacheVariables)
-    instance.binaryDir = instance.binaryDir or newInstance.binaryDir
-    table.insert(instance.inheritedPresets, newInstance)
-  end
-
-  if type(instance.inherits) == "string" then
-    local nextPreset = get_preset(instance.inherits)
-    if nextPreset then
-      updateInstance(createInstance(self, nextPreset, get_preset))
-    end
-  else
-    if type(instance.inherits) == "table" then
-      for _, inherited in ipairs(instance.inherits) do
-        local nextPreset = get_preset(inherited)
-        if nextPreset then
-          updateInstance(createInstance(self, nextPreset, get_preset))
-        end
-      end
-    end
-  end
-
-  return instance
-end
-
 local function expandMacro(self, str)
   if type(str) ~= "string" then
     return str
@@ -196,50 +161,97 @@ local function resolveConditions(self)
   self.disabled = (enabled ~= nil) and (enabled == false)
 end
 
-function Preset:new(cwd, obj, get_preset)
-  local function resolveEnvVars(tbl)
-    local function resolve(value, visitedKeys)
-      if type(value) ~= "string" then
-        return value -- Only resolve string values
+local function resolveEnvVars(self)
+  local function resolve(value, visitedKeys)
+    if type(value) ~= "string" then
+      return value -- Only resolve string values
+    end
+
+    -- Resolve placeholders in the format $env{key}
+    value = value:gsub("%$env{(.-)}", function(envVar)
+      -- Prevent infinite recursion: a key should not refer to itself
+      if visitedKeys[envVar] then
+        error("Circular reference detected for key: " .. envVar)
       end
 
-      -- Resolve placeholders in the format $env{key}
-      return value:gsub("%$env{(.-)}", function(envVar)
-        -- Prevent infinite recursion: a key should not refer to itself
-        if visitedKeys[envVar] then
-          error("Circular reference detected for key: " .. envVar)
-        end
+      local envValue = self.environment[envVar]
+      if envValue == nil then
+        return vim.env[envVar] or ""
+      end
 
-        local envValue = tbl[envVar]
-        if envValue == nil then
-          return vim.env[envVar] or ""
-        end
+      -- Mark this key as visited to detect circular references
+      visitedKeys[envVar] = true
+      local ret = resolve(envValue, visitedKeys)
+      visitedKeys[envVar] = nil -- Unmark the key after resolving
 
-        -- Mark this key as visited to detect circular references
-        visitedKeys[envVar] = true
-        local ret = resolve(envValue, visitedKeys)
-        visitedKeys[envVar] = nil -- Unmark the key after resolving
-
-        return ret
-      end)
-    end
-
-    -- Loop through all the keys in the table and resolve their values
-    local result = {}
-    for key, value in pairs(tbl) do
-      result[key] = resolve(value, { [key] = true })
-    end
-
-    return result
+      return ret
+    end)
   end
 
-  local instance = createInstance(self, obj, get_preset)
-  instance.environment = resolveEnvVars(instance.environment)
+  -- Loop through all the keys in the table and resolve their values
+  for key, value in pairs(self.environment) do
+    self.environment[key] = resolve(value, { [key] = true })
+  end
+end
+
+local function parseTree(self, get_preset)
+  local queue = { self }
+  local queueIdx = 0
+
+  while #queue ~= queueIdx do
+    local current = queue[queueIdx + 1]
+    current = setmetatable(current, self)
+
+    current.environment = current.environment or {}
+    current.cacheVariables = current.cacheVariables or {}
+    current.inheritedPresets = current.inheritedPresets or {}
+
+    local function update(nextPresetName)
+      local nextPreset = get_preset(nextPresetName)
+      if nextPreset then
+        table.insert(current.inheritedPresets, nextPreset)
+        table.insert(queue, nextPreset)
+      end
+    end
+
+    if type(current.inherits) == "string" then
+      update(current.inherits)
+    else
+      if type(current.inherits) == "table" then
+        for _, inherited in ipairs(current.inherits) do
+          update(inherited)
+        end
+      end
+    end
+
+    queueIdx = queueIdx + 1
+  end
+
+  local queueSize = #queue
+  if queueSize > 1 then
+    -- Iterate from the back to pull the parents value down the inheritance hierarchy
+    for i = queueSize - 1, 1, -1 do
+      local current = queue[i]
+      for _, parent in ipairs(current.inheritedPresets) do
+        current.environment = vim.tbl_deep_extend("keep", current.environment, parent.environment)
+        current.binaryDir = current.binaryDir or parent.binaryDir
+        current.cacheVariables =
+          vim.tbl_deep_extend("keep", current.cacheVariables, parent.cacheVariables)
+      end
+    end
+  end
+end
+
+function Preset:new(cwd, obj, get_preset)
+  local instance = setmetatable(obj or {}, self)
+  instance.__index = self
+  instance.environment = instance.environment or {}
   instance.cwd = cwd
 
-  resolveBuildDir(instance)
+  parseTree(instance, get_preset)
+  resolveEnvVars(instance)
   resolveCacheVariables(instance)
-
+  resolveBuildDir(instance)
   -- We have to resolve the environment first as the condition might depend on envVars
   resolveConditions(instance)
 
