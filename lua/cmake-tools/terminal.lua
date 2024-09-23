@@ -610,6 +610,36 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   -- Reposition the terminal buffer, before sending commands
   local final_win_id = _terminal.reposition(opts)
 
+  local chain_symb = osys.iswin32 and " & " or " ; "
+  full_cmd = full_cmd .. chain_symb .. get_command_handling_on_exit()
+
+  if opts.use_shell_alias then
+    local alias_name = "cmake_run_target"
+    if not osys.iswin32 then
+      if is_fish_shell() then
+        env_script = "function " .. alias_name .. "; " .. full_cmd .. ";end; " .. env_script
+      else
+        env_script = "alias " .. alias_name .. "='" .. full_cmd .. "'; " .. env_script
+      end
+      -- Depending how the user defined env_script ends, we have to strip a trailing
+      -- semicolon and replace it by a && to only clear the console if the user defined
+      -- env_script ran successfully
+      if env_script and env_script:match("^%s*$") ~= nil then
+        if env_script:match(";%s*$") then
+          env_script = env_script:match("^(.-);%s*$") .. "&&"
+        elseif not env_script:match("&&%s*$") then
+          env_script = env_script .. "&&"
+        end
+      end
+
+      env_script = env_script .. "clear"
+    else
+      error("using a shell alias is currently not suported for windows")
+    end
+
+    full_cmd = alias_name
+  end
+
   --- NOTE: env_script needs to be run only once if the terminal buffer does not already exist
   --- We compare the old and the new id and only if they are not the same, plus if the terminal exists,
   --    only then, we do not reinitialize the environment, else we reinit the env
@@ -626,21 +656,16 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   end
 
   -- Send final cmd to terminal
-  local chain_symb = osys.iswin32 and " & " or " ; "
-  _terminal.send_data_to_terminal(
-    buffer_idx,
-    full_cmd .. chain_symb .. get_command_handling_on_exit(),
-    {
-      win_id = final_win_id,
-      prefix = opts.prefix_name,
-      split_direction = opts.split_direction,
-      split_size = opts.split_size,
-      start_insert = opts.start_insert,
-      focus = opts.focus,
-      auto_resize = opts.auto_resize,
-      do_not_add_newline = opts.do_not_add_newline,
-    }
-  )
+  _terminal.send_data_to_terminal(buffer_idx, full_cmd, {
+    win_id = final_win_id,
+    prefix = opts.prefix_name,
+    split_direction = opts.split_direction,
+    split_size = opts.split_size,
+    start_insert = opts.start_insert,
+    focus = opts.focus,
+    auto_resize = opts.auto_resize,
+    do_not_add_newline = opts.do_not_add_newline,
+  })
   on_exit_coroutine = coroutine.create(function()
     while utils.file_exists(get_lock_file_path()) do
       vim.defer_fn(function()
