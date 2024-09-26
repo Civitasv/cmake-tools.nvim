@@ -713,20 +713,6 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   coroutine.resume(on_exit_coroutine)
 end
 
-function _terminal.prepare_launch_path(path)
-  if osys.iswin32 then
-    path = '"' .. path .. '"' -- The path is kept in double quotes ... Windows Duh!
-  elseif osys.islinux then
-    path = path
-  elseif osys.iswsl then
-    path = path
-  elseif osys.ismac then
-    path = path
-  end
-
-  return path
-end
-
 function _terminal.close(opts)
   if not _terminal.id then
     log.info("There is no terminal instance")
