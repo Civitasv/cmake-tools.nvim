@@ -551,6 +551,10 @@ local is_fish_shell = function()
   return string.find(shell, "fish")
 end
 
+local is_power_shell = function()
+  return vim.o.shell == "pwsh"
+end
+
 ---creates command that handles all of our post command stuff for on_exit handling
 ---@return string
 local get_command_handling_on_exit = function()
@@ -567,7 +571,7 @@ local get_command_handling_on_exit = function()
 
   if osys.iswin32 then
     exit_op = "%errorlevel%"
-    escape_rm = " del /Q "
+    escape_rm = is_power_shell() and "Remove-Item " or "del /Q "
     exit_code_file_path = exit_code_file_path:gsub("/", "\\")
     lock_file_path = lock_file_path:gsub("/", "\\")
   end
