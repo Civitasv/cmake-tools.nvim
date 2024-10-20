@@ -325,8 +325,6 @@ function cmake.build(opt, callback)
     }
   end
 
-  vim.list_extend(args, config:build_options())
-
   if opt.target ~= nil then
     vim.list_extend(args, { "--target", opt.target })
     vim.list_extend(args, fargs)
@@ -337,6 +335,8 @@ function cmake.build(opt, callback)
     vim.list_extend(args, { "--target", config.build_target })
     vim.list_extend(args, fargs)
   end
+
+  vim.list_extend(args, config:build_options())
 
   local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
