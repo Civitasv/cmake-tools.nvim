@@ -1189,6 +1189,7 @@ function cmake.select_cwd(cwd_path)
         config.cwd = vim.fn.resolve(input)
         cmake.register_autocmd()
         cmake.register_autocmd_provided_by_users()
+        cmake.register_scratch_buffer(config.executor.name, config.runner.name)
         --	end
         cmake.generate({ bang = false, fargs = {} }, nil)
       end)
@@ -1197,6 +1198,7 @@ function cmake.select_cwd(cwd_path)
     config.cwd = vim.fn.resolve(cwd_path.args)
     cmake.register_autocmd()
     cmake.register_autocmd_provided_by_users()
+    cmake.register_scratch_buffer(config.executor.name, config.runner.name)
     cmake.generate({ bang = false, fargs = {} }, nil)
   end
 end
