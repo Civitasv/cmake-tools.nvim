@@ -34,6 +34,8 @@ function cmake.setup(values)
     const.cmake_runner.opts or {}
   )
 
+  require("cmake-tools.notification").setup(const.cmake_notifications)
+
   config = Config:new(const)
 
   -- auto reload previous session
@@ -119,7 +121,7 @@ function cmake.generate(opt, callback)
       end
       cmake.configure_compile_commands()
       cmake.create_regenerate_on_save_autocmd()
-    end, const.cmake_notifications)
+    end)
   end
 
   -- if exists cmake-kits.json, kit is used to set
@@ -181,7 +183,7 @@ function cmake.generate(opt, callback)
     end
     cmake.configure_compile_commands()
     cmake.create_regenerate_on_save_autocmd()
-  end, const.cmake_notifications)
+  end)
 end
 
 --- Clean targets
@@ -208,7 +210,7 @@ function cmake.clean(callback)
     if type(callback) == "function" then
       callback()
     end
-  end, const.cmake_notifications)
+  end)
 end
 
 --- Build this project using the make toolchain of target platform
@@ -276,7 +278,7 @@ function cmake.build(opt, callback)
     if type(callback) == "function" then
       callback()
     end
-  end, const.cmake_notifications)
+  end)
 end
 
 function cmake.quick_build(opt, callback)
@@ -341,8 +343,7 @@ function cmake.install(opt)
     args,
     config.cwd,
     config.executor,
-    nil,
-    const.cmake_notifications
+    nil
   )
 end
 
@@ -421,16 +422,7 @@ function cmake.run(opt)
       local env = environment.get_run_environment(config, opt.target)
       local _args = opt.args and opt.args or config.target_settings[opt.target].args
       local cmd = target_path
-      utils.run(
-        cmd,
-        config.env_script,
-        env,
-        _args,
-        launch_path,
-        config.runner,
-        nil,
-        const.cmake_notifications
-      )
+      utils.run(cmd, config.env_script, env, _args, launch_path, config.runner, nil)
     end)
   else
     local result = config:get_launch_target()
@@ -468,8 +460,7 @@ function cmake.run(opt)
             cmake:get_launch_args(),
             launch_path,
             config.runner,
-            nil,
-            const.cmake_notifications
+            nil
           )
         end
       )
