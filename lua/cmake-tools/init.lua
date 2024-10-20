@@ -13,6 +13,7 @@ local window = require("cmake-tools.window")
 local environment = require("cmake-tools.environment")
 local file_picker = require("cmake-tools.file_picker")
 local scratch = require("cmake-tools.scratch")
+local Result = require("cmake-tools.result")
 
 local ctest = require("cmake-tools.test.ctest")
 
@@ -58,22 +59,46 @@ function cmake.setup(values)
   cmake.register_scratch_buffer(config.executor.name, config.runner.name)
 end
 
---- Generate build system for this project.
--- Think it as `cmake .`
-function cmake.generate(opt, callback)
+local function check_active_job_and_notify(callback)
   if utils.has_active_job(config.runner, config.executor) then
+    callback(Result:new_error(Types.ANOTHER_JOB_RUNNING, "Another CMake job already running"))
+    return true
+  end
+  return false
+end
+
+local function get_cmake_configuration_or_notify(callback)
+  local result = utils.get_cmake_configuration(config.cwd)
+  if not result:is_ok() then
+    callback(result)
+    log.error(result.message)
+    return nil
+  end
+  return result
+end
+
+--- Generate build system for this project, much like the `cmake command`
+---@param opt table
+---@param callback nil|fun(result: cmake.Result): nil
+---@return nil
+function cmake.generate(opt, callback)
+  callback = callback or function() end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
   end
 
   local clean = opt.bang
   local fargs = opt.fargs or {}
   if clean then
-    return cmake.clean(function()
+    return cmake.clean(function(result)
+      if not result:is_ok() then
+        callback(result)
+        return
+      end
       -- Clear CMakeCache.txt
       if config:has_build_directory() then
         utils.rmfile(config.build_directory / "CMakeCache.txt")
@@ -89,7 +114,11 @@ function cmake.generate(opt, callback)
   if presets_file and not config.configure_preset then
     -- this will also set value for build type from preset.
     -- default to be "Debug"
-    return cmake.select_configure_preset(function()
+    return cmake.select_configure_preset(function(result)
+      if not result:is_ok() then
+        callback(result)
+        return
+      end
       cmake.generate(opt, callback)
     end)
   end
@@ -115,20 +144,33 @@ function cmake.generate(opt, callback)
 
     local env = environment.get_build_environment(config)
     local cmd = const.cmake_command
-    return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
-      if type(callback) == "function" then
-        callback()
+    return utils.execute(
+      cmd,
+      config.env_script,
+      env,
+      args,
+      config.cwd,
+      config.executor,
+      ---@param result cmake.Result
+      function(result)
+        callback(result)
+        if result:is_ok() then
+          cmake.configure_compile_commands()
+          cmake.create_regenerate_on_save_autocmd()
+        end
       end
-      cmake.configure_compile_commands()
-      cmake.create_regenerate_on_save_autocmd()
-    end)
+    )
   end
 
   -- if exists cmake-kits.json, kit is used to set
   -- environmental variables and args.
   local kits_config = kits.parse(const.cmake_kits_path, config.cwd)
   if kits_config and not config.kit then
-    return cmake.select_kit(function()
+    return cmake.select_kit(function(result)
+      if not result:is_ok() then
+        callback(result)
+        return
+      end
       cmake.generate(opt, callback)
     end)
   end
@@ -177,24 +219,32 @@ function cmake.generate(opt, callback)
   local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
   env = vim.tbl_extend("keep", env, kit_option.env)
-  return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
-    if type(callback) == "function" then
-      callback()
+  return utils.execute(
+    cmd,
+    config.env_script,
+    env,
+    args,
+    config.cwd,
+    config.executor,
+    function(result)
+      if result:is_ok() then
+        cmake.configure_compile_commands()
+        cmake.create_regenerate_on_save_autocmd()
+      end
+      callback(result)
     end
-    cmake.configure_compile_commands()
-    cmake.create_regenerate_on_save_autocmd()
-  end)
+  )
 end
 
 --- Clean targets
 function cmake.clean(callback)
-  if utils.has_active_job(config.runner, config.executor) then
+  callback = callback or function() end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
   end
 
   local args = {
@@ -206,45 +256,61 @@ function cmake.clean(callback)
 
   local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
-  return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
-    if type(callback) == "function" then
-      callback()
-    end
-  end)
+  return utils.execute(
+    cmd,
+    config.env_script,
+    env,
+    args,
+    config.cwd,
+    config.executor,
+    callback
+  )
 end
 
 --- Build this project using the make toolchain of target platform
 --- think it as `cmake --build .`
 function cmake.build(opt, callback)
-  if utils.has_active_job(config.runner, config.executor) then
+  callback = callback or function() end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
   end
 
   local clean = opt.bang
   local fargs = opt.fargs or {}
   if clean then
-    return cmake.clean(function()
-      cmake.build({ fargs = fargs }, callback)
+    return cmake.clean(function(result)
+      if result:is_ok() then
+        cmake.build({ fargs = fargs }, callback)
+      else
+        callback(result)
+      end
     end)
   end
 
   local ct = config:get_codemodel_targets()
   if not (config:has_build_directory()) or not (ct.code == Types.SUCCESS) then
     -- configure it
-    return cmake.generate({ bang = false, fargs = {} }, function()
-      cmake.build(opt, callback)
+    return cmake.generate({ bang = false, fargs = {} }, function(result)
+      if result:is_ok() then
+        cmake.build(opt, callback)
+      else
+        callback(result)
+      end
     end)
   end
 
   if opt.target == nil and config.build_target == nil then
-    return cmake.select_build_target(function()
-      cmake.build(opt, callback)
-    end), true
+    return cmake.select_build_target(true, function(result)
+      if result:is_ok() then
+        cmake.build(opt, callback)
+      else
+        callback(result)
+      end
+    end)
   end
 
   local args
@@ -274,24 +340,33 @@ function cmake.build(opt, callback)
 
   local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
-  return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
-    if type(callback) == "function" then
-      callback()
-    end
-  end)
+  return utils.execute(
+    cmd,
+    config.env_script,
+    env,
+    args,
+    config.cwd,
+    config.executor,
+    callback
+  )
 end
 
 function cmake.quick_build(opt, callback)
+  callback = callback or function() end
   -- if no target was supplied, query via ui select
   if opt.fargs[1] == nil then
-    if utils.has_active_job(config.runner, config.executor) then
+    if check_active_job_and_notify(callback) then
       return
     end
 
     if not (config:has_build_directory()) then
       -- configure it
-      return cmake.generate({ bang = false, fargs = {} }, function()
-        cmake.quick_build(opt, callback)
+      return cmake.generate({ bang = false, fargs = {} }, function(result)
+        if result:is_ok() then
+          cmake.quick_build(opt, callback)
+        else
+          callback(result)
+        end
       end)
     end
 
@@ -302,10 +377,11 @@ function cmake.quick_build(opt, callback)
       display_targets,
       { prompt = "Select target to build" },
       vim.schedule_wrap(function(_, idx)
-        if not idx then
-          return
+        if idx then
+          cmake.build({ target = targets[idx] }, callback)
+        else
+          callback(Result:new_error(Types.NOT_SELECT_BUILD_TARGET, "No target selected: cancelled"))
         end
-        cmake.build({ target = targets[idx] }, callback)
       end)
     )
   else
@@ -322,14 +398,14 @@ function cmake.stop_runner()
 end
 
 --- CMake install targets
-function cmake.install(opt)
-  if utils.has_active_job(config.runner, config.executor) then
+function cmake.install(opt, callback)
+  callback = callback or function() end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
   end
 
   local fargs = opt.fargs
@@ -343,7 +419,7 @@ function cmake.install(opt)
     args,
     config.cwd,
     config.executor,
-    nil
+    callback
   )
 end
 
@@ -407,13 +483,18 @@ function cmake.get_launch_path(target)
 end
 
 -- Run executable targets
-function cmake.run(opt)
-  if utils.has_active_job(config.runner, config.executor) then
+function cmake.run(opt, callback)
+  callback = callback or function() end
+  if check_active_job_and_notify(callback) then
     return
   end
   if opt.target then
     -- explicit target requested. use that instead of the configured one
-    return cmake.build({ target = opt.target }, function()
+    return cmake.build({ target = opt.target }, function(build_result)
+      if not build_result:is_ok() then
+        callback(build_result)
+        return
+      end
       local model = config:get_code_model_info()[opt.target]
       local result = config:get_launch_target_from_info(model)
       local target_path = result.data
@@ -422,30 +503,54 @@ function cmake.run(opt)
       local env = environment.get_run_environment(config, opt.target)
       local _args = opt.args and opt.args or config.target_settings[opt.target].args
       local cmd = target_path
-      utils.run(cmd, config.env_script, env, _args, launch_path, config.runner, nil)
+      utils.run(
+        cmd,
+        config.env_script,
+        env,
+        _args,
+        launch_path,
+        config.runner,
+        callback
+      )
     end)
   else
     local result = config:get_launch_target()
     local result_code = result.code
     if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
       -- Configure it
-      return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) }, function()
-        cmake.run(opt)
-      end)
+      return cmake.generate(
+        { bang = false, fargs = utils.deepcopy(opt.fargs) },
+        function(generate_result)
+          if result:is_ok() then
+            cmake.run(opt, callback)
+          else
+            callback(generate_result)
+          end
+        end
+      )
     elseif
       result_code == Types.NOT_SELECT_LAUNCH_TARGET
       or result_code == Types.NOT_A_LAUNCH_TARGET
       or result_code == Types.NOT_EXECUTABLE
     then
       -- Re Select a target that could launch
-      return cmake.select_launch_target(function()
-        cmake.run(opt)
-      end), true
+      return cmake.select_launch_target(false, function(launch_result)
+        if launch_result:is_ok() then
+          cmake.run(opt, callback)
+        else
+          callback(launch_result)
+        end
+      end),
+        true
     else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT
       -- Build select launch target every time
       return cmake.build(
         { target = config.launch_target, fargs = utils.deepcopy(opt.fargs) },
-        function()
+        function(build_result)
+          if not build_result:is_ok() then
+            callback(build_result)
+            return
+          end
           result = config:get_launch_target()
           local target_path = result.data
 
@@ -460,7 +565,7 @@ function cmake.run(opt)
             cmake:get_launch_args(),
             launch_path,
             config.runner,
-            nil
+            callback
           )
         end
       )
@@ -468,17 +573,22 @@ function cmake.run(opt)
   end
 end
 
-function cmake.quick_run(opt)
+function cmake.quick_run(opt, callback)
+  callback = callback or function() end
   -- if no target was supplied, query via ui select
   if opt.fargs[1] == nil then
-    if utils.has_active_job(config.runner, config.executor) then
+    if check_active_job_and_notify(callback) then
       return
     end
 
     if not (config:has_build_directory()) then
       -- configure it
-      return cmake.generate({ bang = false, fargs = {} }, function()
-        cmake.quick_run(opt)
+      return cmake.generate({ bang = false, fargs = {} }, function(result)
+        if result:is_ok() then
+          cmake.quick_run(opt)
+        else
+          callback(result)
+        end
       end)
     end
 
@@ -490,14 +600,17 @@ function cmake.quick_run(opt)
       { prompt = "Select target to run" },
       vim.schedule_wrap(function(_, idx)
         if not idx then
+          callback(
+            Result:new_error(Types.NOT_SELECT_LAUNCH_TARGET, "No target selected: cancelled")
+          )
           return
         end
-        cmake.run({ target = targets[idx] })
+        cmake.run({ target = targets[idx] }, callback)
       end)
     )
   else
     local target = table.remove(opt.fargs, 1)
-    cmake.run({ target = target, args = opt.fargs })
+    cmake.run({ target = target, args = opt.fargs }, callback)
   end
 end
 
@@ -517,13 +630,18 @@ function cmake.launch_args(opt)
 end
 
 function cmake.select_build_type(callback)
-  if utils.has_active_job(config.runner, config.executor) then
+  callback = callback
+    or function(result)
+      if result:is_ok() then
+        cmake.generate({ bang = false, fargs = {} }, nil)
+      end
+    end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
   end
 
   local _, types = variants.get(const.cmake_variants_message, config.cwd)
@@ -545,27 +663,29 @@ function cmake.select_build_type(callback)
     },
     vim.schedule_wrap(function(build_type)
       if not build_type then
+        callback(Result:new_error(Types.NOT_SELECT_BUILD_TYPE, "No build type selected: cancelled"))
         return
       end
       config.build_type = build_type.short
       config.variant = build_type.kv
-      if type(callback) == "function" then
-        callback()
-      else
-        cmake.generate({ bang = false, fargs = {} }, nil)
-      end
+      callback(Result:new(Types.SUCCESS, nil, nil))
     end)
   )
 end
 
 function cmake.select_kit(callback)
-  if utils.has_active_job(config.runner, config.executor) then
+  callback = callback
+    or function(result)
+      if result:is_ok() then
+        cmake.generate({ bang = false, fargs = {} }, nil)
+      end
+    end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
   end
 
   local cmake_kits = kits.get(const.cmake_kits_path, config.cwd)
@@ -583,31 +703,34 @@ function cmake.select_kit(callback)
       { prompt = "Select cmake kits" },
       vim.schedule_wrap(function(kit)
         if not kit then
+          callback(Result:new_error(Types.NOT_SELECT_KIT, "No kit selected: cancelled"))
           return
         end
         if config.kit ~= kit then
           config.kit = kit
         end
-        if type(callback) == "function" then
-          callback()
-        else
-          cmake.generate({ bang = false, fargs = {} }, nil)
-        end
+        callback(Result:new(Types.SUCCESS, nil, nil))
       end)
     )
   else
+    callback(Result:new_error(Types.CANNOT_FIND_CMAKE_KITS, "Cannot find CMakeKits file"))
     log.error("Cannot find CMakeKits.[json|yaml] at Root (" .. config.cwd .. ")!!")
   end
 end
 
 function cmake.select_configure_preset(callback)
-  if utils.has_active_job(config.runner, config.executor) then
+  callback = callback
+    or function(result)
+      if result:is_ok() then
+        cmake.generate({ bang = false, fargs = {} }, nil)
+      end
+    end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
   end
 
   -- if exists presets
@@ -629,6 +752,7 @@ function cmake.select_configure_preset(callback)
       },
       vim.schedule_wrap(function(choice)
         if not choice then
+          callback(Result:new_error(Types.NOT_SELECT_PRESET, "No configure preset selected"))
           return
         end
         if config.configure_preset ~= choice then
@@ -637,26 +761,30 @@ function cmake.select_configure_preset(callback)
             presets.get_preset_by_name(choice, "configurePresets", config.cwd)
           )
         end
-        if type(callback) == "function" then
-          callback()
-        else
-          cmake.generate({ bang = false, fargs = {} }, nil)
-        end
+        callback(Result:new(Types.SUCCESS, nil, nil))
       end)
     )
   else
+    callback(
+      Result:new_error(Types.CANNOT_FIND_PRESETS_FILE, "Cannot find CMake[User]Presets file")
+    )
     log.error("Cannot find CMake[User]Presets.json at Root (" .. config.cwd .. ") !!")
   end
 end
 
 function cmake.select_build_preset(callback)
-  if utils.has_active_job(config.runner, config.executor) then
+  callback = callback
+    or function(result)
+      if result:is_ok() then
+        cmake.generate({ bang = false, fargs = {} }, nil)
+      end
+    end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
   end
 
   -- if exists presets
@@ -675,11 +803,11 @@ function cmake.select_build_preset(callback)
       build_preset_names,
       { prompt = "Select cmake build presets", format_item = format_preset_name },
       vim.schedule_wrap(function(choice)
-        if not choice then
-          return
-        end
-        if choice == "None" then
-          config.build_preset = nil
+        if not choice or choice == "None" then
+          if choice == "None" then
+            config.build_preset = nil
+          end
+          callback(Result:new_error(Types.NOT_SELECT_PRESET, "No build preset selected"))
           return
         end
         if config.build_preset ~= choice then
@@ -696,23 +824,27 @@ function cmake.select_build_preset(callback)
           configure_preset_updated = true
         end
 
-        if type(callback) == "function" then
-          callback()
-        elseif configure_preset_updated then
-          cmake.generate({ bang = true, fargs = {} }, nil)
-        end
+        callback(Result:new(Types.SUCCESS, nil, nil))
       end)
     )
   else
+    callback(
+      Result:new_error(Types.CANNOT_FIND_PRESETS_FILE, "Cannot find CMake[User]Presets file")
+    )
     log.error("Cannot find CMake[User]Presets.json at Root (" .. config.cwd .. ")!!")
   end
 end
 
-function cmake.select_build_target(callback, regenerate)
+function cmake.select_build_target(regenerate, callback)
+  callback = callback or function() end
   if not (config:has_build_directory()) then
     -- configure it
-    return cmake.generate({ bang = false, fargs = {} }, function()
-      cmake.select_build_target(callback, true)
+    return cmake.generate({ bang = false, fargs = {} }, function(result)
+      if result:is_ok() then
+        cmake.select_build_target(true, callback)
+      else
+        callback(result)
+      end
     end)
   end
 
@@ -721,10 +853,15 @@ function cmake.select_build_target(callback, regenerate)
   if targets_res.code ~= Types.SUCCESS then
     -- try again
     if not regenerate then
+      callback(targets_res)
       return
     else
-      return cmake.generate({ bang = true, fargs = {} }, function()
-        cmake.select_build_target(callback, false)
+      return cmake.generate({ bang = true, fargs = {} }, function(result)
+        if result:is_ok() then
+          cmake.select_build_target(false, callback)
+        else
+          callback(result)
+        end
       end)
     end
   end
@@ -734,34 +871,41 @@ function cmake.select_build_target(callback, regenerate)
     { prompt = "Select build target" },
     vim.schedule_wrap(function(_, idx)
       if not idx then
+        callback(Result:new_error(Types.NOT_SELECT_BUILD_TARGET, "No target selected: cancelled"))
         return
       end
       config.build_target = targets[idx]
-      if type(callback) == "function" then
-        callback()
-      end
+      callback(Result:new(Types.SUCCESS, config.build_target, nil))
     end)
   )
 end
 
 function cmake.get_cmake_launch_targets(callback)
+  callback = callback or function() end
   if not (config:has_build_directory()) then
     -- configure it
-    return cmake.generate({ bang = false, fargs = {} }, function()
-      cmake.get_cmake_launch_targets(callback)
+    return cmake.generate({ bang = false, fargs = {} }, function(result)
+      if result:is_ok() then
+        cmake.get_cmake_launch_targets(callback)
+      else
+        callback(result)
+      end
     end)
   end
 
-  if type(callback) == "function" then
-    callback(config:launch_targets())
-  end
+  callback(config:launch_targets())
 end
 
-function cmake.select_launch_target(callback, regenerate)
+function cmake.select_launch_target(regenerate, callback)
+  callback = callback or function() end
   if not (config:has_build_directory()) then
     -- configure it
-    return cmake.generate({ bang = false, fargs = {} }, function()
-      cmake.select_launch_target(callback, true)
+    return cmake.generate({ bang = false, fargs = {} }, function(result)
+      if result:is_ok() then
+        cmake.select_launch_target(true, callback)
+      else
+        callback(result)
+      end
     end)
   end
 
@@ -772,8 +916,12 @@ function cmake.select_launch_target(callback, regenerate)
     if not regenerate then
       return
     else
-      return cmake.generate({ bang = true, fargs = {} }, function()
-        cmake.select_launch_target(callback, false)
+      return cmake.generate({ bang = true, fargs = {} }, function(result)
+        if result:is_ok() then
+          cmake.select_launch_target(false, callback)
+        else
+          callback(result)
+        end
       end)
     end
   end
@@ -787,9 +935,7 @@ function cmake.select_launch_target(callback, regenerate)
         return
       end
       config.launch_target = targets[idx]
-      if type(callback) == "function" then
-        callback()
-      end
+      callback(Result:new(Types.SUCCESS, config.launch_target, nil))
     end)
   )
 end
@@ -1427,7 +1573,7 @@ function cmake.register_dap_function()
           or result_code == Types.NOT_EXECUTABLE
         then
           -- Re Select a target that could launch
-          return cmake.select_launch_target(function()
+          return cmake.select_launch_target(false, function()
             cmake.debug(opt, callback)
           end),
             true
