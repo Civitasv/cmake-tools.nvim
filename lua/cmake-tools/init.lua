@@ -35,6 +35,8 @@ function cmake.setup(values)
     const.cmake_runner.opts or {}
   )
 
+  require("cmake-tools.notification").setup(const.cmake_notifications)
+
   config = Config:new(const)
 
   -- auto reload previous session
@@ -156,8 +158,7 @@ function cmake.generate(opt, callback)
           cmake.configure_compile_commands()
           cmake.create_regenerate_on_save_autocmd()
         end
-      end,
-      const.cmake_notifications
+      end
     )
   end
 
@@ -231,8 +232,7 @@ function cmake.generate(opt, callback)
         cmake.create_regenerate_on_save_autocmd()
       end
       callback(result)
-    end,
-    const.cmake_notifications
+    end
   )
 end
 
@@ -263,8 +263,7 @@ function cmake.clean(callback)
     args,
     config.cwd,
     config.executor,
-    callback,
-    const.cmake_notifications
+    callback
   )
 end
 
@@ -348,8 +347,7 @@ function cmake.build(opt, callback)
     args,
     config.cwd,
     config.executor,
-    callback,
-    const.cmake_notifications
+    callback
   )
 end
 
@@ -421,8 +419,7 @@ function cmake.install(opt, callback)
     args,
     config.cwd,
     config.executor,
-    callback,
-    const.cmake_notifications
+    callback
   )
 end
 
@@ -513,8 +510,7 @@ function cmake.run(opt, callback)
         _args,
         launch_path,
         config.runner,
-        callback,
-        const.cmake_notifications
+        callback
       )
     end)
   else
@@ -569,8 +565,7 @@ function cmake.run(opt, callback)
             cmake:get_launch_args(),
             launch_path,
             config.runner,
-            callback,
-            const.cmake_notifications
+            callback
           )
         end
       )
@@ -1331,6 +1326,7 @@ function cmake.select_cwd(cwd_path)
         config.cwd = vim.fn.resolve(input)
         cmake.register_autocmd()
         cmake.register_autocmd_provided_by_users()
+        cmake.register_scratch_buffer(config.executor.name, config.runner.name)
         --	end
         cmake.generate({ bang = false, fargs = {} }, nil)
       end)
@@ -1339,6 +1335,7 @@ function cmake.select_cwd(cwd_path)
     config.cwd = vim.fn.resolve(cwd_path.args)
     cmake.register_autocmd()
     cmake.register_autocmd_provided_by_users()
+    cmake.register_scratch_buffer(config.executor.name, config.runner.name)
     cmake.generate({ bang = false, fargs = {} }, nil)
   end
 end
@@ -1528,6 +1525,20 @@ function cmake.register_dap_function()
         end)
       end
 
+      local initCmds = function()
+        local commands = {}
+        local sources = { vim.env.HOME .. "/.lldbinit", vim.fn.getcwd() .. "/.lldbinit" }
+        for idx, source in ipairs(sources) do
+          local file = io.open(source, "r")
+          if file then
+            local command = "command source " .. source
+            table.insert(commands, command)
+            file:close()
+          end
+        end
+        return commands
+      end
+
       if opt.target then
         -- explicit target requested. use that instead of the configured one
         return cmake.build({ target = opt.target }, function()
@@ -1539,6 +1550,7 @@ function cmake.register_dap_function()
             cwd = cmake.get_launch_path(opt.target),
             args = opt.args and opt.args or config.target_settings[opt.target].args,
             env = env,
+            initCommands = initCmds,
           }
           -- close cmake console
           cmake.close_executor()
@@ -1578,6 +1590,7 @@ function cmake.register_dap_function()
                 cwd = cmake.get_launch_path(cmake.get_launch_target()),
                 args = cmake:get_launch_args(),
                 env = env,
+                initCommands = initCmds,
               }
               -- close cmake console
               cmake.close_executor()

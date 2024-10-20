@@ -41,7 +41,10 @@ local const = {
       toggleterm = {
         direction = "float", -- 'vertical' | 'horizontal' | 'tab' | 'float'
         close_on_exit = false, -- whether close the terminal when exit
-        auto_scroll = true, -- whether auto scroll to the bottom
+        auto_scroll = true, -- auto scroll on new input
+        scroll_on_error = false, -- scroll to bottom on error
+        auto_focus = true, -- auto focus the terminal on activation
+        focus_on_error = false, -- focus on error
         singleton = true, -- single instance, autocloses the opened one, if present
       },
       overseer = {
@@ -62,6 +65,7 @@ local const = {
         single_terminal_per_instance = true, -- Single instance, multiple windows
         single_terminal_per_tab = true, -- Single instance per tab
         keep_terminal_static_location = true, -- Static location of the instance if avialable
+        auto_resize = true, -- Resize the terminal if it already exists
 
         -- Running Tasks
         start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
@@ -84,7 +88,10 @@ local const = {
       toggleterm = {
         direction = "float", -- 'vertical' | 'horizontal' | 'tab' | 'float'
         close_on_exit = false, -- whether close the terminal when exit
-        auto_scroll = true, -- whether auto scroll to the bottom
+        auto_scroll = true, -- auto scroll on new input
+        scroll_on_error = false, -- scroll to bottom on error
+        auto_focus = true, -- auto focus the terminal on activation
+        focus_on_error = false, -- focus on error
         singleton = true, -- single instance, autocloses the opened one, if present
       },
       overseer = {
@@ -105,6 +112,7 @@ local const = {
         single_terminal_per_instance = true, -- Single instance, multiple windows
         single_terminal_per_tab = true, -- Single instance per tab
         keep_terminal_static_location = true, -- Static location of the instance if avialable
+        auto_resize = true, -- Resize the terminal if it already exists
 
         -- Running Tasks
         start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
