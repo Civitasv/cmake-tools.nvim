@@ -552,7 +552,7 @@ local is_fish_shell = function()
 end
 
 local is_power_shell = function()
-  return vim.o.shell == "pwsh"
+  return vim.o.shell == "pwsh" or vim.o.shell == "powershell"
 end
 
 ---creates command that handles all of our post command stuff for on_exit handling
