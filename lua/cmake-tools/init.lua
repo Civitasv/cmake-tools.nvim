@@ -256,15 +256,7 @@ function cmake.clean(callback)
 
   local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
-  return utils.execute(
-    cmd,
-    config.env_script,
-    env,
-    args,
-    config.cwd,
-    config.executor,
-    callback
-  )
+  return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, callback)
 end
 
 --- Build this project using the make toolchain of target platform
@@ -340,15 +332,7 @@ function cmake.build(opt, callback)
 
   local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
-  return utils.execute(
-    cmd,
-    config.env_script,
-    env,
-    args,
-    config.cwd,
-    config.executor,
-    callback
-  )
+  return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, callback)
 end
 
 function cmake.quick_build(opt, callback)
@@ -503,15 +487,7 @@ function cmake.run(opt, callback)
       local env = environment.get_run_environment(config, opt.target)
       local _args = opt.args and opt.args or config.target_settings[opt.target].args
       local cmd = target_path
-      utils.run(
-        cmd,
-        config.env_script,
-        env,
-        _args,
-        launch_path,
-        config.runner,
-        callback
-      )
+      utils.run(cmd, config.env_script, env, _args, launch_path, config.runner, callback)
     end)
   else
     local result = config:get_launch_target()
@@ -630,7 +606,7 @@ function cmake.launch_args(opt)
 end
 
 function cmake.select_build_type(callback)
-  callback = callback
+  callback = type(callback) == "function" and callback
     or function(result)
       if result:is_ok() then
         cmake.generate({ bang = false, fargs = {} }, nil)
@@ -674,7 +650,7 @@ function cmake.select_build_type(callback)
 end
 
 function cmake.select_kit(callback)
-  callback = callback
+  callback = type(callback) == "function" and callback
     or function(result)
       if result:is_ok() then
         cmake.generate({ bang = false, fargs = {} }, nil)
@@ -719,7 +695,7 @@ function cmake.select_kit(callback)
 end
 
 function cmake.select_configure_preset(callback)
-  callback = callback
+  callback = type(callback) == "function" and callback
     or function(result)
       if result:is_ok() then
         cmake.generate({ bang = false, fargs = {} }, nil)
@@ -773,7 +749,7 @@ function cmake.select_configure_preset(callback)
 end
 
 function cmake.select_build_preset(callback)
-  callback = callback
+  callback = type(callback) == "function" and callback
     or function(result)
       if result:is_ok() then
         cmake.generate({ bang = false, fargs = {} }, nil)
@@ -836,7 +812,7 @@ function cmake.select_build_preset(callback)
 end
 
 function cmake.select_build_target(regenerate, callback)
-  callback = callback or function() end
+  callback = type(callback) == "function" and callback or function() end
   if not (config:has_build_directory()) then
     -- configure it
     return cmake.generate({ bang = false, fargs = {} }, function(result)
