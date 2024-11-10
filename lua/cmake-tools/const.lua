@@ -6,6 +6,7 @@ local const = {
   cmake_regenerate_on_save = true, -- auto generate when save CMakeLists.txt
   cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" }, -- this will be passed when invoke `CMakeGenerate`
   cmake_build_options = {}, -- this will be passed when invoke `CMakeBuild`
+  cmake_show_disabled_build_presets = true,
   cmake_build_directory = function()
     if osys.iswin32 then
       return "out\\${variant:buildType}"
