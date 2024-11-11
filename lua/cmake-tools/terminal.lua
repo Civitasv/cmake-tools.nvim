@@ -570,8 +570,8 @@ local get_command_handling_on_exit = function()
   end
 
   if osys.iswin32 then
-    exit_op = "%errorlevel%"
-    escape_rm = is_power_shell() and "Remove-Item " or "del /Q "
+    exit_op = is_power_shell() and "$LASTEXITCODE" or "%errorlevel%"
+    escape_rm = is_power_shell() and " Remove-Item " or " del /Q "
     exit_code_file_path = exit_code_file_path:gsub("/", "\\")
     lock_file_path = lock_file_path:gsub("/", "\\")
   end
@@ -630,7 +630,7 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   end
 
   -- Send final cmd to terminal
-  local chain_symb = osys.iswin32 and " & " or " ; "
+  local chain_symb = (is_power_shell() and " ; ") or (osys.iswin32 and " & " or " ; ")
   _terminal.send_data_to_terminal(
     buffer_idx,
     full_cmd .. chain_symb .. get_command_handling_on_exit(),
