@@ -1401,6 +1401,11 @@ function cmake.create_regenerate_on_save_autocmd()
     table.insert(pattern, ss)
   end
 
+  local cwd = config.cwd
+  if require("cmake-tools.osys").iswin32 then
+      cwd = config.cwd:gsub("\\", "/")
+  end
+
   local presets_exists = config.base_settings.use_preset and Presets.exists(config.cwd)
   if presets_exists then
     for _, item in ipairs({
@@ -1409,7 +1414,7 @@ function cmake.create_regenerate_on_save_autocmd()
       "cmake-presets.json",
       "cmake-user-presets.json",
     }) do
-      table.insert(pattern, config.cwd .. "/" .. item)
+      table.insert(pattern, cwd .. "/" .. item)
     end
   else
     for _, item in ipairs({
@@ -1420,7 +1425,7 @@ function cmake.create_regenerate_on_save_autocmd()
       "CMakeKits.json",
       "cmake-kits.json",
     }) do
-      table.insert(pattern, config.cwd .. "/" .. item)
+      table.insert(pattern, cwd .. "/" .. item)
     end
   end
 
