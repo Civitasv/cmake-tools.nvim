@@ -5,7 +5,7 @@ local const = require("cmake-tools.const")
 local Config = require("cmake-tools.config")
 local variants = require("cmake-tools.variants")
 local kits = require("cmake-tools.kits")
-local presets = require("cmake-tools.presets")
+local Presets = require("cmake-tools.presets")
 local log = require("cmake-tools.log")
 local hints = require("cmake-tools.hints")
 local _session = require("cmake-tools.session")
@@ -13,6 +13,8 @@ local window = require("cmake-tools.window")
 local environment = require("cmake-tools.environment")
 local file_picker = require("cmake-tools.file_picker")
 local scratch = require("cmake-tools.scratch")
+local Result = require("cmake-tools.result")
+local Path = require("plenary.path")
 
 local ctest = require("cmake-tools.test.ctest")
 
@@ -33,6 +35,8 @@ function cmake.setup(values)
     const.cmake_runner.default_opts[const.cmake_runner.name],
     const.cmake_runner.opts or {}
   )
+
+  require("cmake-tools.notification").setup(const.cmake_notifications)
 
   config = Config:new(const)
 
@@ -56,22 +60,46 @@ function cmake.setup(values)
   cmake.register_scratch_buffer(config.executor.name, config.runner.name)
 end
 
---- Generate build system for this project.
--- Think it as `cmake .`
-function cmake.generate(opt, callback)
+local function check_active_job_and_notify(callback)
   if utils.has_active_job(config.runner, config.executor) then
+    callback(Result:new_error(Types.ANOTHER_JOB_RUNNING, "Another CMake job already running"))
+    return true
+  end
+  return false
+end
+
+local function get_cmake_configuration_or_notify(callback)
+  local result = utils.get_cmake_configuration(config.cwd)
+  if not result:is_ok() then
+    callback(result)
+    log.error(result.message)
+    return nil
+  end
+  return result
+end
+
+--- Generate build system for this project, much like the `cmake command`
+---@param opt table
+---@param callback nil|fun(result: cmake.Result): nil
+---@return nil
+function cmake.generate(opt, callback)
+  callback = callback or function() end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
   end
 
   local clean = opt.bang
   local fargs = opt.fargs or {}
   if clean then
-    return cmake.clean(function()
+    return cmake.clean(function(result)
+      if not result:is_ok() then
+        callback(result)
+        return
+      end
       -- Clear CMakeCache.txt
       if config:has_build_directory() then
         utils.rmfile(config.build_directory / "CMakeCache.txt")
@@ -83,50 +111,94 @@ function cmake.generate(opt, callback)
   -- if exists presets, preset include all info that cmake
   -- needed to execute, so we don't use cmake-kits.json and
   -- cmake-variants.[json|yaml] event they exist.
-  local presets_file = config.base_settings.use_preset and presets.check(config.cwd)
-  if presets_file and not config.configure_preset then
-    -- this will also set value for build type from preset.
-    -- default to be "Debug"
-    return cmake.select_configure_preset(function()
-      cmake.generate(opt, callback)
-    end)
-  end
+  local presets_exists = config.base_settings.use_preset and Presets.exists(config.cwd)
+  if presets_exists then
+    local presets = Presets:parse(config.cwd)
 
-  if presets_file and config.configure_preset then
-    -- if exsist preset file and set configure preset, then
-    -- set build directory to the `binaryDir` option of `configurePresets`
-    local build_directory, no_expand_build_directory = presets.get_build_dir(
-      presets.get_preset_by_name(config.configure_preset, "configurePresets", config.cwd),
-      config.cwd
-    )
-    if build_directory ~= "" then
-      config:update_build_dir(build_directory, no_expand_build_directory)
-    end
-    config:generate_build_directory()
-
-    local args = {
-      "--preset",
-      config.configure_preset,
-    }
-    vim.list_extend(args, config:generate_options())
-    vim.list_extend(args, fargs)
-
-    local env = environment.get_build_environment(config)
-    local cmd = const.cmake_command
-    return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
-      if type(callback) == "function" then
-        callback()
+    if not config.configure_preset then
+      -- try to determine the confiure preset based on the build preset
+      if config.build_preset then
+        local build_preset = presets:get_build_preset(config.build_preset)
+        if build_preset then
+          local preset =
+            presets:get_configure_preset(build_preset.configurePreset, { include_hidden = true })
+          if preset then
+            config.configure_preset = preset.name
+          end
+        end
       end
-      cmake.configure_compile_commands()
-      cmake.create_regenerate_on_save_autocmd()
-    end, const.cmake_notifications)
+
+      if not config.configure_preset then
+        -- this will also set value for build type from preset.
+        -- default to be "Debug"
+        return cmake.select_configure_preset(function(result)
+          if not result:is_ok() then
+            callback(result)
+            return
+          end
+          cmake.generate(opt, callback)
+        end)
+      end
+      return
+    end
+
+    if config.configure_preset then
+      -- if exsist preset file and set configure preset, then
+      -- set build directory to the `binaryDir` option of `configurePresets`
+      local preset = presets:get_configure_preset(config.configure_preset)
+      if not preset then
+        config.configure_preset = nil
+        if config.build_preset then
+          local build_preset = presets:get_build_preset(config.build_preset)
+          if not build_preset then
+            config.build_preset = nil
+          end
+        end
+        return
+      end
+      local build_directory, no_expand_build_directory = preset.binaryDirExpanded, preset.binaryDir
+      if build_directory ~= "" then
+        config:update_build_dir(build_directory, no_expand_build_directory)
+      end
+      config:generate_build_directory()
+
+      local args = {
+        "--preset",
+        config.configure_preset,
+      }
+      vim.list_extend(args, config:generate_options())
+      vim.list_extend(args, fargs)
+
+      local env = environment.get_build_environment(config)
+      local cmd = const.cmake_command
+      return utils.execute(
+        cmd,
+        config.env_script,
+        env,
+        args,
+        config.cwd,
+        config.executor,
+        ---@param result cmake.Result
+        function(result)
+          callback(result)
+          if result:is_ok() then
+            cmake.configure_compile_commands()
+            cmake.create_regenerate_on_save_autocmd()
+          end
+        end
+      )
+    end
   end
 
   -- if exists cmake-kits.json, kit is used to set
   -- environmental variables and args.
   local kits_config = kits.parse(const.cmake_kits_path, config.cwd)
   if kits_config and not config.kit then
-    return cmake.select_kit(function()
+    return cmake.select_kit(function(result)
+      if not result:is_ok() then
+        callback(result)
+        return
+      end
       cmake.generate(opt, callback)
     end)
   end
@@ -175,80 +247,104 @@ function cmake.generate(opt, callback)
   local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
   env = vim.tbl_extend("keep", env, kit_option.env)
-  return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
-    if type(callback) == "function" then
-      callback()
+  return utils.execute(
+    cmd,
+    config.env_script,
+    env,
+    args,
+    config.cwd,
+    config.executor,
+    function(result)
+      if result:is_ok() then
+        cmake.configure_compile_commands()
+        cmake.create_regenerate_on_save_autocmd()
+      end
+      callback(result)
     end
-    cmake.configure_compile_commands()
-    cmake.create_regenerate_on_save_autocmd()
-  end, const.cmake_notifications)
+  )
 end
 
 --- Clean targets
 function cmake.clean(callback)
-  if utils.has_active_job(config.runner, config.executor) then
+  callback = callback or function() end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
+  end
+
+  local path = Path:new(
+    utils.transform_path(config:build_directory_path(), config.executor.name == "quickfix")
+  )
+  if not (path / "CMakeCache.txt"):exists() then
+    -- no need to clean up as we do not have a cache
+    return
   end
 
   local args = {
     "--build",
-    utils.transform_path(config:build_directory_path(), config.executor.name == "quickfix"),
+    path.filename,
     "--target",
     "clean",
   }
 
   local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
-  return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
-    if type(callback) == "function" then
-      callback()
-    end
-  end, const.cmake_notifications)
+  return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, callback)
 end
 
 --- Build this project using the make toolchain of target platform
 --- think it as `cmake --build .`
 function cmake.build(opt, callback)
-  if utils.has_active_job(config.runner, config.executor) then
+  callback = callback or function() end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
   end
 
   local clean = opt.bang
   local fargs = opt.fargs or {}
   if clean then
-    return cmake.clean(function()
-      cmake.build({ fargs = fargs }, callback)
+    return cmake.clean(function(result)
+      if result:is_ok() then
+        cmake.build({ fargs = fargs }, callback)
+      else
+        callback(result)
+      end
     end)
   end
 
   local ct = config:get_codemodel_targets()
   if not (config:has_build_directory()) or not (ct.code == Types.SUCCESS) then
     -- configure it
-    return cmake.generate({ bang = false, fargs = {} }, function()
-      cmake.build(opt, callback)
+    return cmake.generate({ bang = false, fargs = {} }, function(result)
+      if result:is_ok() then
+        cmake.build(opt, callback)
+      else
+        callback(result)
+      end
     end)
   end
 
   if opt.target == nil and config.build_target == nil then
-    return cmake.select_build_target(function()
-      cmake.build(opt, callback)
-    end), true
+    return cmake.select_build_target(true, function(result)
+      if result:is_ok() then
+        cmake.build(opt, callback)
+      else
+        callback(result)
+      end
+    end)
   end
 
   local args
-  local presets_file = config.base_settings.use_preset and presets.check(config.cwd)
+  local presets_exists = config.base_settings.use_preset and Presets.exists(config.cwd)
 
-  if presets_file and config.build_preset then
+  if presets_exists and config.build_preset then
     args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
   else
     args = {
@@ -256,8 +352,6 @@ function cmake.build(opt, callback)
       utils.transform_path(config:build_directory_path(), config.executor.name == "quickfix"),
     }
   end
-
-  vim.list_extend(args, config:build_options())
 
   if opt.target ~= nil then
     vim.list_extend(args, { "--target", opt.target })
@@ -270,26 +364,29 @@ function cmake.build(opt, callback)
     vim.list_extend(args, fargs)
   end
 
+  vim.list_extend(args, config:build_options())
+
   local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
-  return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, function()
-    if type(callback) == "function" then
-      callback()
-    end
-  end, const.cmake_notifications)
+  return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, callback)
 end
 
 function cmake.quick_build(opt, callback)
+  callback = callback or function() end
   -- if no target was supplied, query via ui select
   if opt.fargs[1] == nil then
-    if utils.has_active_job(config.runner, config.executor) then
+    if check_active_job_and_notify(callback) then
       return
     end
 
     if not (config:has_build_directory()) then
       -- configure it
-      return cmake.generate({ bang = false, fargs = {} }, function()
-        cmake.quick_build(opt, callback)
+      return cmake.generate({ bang = false, fargs = {} }, function(result)
+        if result:is_ok() then
+          cmake.quick_build(opt, callback)
+        else
+          callback(result)
+        end
       end)
     end
 
@@ -300,10 +397,11 @@ function cmake.quick_build(opt, callback)
       display_targets,
       { prompt = "Select target to build" },
       vim.schedule_wrap(function(_, idx)
-        if not idx then
-          return
+        if idx then
+          cmake.build({ target = targets[idx] }, callback)
+        else
+          callback(Result:new_error(Types.NOT_SELECT_BUILD_TARGET, "No target selected: cancelled"))
         end
-        cmake.build({ target = targets[idx] }, callback)
       end)
     )
   else
@@ -320,14 +418,14 @@ function cmake.stop_runner()
 end
 
 --- CMake install targets
-function cmake.install(opt)
-  if utils.has_active_job(config.runner, config.executor) then
+function cmake.install(opt, callback)
+  callback = callback or function() end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
   end
 
   local fargs = opt.fargs
@@ -341,8 +439,7 @@ function cmake.install(opt)
     args,
     config.cwd,
     config.executor,
-    nil,
-    const.cmake_notifications
+    callback
   )
 end
 
@@ -406,13 +503,18 @@ function cmake.get_launch_path(target)
 end
 
 -- Run executable targets
-function cmake.run(opt)
-  if utils.has_active_job(config.runner, config.executor) then
+function cmake.run(opt, callback)
+  callback = callback or function() end
+  if check_active_job_and_notify(callback) then
     return
   end
   if opt.target then
     -- explicit target requested. use that instead of the configured one
-    return cmake.build({ target = opt.target }, function()
+    return cmake.build({ target = opt.target }, function(build_result)
+      if not build_result:is_ok() then
+        callback(build_result)
+        return
+      end
       local model = config:get_code_model_info()[opt.target]
       local result = config:get_launch_target_from_info(model)
       local target_path = result.data
@@ -421,39 +523,46 @@ function cmake.run(opt)
       local env = environment.get_run_environment(config, opt.target)
       local _args = opt.args and opt.args or config.target_settings[opt.target].args
       local cmd = target_path
-      utils.run(
-        cmd,
-        config.env_script,
-        env,
-        _args,
-        launch_path,
-        config.runner,
-        nil,
-        const.cmake_notifications
-      )
+      utils.run(cmd, config.env_script, env, _args, launch_path, config.runner, callback)
     end)
   else
     local result = config:get_launch_target()
     local result_code = result.code
     if result_code == Types.NOT_CONFIGURED or result_code == Types.CANNOT_FIND_CODEMODEL_FILE then
       -- Configure it
-      return cmake.generate({ bang = false, fargs = utils.deepcopy(opt.fargs) }, function()
-        cmake.run(opt)
-      end)
+      return cmake.generate(
+        { bang = false, fargs = utils.deepcopy(opt.fargs) },
+        function(generate_result)
+          if result:is_ok() then
+            cmake.run(opt, callback)
+          else
+            callback(generate_result)
+          end
+        end
+      )
     elseif
       result_code == Types.NOT_SELECT_LAUNCH_TARGET
       or result_code == Types.NOT_A_LAUNCH_TARGET
       or result_code == Types.NOT_EXECUTABLE
     then
       -- Re Select a target that could launch
-      return cmake.select_launch_target(function()
-        cmake.run(opt)
-      end), true
+      return cmake.select_launch_target(false, function(launch_result)
+        if launch_result:is_ok() then
+          cmake.run(opt, callback)
+        else
+          callback(launch_result)
+        end
+      end),
+        true
     else -- if result_code == Types.SELECTED_LAUNCH_TARGET_NOT_BUILT
       -- Build select launch target every time
       return cmake.build(
         { target = config.launch_target, fargs = utils.deepcopy(opt.fargs) },
-        function()
+        function(build_result)
+          if not build_result:is_ok() then
+            callback(build_result)
+            return
+          end
           result = config:get_launch_target()
           local target_path = result.data
 
@@ -468,8 +577,7 @@ function cmake.run(opt)
             cmake:get_launch_args(),
             launch_path,
             config.runner,
-            nil,
-            const.cmake_notifications
+            callback
           )
         end
       )
@@ -477,17 +585,22 @@ function cmake.run(opt)
   end
 end
 
-function cmake.quick_run(opt)
+function cmake.quick_run(opt, callback)
+  callback = callback or function() end
   -- if no target was supplied, query via ui select
   if opt.fargs[1] == nil then
-    if utils.has_active_job(config.runner, config.executor) then
+    if check_active_job_and_notify(callback) then
       return
     end
 
     if not (config:has_build_directory()) then
       -- configure it
-      return cmake.generate({ bang = false, fargs = {} }, function()
-        cmake.quick_run(opt)
+      return cmake.generate({ bang = false, fargs = {} }, function(result)
+        if result:is_ok() then
+          cmake.quick_run(opt)
+        else
+          callback(result)
+        end
       end)
     end
 
@@ -499,14 +612,17 @@ function cmake.quick_run(opt)
       { prompt = "Select target to run" },
       vim.schedule_wrap(function(_, idx)
         if not idx then
+          callback(
+            Result:new_error(Types.NOT_SELECT_LAUNCH_TARGET, "No target selected: cancelled")
+          )
           return
         end
-        cmake.run({ target = targets[idx] })
+        cmake.run({ target = targets[idx] }, callback)
       end)
     )
   else
     local target = table.remove(opt.fargs, 1)
-    cmake.run({ target = target, args = opt.fargs })
+    cmake.run({ target = target, args = opt.fargs }, callback)
   end
 end
 
@@ -526,13 +642,18 @@ function cmake.launch_args(opt)
 end
 
 function cmake.select_build_type(callback)
-  if utils.has_active_job(config.runner, config.executor) then
+  callback = type(callback) == "function" and callback
+    or function(result)
+      if result:is_ok() then
+        cmake.generate({ bang = false, fargs = {} }, nil)
+      end
+    end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
   end
 
   local _, types = variants.get(const.cmake_variants_message, config.cwd)
@@ -554,27 +675,29 @@ function cmake.select_build_type(callback)
     },
     vim.schedule_wrap(function(build_type)
       if not build_type then
+        callback(Result:new_error(Types.NOT_SELECT_BUILD_TYPE, "No build type selected: cancelled"))
         return
       end
       config.build_type = build_type.short
       config.variant = build_type.kv
-      if type(callback) == "function" then
-        callback()
-      else
-        cmake.generate({ bang = false, fargs = {} }, nil)
-      end
+      callback(Result:new(Types.SUCCESS, nil, nil))
     end)
   )
 end
 
 function cmake.select_kit(callback)
-  if utils.has_active_job(config.runner, config.executor) then
+  callback = type(callback) == "function" and callback
+    or function(result)
+      if result:is_ok() then
+        cmake.generate({ bang = false, fargs = {} }, nil)
+      end
+    end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
   end
 
   local cmake_kits = kits.get(const.cmake_kits_path, config.cwd)
@@ -592,42 +715,42 @@ function cmake.select_kit(callback)
       { prompt = "Select cmake kits" },
       vim.schedule_wrap(function(kit)
         if not kit then
+          callback(Result:new_error(Types.NOT_SELECT_KIT, "No kit selected: cancelled"))
           return
         end
         if config.kit ~= kit then
           config.kit = kit
         end
-        if type(callback) == "function" then
-          callback()
-        else
-          cmake.generate({ bang = false, fargs = {} }, nil)
-        end
+        callback(Result:new(Types.SUCCESS, nil, nil))
       end)
     )
   else
+    callback(Result:new_error(Types.CANNOT_FIND_CMAKE_KITS, "Cannot find CMakeKits file"))
     log.error("Cannot find CMakeKits.[json|yaml] at Root (" .. config.cwd .. ")!!")
   end
 end
 
 function cmake.select_configure_preset(callback)
-  if utils.has_active_job(config.runner, config.executor) then
+  callback = type(callback) == "function" and callback
+    or function(result)
+      if result:is_ok() then
+        cmake.generate({ bang = false, fargs = {} }, nil)
+      end
+    end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
   end
 
   -- if exists presets
-  local presets_file = presets.check(config.cwd)
-  if presets_file then
-    local configure_preset_names =
-      presets.parse("configurePresets", { include_hidden = false }, config.cwd)
-    local configure_presets =
-      presets.parse_name_mapped("configurePresets", { include_hidden = false }, config.cwd)
+  if Presets.exists(config.cwd) then
+    local presets = Presets:parse(config.cwd)
+    local configure_preset_names = presets:get_configure_preset_names()
     local format_preset_name = function(p_name)
-      local p = configure_presets[p_name]
+      local p = presets:get_configure_preset(p_name)
       return p.displayName or p.name
     end
     vim.ui.select(
@@ -638,90 +761,101 @@ function cmake.select_configure_preset(callback)
       },
       vim.schedule_wrap(function(choice)
         if not choice then
+          callback(Result:new_error(Types.NOT_SELECT_PRESET, "No configure preset selected"))
           return
         end
         if config.configure_preset ~= choice then
           config.configure_preset = choice
-          config.build_type = presets.get_build_type(
-            presets.get_preset_by_name(choice, "configurePresets", config.cwd)
-          )
+          config.build_type = presets:get_configure_preset(choice):get_build_type()
         end
-        if type(callback) == "function" then
-          callback()
-        else
-          cmake.generate({ bang = false, fargs = {} }, nil)
-        end
+        callback(Result:new(Types.SUCCESS, nil, nil))
       end)
     )
   else
+    callback(
+      Result:new_error(Types.CANNOT_FIND_PRESETS_FILE, "Cannot find CMake[User]Presets file")
+    )
     log.error("Cannot find CMake[User]Presets.json at Root (" .. config.cwd .. ") !!")
   end
 end
 
 function cmake.select_build_preset(callback)
-  if utils.has_active_job(config.runner, config.executor) then
+  callback = type(callback) == "function" and callback
+    or function(result)
+      if result:is_ok() then
+        cmake.generate({ bang = false, fargs = {} }, nil)
+      end
+    end
+  if check_active_job_and_notify(callback) then
     return
   end
 
-  local result = utils.get_cmake_configuration(config.cwd)
-  if result.code ~= Types.SUCCESS then
-    return log.error(result.message)
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
   end
 
   -- if exists presets
-  local presets_file = presets.check(config.cwd)
-  if presets_file then
-    local build_preset_names = presets.parse("buildPresets", { include_hidden = false }, config.cwd)
-    local build_presets =
-      presets.parse_name_mapped("buildPresets", { include_hidden = false }, config.cwd)
+  if Presets.exists(config.cwd) then
+    local presets = Presets:parse(config.cwd)
+    local build_preset_names =
+      presets:get_build_preset_names({ include_disabled = config:show_disabled_build_presets() })
     build_preset_names = vim.list_extend(build_preset_names, { "None" })
-    build_presets = vim.tbl_extend("keep", build_presets, { None = { displayName = "None" } })
     local format_preset_name = function(p_name)
-      local p = build_presets[p_name]
+      if p_name == "None" then
+        return p_name
+      end
+      local p = presets:get_build_preset(p_name)
       return p.displayName or p.name
     end
     vim.ui.select(
       build_preset_names,
       { prompt = "Select cmake build presets", format_item = format_preset_name },
       vim.schedule_wrap(function(choice)
-        if not choice then
-          return
-        end
-        if choice == "None" then
-          config.build_preset = nil
+        if not choice or choice == "None" then
+          if choice == "None" then
+            config.build_preset = nil
+          end
+          callback(Result:new_error(Types.NOT_SELECT_PRESET, "No build preset selected"))
           return
         end
         if config.build_preset ~= choice then
           config.build_preset = choice
         end
-        local associated_configure_preset =
-          presets.get_preset_by_name(choice, "buildPresets", config.cwd)["configurePreset"]
+        local associated_configure_preset = presets:get_configure_preset(
+          presets:get_build_preset(choice).configurePreset,
+          { include_hidden = true }
+        )
+        local associated_configure_preset_name = associated_configure_preset
+            and associated_configure_preset.name
+          or nil
         local configure_preset_updated = false
 
-        if
-          associated_configure_preset and config.configure_preset ~= associated_configure_preset
-        then
-          config.configure_preset = associated_configure_preset
+        if config.configure_preset ~= associated_configure_preset_name then
+          config.configure_preset = associated_configure_preset_name
           configure_preset_updated = true
         end
 
-        if type(callback) == "function" then
-          callback()
-        elseif configure_preset_updated then
-          cmake.generate({ bang = true, fargs = {} }, nil)
-        end
+        callback(Result:new(Types.SUCCESS, nil, nil))
       end)
     )
   else
+    callback(
+      Result:new_error(Types.CANNOT_FIND_PRESETS_FILE, "Cannot find CMake[User]Presets file")
+    )
     log.error("Cannot find CMake[User]Presets.json at Root (" .. config.cwd .. ")!!")
   end
 end
 
-function cmake.select_build_target(callback, regenerate)
+function cmake.select_build_target(regenerate, callback)
+  callback = type(callback) == "function" and callback or function() end
   if not (config:has_build_directory()) then
     -- configure it
-    return cmake.generate({ bang = false, fargs = {} }, function()
-      cmake.select_build_target(callback, true)
+    return cmake.generate({ bang = false, fargs = {} }, function(result)
+      if result:is_ok() then
+        cmake.select_build_target(true, callback)
+      else
+        callback(result)
+      end
     end)
   end
 
@@ -730,10 +864,15 @@ function cmake.select_build_target(callback, regenerate)
   if targets_res.code ~= Types.SUCCESS then
     -- try again
     if not regenerate then
+      callback(targets_res)
       return
     else
-      return cmake.generate({ bang = true, fargs = {} }, function()
-        cmake.select_build_target(callback, false)
+      return cmake.generate({ bang = true, fargs = {} }, function(result)
+        if result:is_ok() then
+          cmake.select_build_target(false, callback)
+        else
+          callback(result)
+        end
       end)
     end
   end
@@ -743,34 +882,41 @@ function cmake.select_build_target(callback, regenerate)
     { prompt = "Select build target" },
     vim.schedule_wrap(function(_, idx)
       if not idx then
+        callback(Result:new_error(Types.NOT_SELECT_BUILD_TARGET, "No target selected: cancelled"))
         return
       end
       config.build_target = targets[idx]
-      if type(callback) == "function" then
-        callback()
-      end
+      callback(Result:new(Types.SUCCESS, config.build_target, nil))
     end)
   )
 end
 
 function cmake.get_cmake_launch_targets(callback)
+  callback = callback or function() end
   if not (config:has_build_directory()) then
     -- configure it
-    return cmake.generate({ bang = false, fargs = {} }, function()
-      cmake.get_cmake_launch_targets(callback)
+    return cmake.generate({ bang = false, fargs = {} }, function(result)
+      if result:is_ok() then
+        cmake.get_cmake_launch_targets(callback)
+      else
+        callback(result)
+      end
     end)
   end
 
-  if type(callback) == "function" then
-    callback(config:launch_targets())
-  end
+  callback(config:launch_targets())
 end
 
-function cmake.select_launch_target(callback, regenerate)
+function cmake.select_launch_target(regenerate, callback)
+  callback = callback or function() end
   if not (config:has_build_directory()) then
     -- configure it
-    return cmake.generate({ bang = false, fargs = {} }, function()
-      cmake.select_launch_target(callback, true)
+    return cmake.generate({ bang = false, fargs = {} }, function(result)
+      if result:is_ok() then
+        cmake.select_launch_target(true, callback)
+      else
+        callback(result)
+      end
     end)
   end
 
@@ -781,8 +927,12 @@ function cmake.select_launch_target(callback, regenerate)
     if not regenerate then
       return
     else
-      return cmake.generate({ bang = true, fargs = {} }, function()
-        cmake.select_launch_target(callback, false)
+      return cmake.generate({ bang = true, fargs = {} }, function(result)
+        if result:is_ok() then
+          cmake.select_launch_target(false, callback)
+        else
+          callback(result)
+        end
       end)
     end
   end
@@ -796,9 +946,7 @@ function cmake.select_launch_target(callback, regenerate)
         return
       end
       config.launch_target = targets[idx]
-      if type(callback) == "function" then
-        callback()
-      end
+      callback(Result:new(Types.SUCCESS, config.launch_target, nil))
     end)
   )
 end
@@ -1097,8 +1245,7 @@ function cmake.is_cmake_project()
 end
 
 function cmake.has_cmake_preset()
-  local presets_file = presets.check(config.cwd)
-  return presets_file ~= nil
+  return Presets.exists(config.cwd)
 end
 
 function cmake.get_build_targets()
@@ -1189,6 +1336,7 @@ function cmake.select_cwd(cwd_path)
         config.cwd = vim.fn.resolve(input)
         cmake.register_autocmd()
         cmake.register_autocmd_provided_by_users()
+        cmake.register_scratch_buffer(config.executor.name, config.runner.name)
         --	end
         cmake.generate({ bang = false, fargs = {} }, nil)
       end)
@@ -1197,6 +1345,7 @@ function cmake.select_cwd(cwd_path)
     config.cwd = vim.fn.resolve(cwd_path.args)
     cmake.register_autocmd()
     cmake.register_autocmd_provided_by_users()
+    cmake.register_scratch_buffer(config.executor.name, config.runner.name)
     cmake.generate({ bang = false, fargs = {} }, nil)
   end
 end
@@ -1252,8 +1401,8 @@ function cmake.create_regenerate_on_save_autocmd()
     table.insert(pattern, ss)
   end
 
-  local presets_file = config.base_settings.use_preset and presets.check(config.cwd)
-  if presets_file then
+  local presets_exists = config.base_settings.use_preset and Presets.exists(config.cwd)
+  if presets_exists then
     for _, item in ipairs({
       "CMakePresets.json",
       "CMakeUserPresets.json",
@@ -1284,10 +1433,16 @@ function cmake.create_regenerate_on_save_autocmd()
         local buf = vim.api.nvim_get_current_buf()
         -- Check if buffer is actually modified, and only if it is modified,
         -- execute the :CMakeGenerate, otherwise return. This is to avoid unnecessary regenerattion
-        local buf_modified = vim.api.nvim_buf_get_option(buf, "modified")
-        if buf_modified then
-          cmake.generate({ bang = false, fargs = {} }, nil)
-          config:update_targets()
+        if vim.api.nvim_buf_get_option(buf, "modified") then
+          vim.api.nvim_create_autocmd("BufWritePost", {
+            group = group,
+            once = true,
+            buffer = buf,
+            callback = function()
+              cmake.generate({ bang = false, fargs = {} }, nil)
+              config:update_targets()
+            end,
+          })
         end
       end,
     })
@@ -1386,6 +1541,20 @@ function cmake.register_dap_function()
         end)
       end
 
+      local initCmds = function()
+        local commands = {}
+        local sources = { vim.env.HOME .. "/.lldbinit", vim.fn.getcwd() .. "/.lldbinit" }
+        for idx, source in ipairs(sources) do
+          local file = io.open(source, "r")
+          if file then
+            local command = "command source " .. source
+            table.insert(commands, command)
+            file:close()
+          end
+        end
+        return commands
+      end
+
       if opt.target then
         -- explicit target requested. use that instead of the configured one
         return cmake.build({ target = opt.target }, function()
@@ -1397,6 +1566,7 @@ function cmake.register_dap_function()
             cwd = cmake.get_launch_path(opt.target),
             args = opt.args and opt.args or config.target_settings[opt.target].args,
             env = env,
+            initCommands = initCmds,
           }
           -- close cmake console
           cmake.close_executor()
@@ -1419,7 +1589,7 @@ function cmake.register_dap_function()
           or result_code == Types.NOT_EXECUTABLE
         then
           -- Re Select a target that could launch
-          return cmake.select_launch_target(function()
+          return cmake.select_launch_target(false, function()
             cmake.debug(opt, callback)
           end),
             true
@@ -1436,6 +1606,7 @@ function cmake.register_dap_function()
                 cwd = cmake.get_launch_path(cmake.get_launch_target()),
                 args = cmake:get_launch_args(),
                 env = env,
+                initCommands = initCmds,
               }
               -- close cmake console
               cmake.close_executor()

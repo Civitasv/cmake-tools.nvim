@@ -7,8 +7,11 @@ local _terminal = {
   id = nil, -- id for the unified terminal
   id_old = nil, -- Old id to keep track of the buffer
 }
--- this coroutine will be used to check when command exits and runs on_exit function
-local on_exit_coroutine
+
+local last_run_config = {
+  build_dir = nil,
+  launch_cmd = nil,
+}
 
 function _terminal.has_active_job(opts)
   if _terminal.id then
@@ -479,40 +482,6 @@ function _terminal.get_buffers_with_prefix(prefix)
   return filtered_buffers
 end
 
-function _terminal.prepare_cmd_for_run(cmd, env, args, cwd)
-  local full_cmd = ""
-
-  -- Launch form executable's build directory by default
-  full_cmd = "cd " .. utils.transform_path(cwd) .. " &&"
-
-  if osys.iswin32 then
-    for k, v in pairs(env) do
-      full_cmd = full_cmd .. " set " .. k .. "=" .. v .. "&&"
-    end
-  else
-    for k, v in pairs(env) do
-      full_cmd = full_cmd .. " " .. k .. "=" .. v .. ""
-    end
-  end
-
-  full_cmd = full_cmd .. " " .. utils.transform_path(cmd)
-
-  if osys.islinux or osys.iswsl or osys.ismac then
-    full_cmd = " " .. full_cmd -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
-  end
-
-  -- Add args to the cmd
-  for _, arg in ipairs(args) do
-    full_cmd = full_cmd .. " " .. arg
-  end
-
-  if osys.iswin32 then -- wrap in sub process to prevent env vars from being persited
-    full_cmd = 'cmd /C "' .. full_cmd .. '"'
-  end
-
-  return full_cmd
-end
-
 local get_tmp_dir = function()
   return vim.fn.stdpath("data") .. "/cmake-tools-tmp"
 end
@@ -551,6 +520,10 @@ local is_fish_shell = function()
   return string.find(shell, "fish")
 end
 
+local is_power_shell = function()
+  return vim.o.shell == "pwsh" or vim.o.shell == "powershell"
+end
+
 ---creates command that handles all of our post command stuff for on_exit handling
 ---@return string
 local get_command_handling_on_exit = function()
@@ -567,7 +540,7 @@ local get_command_handling_on_exit = function()
 
   if osys.iswin32 then
     exit_op = "%errorlevel%"
-    escape_rm = " del /Q "
+    escape_rm = is_power_shell() and "Remove-Item " or "del /Q "
     exit_code_file_path = exit_code_file_path:gsub("/", "\\")
     lock_file_path = lock_file_path:gsub("/", "\\")
   end
@@ -596,13 +569,25 @@ end
 ---@param on_exit function|nil function to be called on exit the terminal will pass commands exit code as an argument
 ---@param on_output any !unused here added for the sake of unification
 function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
-  local full_cmd = _terminal.prepare_cmd_for_run(cmd, env, args, cwd)
+  local function prepare_run(cmd, env, args, cwd)
+    -- Escape all special pattern characters
+    local escapedCwd = cwd:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+    cmd = cmd:gsub(escapedCwd, osys.iswin32 and ".\\" or "./")
+    cwd = utils.transform_path(cwd)
+    local envTbl = {}
+    local fmtStr = osys.iswin32 and "set %s=%s" or "%s=%s"
+    for k, v in pairs(env) do
+      table.insert(envTbl, string.format(fmtStr, k, v))
+    end
+    env = table.concat(envTbl, " ")
+    args = table.concat(args, " ")
 
-  local prefix = opts.prefix_name -- [CMakeTools]
-  create_lock_file()
+    return cmd, env, args, cwd
+  end
+
   -- prefix is added to the terminal name because the reposition_term() function needs to find it
   local terminal_already_exists, buffer_idx = _terminal.create_if_not_exists(
-    prefix .. opts.name, -- [CMakeTools]Executor Terminal/Runner Terminal
+    opts.prefix_name .. opts.name, -- [CMakeTools]Executor Terminal/Runner Terminal
     opts
   )
   _terminal.id = buffer_idx
@@ -610,39 +595,117 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   -- Reposition the terminal buffer, before sending commands
   local final_win_id = _terminal.reposition(opts)
 
-  --- NOTE: env_script needs to be run only once if the terminal buffer does not already exist
-  --- We compare the old and the new id and only if they are not the same, plus if the terminal exists,
-  --    only then, we do not reinitialize the environment, else we reinit the env
-  if not terminal_already_exists or _terminal.id_old ~= _terminal.id then
-    _terminal.id_old = _terminal.id
-    _terminal.send_data_to_terminal(buffer_idx, env_script, {
-      win_id = final_win_id,
-      prefix = opts.prefix_name,
-      split_direction = opts.split_direction,
-      split_size = opts.split_size,
-      start_insert = opts.start_insert,
-      focus = opts.focus,
-    })
+  local exit_handler = (osys.iswin32 and "& " or "; ") .. get_command_handling_on_exit()
+  local final_cmd, final_env, final_args, build_dir = prepare_run(cmd, env, args, cwd)
+  local full_cmd
+  local call_update
+
+  local termOpts = {
+    win_id = final_win_id,
+    prefix = opts.prefix_name,
+    split_direction = opts.split_direction,
+    split_size = opts.split_size,
+    start_insert = opts.start_insert,
+    auto_resize = opts.auto_resize,
+    focus = opts.focus,
+  }
+
+  if not opts.use_shell_alias then
+    full_cmd = (osys.iswin32 and 'cmd /C "' or "")
+      .. "cd "
+      .. build_dir
+      .. " && "
+      .. (final_env .. (final_env ~= "" and " " or ""))
+      .. final_cmd
+      .. ((final_args ~= "" and " " or "") .. final_args)
+      .. (osys.iswin32 and '"' or "")
+      .. exit_handler
+  else
+    if osys.iswin32 then
+      error("using a shell alias is currently not suported for windows")
+    end
+
+    local alias_name = "cmake_run_target"
+    local update_function = "cmake_update_target"
+
+    full_cmd = (final_env ~= "" and (final_env .. " ") or "") .. alias_name .. " " .. final_args
+    if not is_fish_shell and osys.islinux or osys.iswsl or osys.ismac then
+      -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
+      full_cmd = " " .. full_cmd
+    end
+
+    call_update = string.format(" %s '%s' '%s'", update_function, build_dir, final_cmd)
+
+    --- NOTE: env_script needs to be run only once if the terminal buffer does not already exist
+    --- We compare the old and the new id and only if they are not the same, plus if the terminal exists,
+    --    only then, we do not reinitialize the environment, else we reinit the env
+    if not terminal_already_exists or _terminal.id_old ~= _terminal.id then
+      local env_var_build = "CMAKE_TOOLS_BUILD_DIR"
+      local env_var_target = "CMAKE_TOOLS_LAUNCH_TARGET"
+
+      local userEnvScript = env_script
+      local fmt = {}
+
+      if is_fish_shell() then
+        fmt.update_func = "function %s; set -g %s $argv[1]; set -g %s $argv[2]; end; "
+        fmt.run_func = "function %s; cd $%s && eval '$%s $argv' %s; end; "
+      else
+        fmt.update_func = "%s() { export %s=$1; export %s=$2; }; "
+        fmt.run_func = "%s() { cd $%s && eval '$%s $*' %s; }; "
+      end
+
+      -- Depending how the user defined env_script ends, we have to strip a trailing
+      -- semicolon and replace it by a && to only clear the console if the user defined
+      -- env_script ran successfully
+      if userEnvScript and userEnvScript:match("^%s*$") == nil then
+        if userEnvScript:match(";%s*$") then
+          userEnvScript = userEnvScript:match("^(.-);%s*$") .. "&&"
+        elseif not userEnvScript:match("&&%s*$") then
+          userEnvScript = userEnvScript .. "&&"
+        end
+      end
+
+      env_script = string.format(fmt.update_func, update_function, env_var_build, env_var_target)
+        .. call_update
+        .. " && "
+        .. string.format(fmt.run_func, alias_name, env_var_build, env_var_target, exit_handler)
+        .. userEnvScript
+        .. "clear"
+
+      if not is_fish_shell and osys.islinux or osys.iswsl or osys.ismac then
+        -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
+        env_script = " " .. env_script
+      end
+
+      _terminal.id_old = _terminal.id
+      _terminal.send_data_to_terminal(buffer_idx, env_script, termOpts)
+    end
   end
 
+  if
+    opts.use_shell_alias
+    and (last_run_config.build_dir ~= build_dir or last_run_config.launch_cmd ~= final_cmd)
+  then
+    if last_run_config.build_dir then
+      _terminal.send_data_to_terminal(buffer_idx, call_update, termOpts)
+    end
+
+    last_run_config.build_dir = build_dir
+    last_run_config.launch_cmd = final_cmd
+  end
+
+  termOpts.do_not_add_newline = opts.do_not_add_newline
+
+  create_lock_file()
+
   -- Send final cmd to terminal
-  local chain_symb = osys.iswin32 and " & " or " ; "
-  _terminal.send_data_to_terminal(
-    buffer_idx,
-    full_cmd .. chain_symb .. get_command_handling_on_exit(),
-    {
-      win_id = final_win_id,
-      prefix = opts.prefix_name,
-      split_direction = opts.split_direction,
-      split_size = opts.split_size,
-      start_insert = opts.start_insert,
-      focus = opts.focus,
-      auto_resize = opts.auto_resize,
-      do_not_add_newline = opts.do_not_add_newline,
-    }
-  )
+  _terminal.send_data_to_terminal(buffer_idx, full_cmd, termOpts)
+
+  -- this coroutine will be used to check when command exits and runs on_exit function
+  local on_exit_coroutine
   on_exit_coroutine = coroutine.create(function()
-    while utils.file_exists(get_lock_file_path()) do
+    local lock_fie_path = get_lock_file_path()
+    while utils.file_exists(lock_fie_path) do
       vim.defer_fn(function()
         coroutine.resume(on_exit_coroutine)
       end, 25)
@@ -652,20 +715,6 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
     -- if type onexit function then on_exit()
   end)
   coroutine.resume(on_exit_coroutine)
-end
-
-function _terminal.prepare_launch_path(path)
-  if osys.iswin32 then
-    path = '"' .. path .. '"' -- The path is kept in double quotes ... Windows Duh!
-  elseif osys.islinux then
-    path = path
-  elseif osys.iswsl then
-    path = path
-  elseif osys.ismac then
-    path = path
-  end
-
-  return path
 end
 
 function _terminal.close(opts)

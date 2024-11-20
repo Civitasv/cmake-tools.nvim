@@ -6,6 +6,7 @@ local const = {
   cmake_regenerate_on_save = true, -- auto generate when save CMakeLists.txt
   cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" }, -- this will be passed when invoke `CMakeGenerate`
   cmake_build_options = {}, -- this will be passed when invoke `CMakeBuild`
+  cmake_show_disabled_build_presets = true,
   cmake_build_directory = function()
     if osys.iswin32 then
       return "out\\${variant:buildType}"
@@ -41,7 +42,10 @@ local const = {
       toggleterm = {
         direction = "float", -- 'vertical' | 'horizontal' | 'tab' | 'float'
         close_on_exit = false, -- whether close the terminal when exit
-        auto_scroll = true, -- whether auto scroll to the bottom
+        auto_scroll = true, -- auto scroll on new input
+        scroll_on_error = false, -- scroll to bottom on error
+        auto_focus = true, -- auto focus the terminal on activation
+        focus_on_error = false, -- focus on error
         singleton = true, -- single instance, autocloses the opened one, if present
       },
       overseer = {
@@ -86,7 +90,10 @@ local const = {
       toggleterm = {
         direction = "float", -- 'vertical' | 'horizontal' | 'tab' | 'float'
         close_on_exit = false, -- whether close the terminal when exit
-        auto_scroll = true, -- whether auto scroll to the bottom
+        auto_scroll = true, -- auto scroll on new input
+        scroll_on_error = false, -- scroll to bottom on error
+        auto_focus = true, -- auto focus the terminal on activation
+        focus_on_error = false, -- focus on error
         singleton = true, -- single instance, autocloses the opened one, if present
       },
       overseer = {
@@ -114,6 +121,7 @@ local const = {
         start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
         focus = false, -- Focus on terminal when cmake task is launched.
         do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
+        use_shell_alias = false, -- Hide the implementation details used to run the built target by using a shell alias
       },
     },
   },
