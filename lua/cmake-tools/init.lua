@@ -342,15 +342,18 @@ function cmake.build(opt, callback)
   end
 
   local args
+  local cwd
   local presets_exists = config.base_settings.use_preset and Presets.exists(config.cwd)
 
   if presets_exists and config.build_preset then
     args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
+    cwd = config.cwd
   else
     args = {
       "--build",
       utils.transform_path(config:build_directory_path(), config.executor.name == "quickfix"),
     }
+    cwd = "."
   end
 
   if opt.target ~= nil then
@@ -368,7 +371,7 @@ function cmake.build(opt, callback)
 
   local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
-  return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, callback)
+  return utils.execute(cmd, config.env_script, env, args, cwd, config.executor, callback)
 end
 
 function cmake.quick_build(opt, callback)
