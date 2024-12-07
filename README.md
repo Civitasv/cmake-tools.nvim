@@ -92,6 +92,7 @@ require("cmake-tools").setup {
       terminal = {
         name = "Main Terminal",
         prefix_name = "[CMakeTools]: ", -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
+        -- If you are using windows for neovim(not wsl), It's better to not use '[ ]', because it will appeal an error because the bug of neovim
         split_direction = "horizontal", -- "horizontal", "vertical"
         split_size = 11,
 
@@ -140,6 +141,7 @@ require("cmake-tools").setup {
       terminal = {
         name = "Main Terminal",
         prefix_name = "[CMakeTools]: ", -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
+        -- If you are using windows for neovim(not wsl), It's better to not use '[ ]', because it will appeal an error because the bug of neovim
         split_direction = "horizontal", -- "horizontal", "vertical"
         split_size = 11,
 
@@ -168,11 +170,11 @@ require("cmake-tools").setup {
 
 Generally, the default is enough.
 
-*And attention, when you firstly enter a new project, a session file for this project will be created, and `cmake_generate_options`, `cmake_build_options`, `cmake_build_directory` in your configuration will be used to initialize some fields of it. Then, if you reopen this project, it will reuse this session file to initialize these fields, or, you can think this project has its own settings, so if you change the values in global configuration, it will not reflect on these projects, you should refresh these fields by your own. Also see [session docs](./docs/sessions.md) and issue [#162](https://github.com/Civitasv/cmake-tools.nvim/issues/162).*
+_And attention, when you firstly enter a new project, a session file for this project will be created, and `cmake_generate_options`, `cmake_build_options`, `cmake_build_directory` in your configuration will be used to initialize some fields of it. Then, if you reopen this project, it will reuse this session file to initialize these fields, or, you can think this project has its own settings, so if you change the values in global configuration, it will not reflect on these projects, you should refresh these fields by your own. Also see [session docs](./docs/sessions.md) and issue [#162](https://github.com/Civitasv/cmake-tools.nvim/issues/162)._
 
 ## :magic_wand: Docs
 
-*Our plugin will automatically create a buffer named \*cmake-tools\*, all commands executed by this plugin will be dumped in this buffer, so when something goes wrong, you can know excatly what happend.*
+_Our plugin will automatically create a buffer named \*cmake-tools\*, all commands executed by this plugin will be dumped in this buffer, so when something goes wrong, you can know excatly what happend._
 
 1. [basic usage](./docs/basic_usage.md)
 2. [settings](./docs/settings.md)

@@ -572,7 +572,12 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   local function prepare_run(cmd, env, args, cwd)
     -- Escape all special pattern characters
     local escapedCwd = cwd:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
-    cmd = cmd:gsub(escapedCwd, osys.iswin32 and ".\\" or "./")
+    if osys.iswin32 then
+      cmd = cmd:gsub(escapedCwd, ".\\")
+      cmd = cmd:gsub("/", "\\")
+    else
+      cmd = cmd:gsub(escapedCwd, "./")
+    end
     cwd = utils.transform_path(cwd)
     local envTbl = {}
     local fmtStr = osys.iswin32 and "set %s=%s" or "%s=%s"
