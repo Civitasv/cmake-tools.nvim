@@ -570,8 +570,6 @@ end
 ---@param on_output any !unused here added for the sake of unification
 function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
   local function prepare_run(cmd, env, args, cwd)
-    vim.notify(string.format("Original cmd: %s", cmd), vim.log.levels.WARN)
-    vim.notify(string.format("Original cwd: %s", cwd), vim.log.levels.WARN)
     local escapedCwd = cwd:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
 
     if osys.iswin32 then
