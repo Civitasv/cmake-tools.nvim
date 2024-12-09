@@ -571,69 +571,52 @@ end
 function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
   local function is_absolute_path(path)
     if osys.iswin32 then
-      -- Windows：绝对路径以驱动器字母或双反斜杠开头
+      -- Windows: 绝对路径以驱动器字母或双反斜杠开头
       return path:match("^[A-Za-z]:[\\/].*") or path:match("^[\\/]{2}.*")
     else
-      -- Unix/Linux/macOS：绝对路径以斜杠开头
+      -- Unix/Linux/macOS: 绝对路径以斜杠开头
       return path:sub(1, 1) == "/"
     end
   end
 
   local function prepare_run(cmd, env, args, cwd)
-    -- 初始化用于存储目录路径和文件名的变量
-    local dir_path, filename
+    -- 使用 vim.fn.fnamemodify 提取目录路径和文件名
+    local dir_path = vim.fn.fnamemodify(cmd, ":h") -- 目录路径
+    local filename = vim.fn.fnamemodify(cmd, ":t") -- 文件名
 
-    if osys.iswin32 then
-      -- Windows：匹配任何目录路径，捕获目录和文件名
-      -- 模式解释：
-      -- ^(.-)[\\/](.+)$
-      -- ^        : 字符串开头
-      -- (.-)     : 非贪婪地捕获任意字符，直到遇到分隔符
-      -- [\\/]    : 匹配 / 或 \
-      -- (.+)$    : 捕获剩余的文件名
-      dir_path, filename = cmd:match("^(.-)[\\/](.+)$")
-    else
-      -- 非 Windows：匹配任何目录路径，捕获目录和文件名
-      -- 模式解释：
-      -- ^(.-)/(.+)$
-      -- ^        : 字符串开头
-      -- (.-)     : 非贪婪地捕获任意字符，直到遇到 /
-      -- /        : 分隔符
-      -- (.+)$    : 捕获剩余的文件名
-      dir_path, filename = cmd:match("^(.-)/(.+)$")
-    end
+    if dir_path and dir_path ~= "." then
+      -- 移除目录路径前的 "./" 或 ".\"
+      if dir_path:sub(1, 2) == "./" or dir_path:sub(1, 2) == ".\\" then
+        dir_path = dir_path:sub(3)
+      end
 
-    if dir_path and filename then
-      -- 检查目录路径是否不是绝对路径且不包含 ".."
-      if not dir_path:match("%.%.") and not is_absolute_path(dir_path) then
-        -- 根据操作系统，使用正确的路径分隔符将目录路径添加到 cwd
+      -- 检查 dir_path 是否是相对路径且不包含 ".."
+      local is_abs = is_absolute_path(dir_path)
+      local has_parent_dir = dir_path:match("%.%.")
+      if not is_abs and not has_parent_dir then
+        -- 将 dir_path 添加到 cwd 末尾
         if osys.iswin32 then
           cwd = cwd .. "\\" .. dir_path
-          -- 将 cmd 设置为 .\filename.exe
-          cmd = ".\\" .. filename
+          cmd = "./" .. filename -- 保持 ./ 前缀
         else
           cwd = cwd .. "/" .. dir_path
-          -- 将 cmd 设置为 ./filename
           cmd = "./" .. filename
         end
+      else
+        -- 如果 dir_path 是绝对路径或包含 ".."，仅设置 cmd 为 ./filename
+        cmd = "./" .. filename
       end
     end
 
-    -- 转义 cwd 中的所有特殊模式字符，以确保在 gsub 中安全使用
+    -- 转义 cwd 中的特殊模式字符，以确保在 gsub 中安全使用
     local escapedCwd = cwd:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
 
     if osys.iswin32 then
-      -- Windows 系统
-
-      -- 将 cwd 替换为 .\，使路径相对于当前目录
+      -- Windows 系统：将 cwd 替换为 .\ 并将所有 / 替换为 \
       cmd = cmd:gsub(escapedCwd, ".\\")
-
-      -- 将所有 / 替换为 \，确保使用正确的路径分隔符
       cmd = cmd:gsub("/", "\\")
     else
-      -- 非 Windows 系统（Linux/macOS）
-
-      -- 将 cwd 替换为 ./，使路径相对于当前目录
+      -- 非 Windows 系统：将 cwd 替换为 ./
       cmd = cmd:gsub(escapedCwd, "./")
     end
 
@@ -651,10 +634,8 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
     -- 将参数表连接成一个以空格分隔的字符串
     args = table.concat(args, " ")
 
-    -- 返回处理后的 cmd、env、args 和 cwd
     return cmd, env, args, cwd
   end
-
   -- prefix is added to the terminal name because the reposition_term() function needs to find it
   local terminal_already_exists, buffer_idx = _terminal.create_if_not_exists(
     opts.prefix_name .. opts.name, -- [CMakeTools]Executor Terminal/Runner Terminal
