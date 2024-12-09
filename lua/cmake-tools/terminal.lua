@@ -569,49 +569,89 @@ end
 ---@param on_exit function|nil function to be called on exit the terminal will pass commands exit code as an argument
 ---@param on_output any !unused here added for the sake of unification
 function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
+  local function is_absolute_path(path)
+    if osys.iswin32 then
+      -- Windows：绝对路径以驱动器字母或双反斜杠开头
+      return path:match("^[A-Za-z]:[\\/].*") or path:match("^[\\/]{2}.*")
+    else
+      -- Unix/Linux/macOS：绝对路径以斜杠开头
+      return path:sub(1, 1) == "/"
+    end
+  end
+
   local function prepare_run(cmd, env, args, cwd)
-    local bin_prefixes = {
-      "^bin[/\\]", -- 以 "bin/" 或 "bin\" 开头
-      "^%./bin[/\\]", -- 以 "./bin/" 或 "./bin\" 开头
-      "^%.\\bin[/\\]", -- 以 ".\bin/" 或 ".\bin\" 开头
-    }
+    -- 初始化用于存储目录路径和文件名的变量
+    local dir_path, filename
 
-    local matched = false
+    if osys.iswin32 then
+      -- Windows：匹配任何目录路径，捕获目录和文件名
+      -- 模式解释：
+      -- ^(.-)[\\/](.+)$
+      -- ^        : 字符串开头
+      -- (.-)     : 非贪婪地捕获任意字符，直到遇到分隔符
+      -- [\\/]    : 匹配 / 或 \
+      -- (.+)$    : 捕获剩余的文件名
+      dir_path, filename = cmd:match("^(.-)[\\/](.+)$")
+    else
+      -- 非 Windows：匹配任何目录路径，捕获目录和文件名
+      -- 模式解释：
+      -- ^(.-)/(.+)$
+      -- ^        : 字符串开头
+      -- (.-)     : 非贪婪地捕获任意字符，直到遇到 /
+      -- /        : 分隔符
+      -- (.+)$    : 捕获剩余的文件名
+      dir_path, filename = cmd:match("^(.-)/(.+)$")
+    end
 
-    -- 遍历所有 bin 前缀模式，检测 cmd 是否以其中任何一个模式开头
-    for _, pattern in ipairs(bin_prefixes) do
-      -- 使用 pattern 匹配 cmd，并捕获剩余部分
-      local rest = cmd:match(pattern .. "(.*)")
-      if rest then
-        matched = true
+    if dir_path and filename then
+      -- 检查目录路径是否不是绝对路径且不包含 ".."
+      if not dir_path:match("%.%.") and not is_absolute_path(dir_path) then
+        -- 根据操作系统，使用正确的路径分隔符将目录路径添加到 cwd
         if osys.iswin32 then
-          cwd = cwd .. "\\bin"
-          cmd = ".\\" .. rest
+          cwd = cwd .. "\\" .. dir_path
+          -- 将 cmd 设置为 .\filename.exe
+          cmd = ".\\" .. filename
         else
-          cwd = cwd .. "/bin"
-          cmd = "./" .. rest
+          cwd = cwd .. "/" .. dir_path
+          -- 将 cmd 设置为 ./filename
+          cmd = "./" .. filename
         end
-        break
       end
     end
 
-    -- Escape all special pattern characters
+    -- 转义 cwd 中的所有特殊模式字符，以确保在 gsub 中安全使用
     local escapedCwd = cwd:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+
     if osys.iswin32 then
+      -- Windows 系统
+
+      -- 将 cwd 替换为 .\，使路径相对于当前目录
       cmd = cmd:gsub(escapedCwd, ".\\")
+
+      -- 将所有 / 替换为 \，确保使用正确的路径分隔符
       cmd = cmd:gsub("/", "\\")
     else
+      -- 非 Windows 系统（Linux/macOS）
+
+      -- 将 cwd 替换为 ./，使路径相对于当前目录
       cmd = cmd:gsub(escapedCwd, "./")
     end
+
+    -- 转换 cwd 路径，确保路径格式正确
     cwd = utils.transform_path(cwd)
+
+    -- 准备环境变量字符串
     local envTbl = {}
     local fmtStr = osys.iswin32 and "set %s=%s" or "%s=%s"
     for k, v in pairs(env) do
       table.insert(envTbl, string.format(fmtStr, k, v))
     end
     env = table.concat(envTbl, " ")
+
+    -- 将参数表连接成一个以空格分隔的字符串
     args = table.concat(args, " ")
 
+    -- 返回处理后的 cmd、env、args 和 cwd
     return cmd, env, args, cwd
   end
 
