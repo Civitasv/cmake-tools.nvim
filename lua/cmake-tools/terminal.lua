@@ -570,6 +570,31 @@ end
 ---@param on_output any !unused here added for the sake of unification
 function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
   local function prepare_run(cmd, env, args, cwd)
+    local bin_prefixes = {
+      "^bin[/\\]", -- 以 "bin/" 或 "bin\" 开头
+      "^%./bin[/\\]", -- 以 "./bin/" 或 "./bin\" 开头
+      "^%.\\bin[/\\]", -- 以 ".\bin/" 或 ".\bin\" 开头
+    }
+
+    local matched = false
+
+    -- 遍历所有 bin 前缀模式，检测 cmd 是否以其中任何一个模式开头
+    for _, pattern in ipairs(bin_prefixes) do
+      -- 使用 pattern 匹配 cmd，并捕获剩余部分
+      local rest = cmd:match(pattern .. "(.*)")
+      if rest then
+        matched = true
+        if osys.iswin32 then
+          cwd = cwd .. "\\bin"
+          cmd = ".\\" .. rest
+        else
+          cwd = cwd .. "/bin"
+          cmd = "./" .. rest
+        end
+        break
+      end
+    end
+
     -- Escape all special pattern characters
     local escapedCwd = cwd:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
     if osys.iswin32 then
