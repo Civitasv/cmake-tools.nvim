@@ -569,46 +569,7 @@ end
 ---@param on_exit function|nil function to be called on exit the terminal will pass commands exit code as an argument
 ---@param on_output any !unused here added for the sake of unification
 function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
-  local function is_absolute_path(path)
-    if osys.iswin32 then
-      -- Windows: 绝对路径以驱动器字母或双反斜杠开头
-      return path:match("^[A-Za-z]:[\\/].*") or path:match("^[\\/]{2}.*")
-    else
-      -- Unix/Linux/macOS: 绝对路径以斜杠开头
-      return path:sub(1, 1) == "/"
-    end
-  end
-
   local function prepare_run(cmd, env, args, cwd)
-    -- 使用 vim.fn.fnamemodify 提取目录路径和文件名
-    local dir_path = vim.fn.fnamemodify(cmd, ":h") -- 目录路径
-    local filename = vim.fn.fnamemodify(cmd, ":t") -- 文件名
-
-    if dir_path and dir_path ~= "." then
-      -- 移除目录路径前的 "./" 或 ".\"
-      if dir_path:sub(1, 2) == "./" or dir_path:sub(1, 2) == ".\\" then
-        dir_path = dir_path:sub(3)
-      end
-
-      -- 检查 dir_path 是否是相对路径且不包含 ".."
-      local is_abs = is_absolute_path(dir_path)
-      local has_parent_dir = dir_path:match("%.%.")
-      if not is_abs and not has_parent_dir then
-        -- 将 dir_path 添加到 cwd 末尾
-        if osys.iswin32 then
-          cwd = cwd .. "\\" .. dir_path
-          cmd = "./" .. filename -- 保持 ./ 前缀
-        else
-          cwd = cwd .. "/" .. dir_path
-          cmd = "./" .. filename
-        end
-      else
-        -- 如果 dir_path 是绝对路径或包含 ".."，仅设置 cmd 为 ./filename
-        cmd = "./" .. filename
-      end
-    end
-
-    -- 转义 cwd 中的特殊模式字符，以确保在 gsub 中安全使用
     local escapedCwd = cwd:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
 
     if osys.iswin32 then
@@ -633,7 +594,32 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
 
     -- 将参数表连接成一个以空格分隔的字符串
     args = table.concat(args, " ")
+    -- 仅在 Windows 系统上执行特定处理
+    if osys.iswin32 then
+      -- 查找最后一个反斜杠的位置
+      local last_backslash = cmd:match("^.*\\") and #cmd:match("^(.*\\)") or nil
 
+      if last_backslash then
+        -- 提取最后一个反斜杠后的字符
+        local suffix = cmd:sub(last_backslash + 1, last_backslash + 1)
+
+        if suffix ~= "." then
+          -- 提取文件夹名称
+          local folder_name = cmd:match("^.*\\(.-)\\[^\\]+$") or ""
+
+          if folder_name ~= "" then
+            -- 将文件夹名称添加到 cwd
+            cwd = cwd .. "\\" .. folder_name
+
+            -- 提取可执行文件名
+            local exe_name = cmd:match("^.*\\([^\\]+)$") or cmd
+
+            -- 更新 cmd 为 .\exe_name
+            cmd = ".\\" .. exe_name
+          end
+        end
+      end
+    end
     return cmd, env, args, cwd
   end
   -- prefix is added to the terminal name because the reposition_term() function needs to find it
