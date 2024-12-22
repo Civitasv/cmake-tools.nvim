@@ -539,8 +539,8 @@ local get_command_handling_on_exit = function()
   end
 
   if osys.iswin32 then
-    exit_op = "%errorlevel%"
-    escape_rm = is_power_shell() and "Remove-Item " or "del /Q "
+    exit_op = is_power_shell() and "$LASTEXITCODE" or "%errorlevel%"
+    escape_rm = is_power_shell() and " Remove-Item " or " del /Q "
     exit_code_file_path = exit_code_file_path:gsub("/", "\\")
     lock_file_path = lock_file_path:gsub("/", "\\")
   end
