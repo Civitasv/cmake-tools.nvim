@@ -595,7 +595,11 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   -- Reposition the terminal buffer, before sending commands
   local final_win_id = _terminal.reposition(opts)
 
-  local exit_handler = (osys.iswin32 and "& " or "; ") .. get_command_handling_on_exit()
+  local chain_symb = (osys.iswin32 and "& " or "; ")
+  if is_power_shell() then
+    chain_symb = "; "
+  end
+  local exit_handler = chain_symb .. get_command_handling_on_exit()
   local final_cmd, final_env, final_args, build_dir = prepare_run(cmd, env, args, cwd)
   local full_cmd
   local call_update
