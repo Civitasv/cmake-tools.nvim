@@ -6,6 +6,7 @@ local const = {
   cmake_regenerate_on_save = true, -- auto generate when save CMakeLists.txt
   cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" }, -- this will be passed when invoke `CMakeGenerate`
   cmake_build_options = {}, -- this will be passed when invoke `CMakeBuild`
+  cmake_show_disabled_build_presets = true,
   cmake_build_directory = function()
     if osys.iswin32 then
       return "out\\${variant:buildType}"
@@ -53,7 +54,9 @@ local const = {
             "terminal",
           },
         }, -- options to pass into the `overseer.new_task` command
-        on_new_task = function(task) end, -- a function that gets overseer.Task when it is created, before calling `task:start`
+        on_new_task = function(task)
+          require("overseer").open({ enter = false, direction = "right" })
+        end, -- a function that gets overseer.Task when it is created, before calling `task:start`
       },
       terminal = {
         name = "Executor Terminal",
@@ -118,6 +121,7 @@ local const = {
         start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
         focus = false, -- Focus on terminal when cmake task is launched.
         do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
+        use_shell_alias = false, -- Hide the implementation details used to run the built target by using a shell alias
       },
     },
   },
