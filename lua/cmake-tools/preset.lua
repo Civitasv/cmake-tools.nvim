@@ -39,7 +39,6 @@ local function resolveBuildDir(self)
     return
   end
   self.binaryDirExpanded = expandMacro(self, self.binaryDir)
-  self.binaryDirExpanded = vim.fn.fnamemodify(self.binaryDirExpanded, ":.")
 end
 
 local function resolveCacheVariables(self)
