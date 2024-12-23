@@ -570,21 +570,58 @@ end
 ---@param on_output any !unused here added for the sake of unification
 function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
   local function prepare_run(cmd, env, args, cwd)
-    -- Escape all special pattern characters
     local escapedCwd = cwd:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
-    cmd = cmd:gsub(escapedCwd, osys.iswin32 and ".\\" or "./")
+
+    if osys.iswin32 then
+      -- Windows 系统：将 cwd 替换为 .\ 并将所有 / 替换为 \
+      cmd = cmd:gsub(escapedCwd, ".\\")
+      cmd = cmd:gsub("/", "\\")
+    else
+      -- 非 Windows 系统：将 cwd 替换为 ./
+      cmd = cmd:gsub(escapedCwd, "./")
+    end
+
+    -- 转换 cwd 路径，确保路径格式正确
     cwd = utils.transform_path(cwd)
+
+    -- 准备环境变量字符串
     local envTbl = {}
     local fmtStr = osys.iswin32 and "set %s=%s" or "%s=%s"
     for k, v in pairs(env) do
       table.insert(envTbl, string.format(fmtStr, k, v))
     end
     env = table.concat(envTbl, " ")
-    args = table.concat(args, " ")
 
+    -- 将参数表连接成一个以空格分隔的字符串
+    args = table.concat(args, " ")
+    -- 仅在 Windows 系统上执行特定处理
+    if osys.iswin32 then
+      -- 查找最后一个反斜杠的位置
+      local last_backslash = cmd:match("^.*\\") and #cmd:match("^(.*\\)") or nil
+
+      if last_backslash then
+        -- 提取最后一个反斜杠后的字符
+        local suffix = cmd:sub(last_backslash + 1, last_backslash + 1)
+
+        if suffix ~= "." then
+          -- 提取文件夹名称
+          local folder_name = cmd:match("^.*\\(.-)\\[^\\]+$") or ""
+
+          if folder_name ~= "" then
+            -- 将文件夹名称添加到 cwd
+            cwd = cwd .. "\\" .. folder_name
+
+            -- 提取可执行文件名
+            local exe_name = cmd:match("^.*\\([^\\]+)$") or cmd
+
+            -- 更新 cmd 为 .\exe_name
+            cmd = ".\\" .. exe_name
+          end
+        end
+      end
+    end
     return cmd, env, args, cwd
   end
-
   -- prefix is added to the terminal name because the reposition_term() function needs to find it
   local terminal_already_exists, buffer_idx = _terminal.create_if_not_exists(
     opts.prefix_name .. opts.name, -- [CMakeTools]Executor Terminal/Runner Terminal
