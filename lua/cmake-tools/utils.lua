@@ -188,6 +188,10 @@ function utils.run(cmd, env_script, env, args, cwd, runner, callback)
   -- save all
   vim.cmd("silent exec " .. '"wall"')
 
+  if osys.iswin32 then
+    cmd = cmd:gsub('/', '\\')
+  end
+
   local ntfy = notification:new("runner")
 
   ntfy:notify(cmd, "info")
