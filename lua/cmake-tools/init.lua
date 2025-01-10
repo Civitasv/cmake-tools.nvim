@@ -1403,7 +1403,7 @@ function cmake.create_regenerate_on_save_autocmd()
 
   local cwd = config.cwd
   if require("cmake-tools.osys").iswin32 then
-      cwd = config.cwd:gsub("\\", "/")
+    cwd = config.cwd:gsub("\\", "/")
   end
 
   local presets_exists = config.base_settings.use_preset and Presets.exists(config.cwd)
