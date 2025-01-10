@@ -258,6 +258,9 @@ end
 
 function Config:get_launch_target_from_info(target_info)
   local target_path = target_info["artifacts"][1]["path"]
+  if require('cmake-tools.osys').iswin32 then
+    target_path = target_path:gsub("/", "\\")
+  end
   target_path = Path:new(target_path)
   if not target_path:is_absolute() then
     -- then it is a relative path, based on build directory
