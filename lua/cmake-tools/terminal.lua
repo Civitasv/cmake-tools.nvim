@@ -532,6 +532,7 @@ local get_command_handling_on_exit = function()
 
   local exit_op = "$?"
   local escape_rm = " \\rm -f "
+  local and_op = " &&"
 
   if is_fish_shell() then
     exit_op = "$status"
@@ -540,12 +541,13 @@ local get_command_handling_on_exit = function()
 
   if osys.iswin32 then
     exit_op = is_power_shell() and "$LASTEXITCODE" or "%errorlevel%"
+    and_op = is_power_shell() and " -and" or " &&"
     escape_rm = is_power_shell() and " Remove-Item " or " del /Q "
     exit_code_file_path = exit_code_file_path:gsub("/", "\\")
     lock_file_path = lock_file_path:gsub("/", "\\")
   end
 
-  return "echo " .. exit_op .. " > " .. exit_code_file_path .. " &&" .. escape_rm .. lock_file_path
+  return "echo " .. exit_op .. " > " .. exit_code_file_path .. and_op .. escape_rm .. lock_file_path
 end
 
 ---tries to read the number stored in get_last_exit_code_file_path() file
