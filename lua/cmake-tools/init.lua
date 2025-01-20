@@ -364,6 +364,10 @@ function cmake.build(opt, callback)
     vim.list_extend(args, fargs)
   end
 
+  if config.build_type ~= nil then
+    vim.list_extend(args, { "--config", config.build_type })
+  end
+
   vim.list_extend(args, config:build_options())
 
   local env = environment.get_build_environment(config)
