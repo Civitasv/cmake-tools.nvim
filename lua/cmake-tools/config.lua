@@ -51,7 +51,7 @@ function Config:new(const)
 
   obj.executor = const.cmake_executor
   obj.runner = const.cmake_runner
-  for _,v in pairs(const.ctest_extra_args) do
+  for _, v in pairs(const.ctest_extra_args) do
     table.insert(obj.ctest.extra_args, v)
   end
   return obj
