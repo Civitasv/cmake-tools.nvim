@@ -267,7 +267,13 @@ function Preset:new(cwd, obj, get_preset)
 end
 
 function Preset:get_build_type()
-  return self.cacheVariables and self.cacheVariables.CMAKE_BUILD_TYPE or "Debug"
+  if self.cacheVariables and self.cacheVariables.CMAKE_BUILD_TYPE then
+    if type(self.cacheVariables.CMAKE_BUILD_TYPE) == "table" then
+      return self.cacheVariables.CMAKE_BUILD_TYPE["value"]
+    end
+    return self.cacheVariables.CMAKE_BUILD_TYPE
+  end
+  return "Debug"
 end
 
 return Preset
