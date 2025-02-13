@@ -4,6 +4,10 @@ local osys = require("cmake-tools.osys")
 local Preset = {}
 
 local function expandMacro(self, str)
+  if type(str) == "table" and str["value"] ~= nil then
+    return str["value"]
+  end
+
   if type(str) ~= "string" then
     return str
   end
@@ -267,13 +271,7 @@ function Preset:new(cwd, obj, get_preset)
 end
 
 function Preset:get_build_type()
-  if self.cacheVariables and self.cacheVariables.CMAKE_BUILD_TYPE then
-    if type(self.cacheVariables.CMAKE_BUILD_TYPE) == "table" then
-      return self.cacheVariables.CMAKE_BUILD_TYPE["value"]
-    end
-    return self.cacheVariables.CMAKE_BUILD_TYPE
-  end
-  return "Debug"
+  return self.cacheVariables and self.cacheVariables.CMAKE_BUILD_TYPE or "Debug"
 end
 
 return Preset
