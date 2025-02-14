@@ -5,7 +5,7 @@ local Preset = {}
 
 local function expandMacro(self, str)
   if type(str) == "table" and str["value"] ~= nil then
-    return str["value"]
+    str = str["value"]
   end
 
   if type(str) ~= "string" then
