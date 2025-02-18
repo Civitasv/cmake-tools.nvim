@@ -1,6 +1,22 @@
 local osys = require("cmake-tools.osys")
 local utils = require("cmake-tools.utils")
 
+local function find_file_in_dir_or_parent(dir, fname)
+  local path = dir .. "/" .. fname
+  local file = io.open(path, "r")
+  if file then
+    file:close()
+    return path
+  end
+
+  local parentDir = dir:match("(.+)/[^/]+$")
+  if not parentDir then
+    return nil
+  end
+
+  return find_file_in_dir_or_parent(parentDir, fname)
+end
+
 local session = {
   dir = {
     unix = vim.fn.expand("~") .. "/.cache/cmake_tools_nvim/",
@@ -23,6 +39,11 @@ local function get_cache_path()
   end
 end
 
+local function get_local_config_path()
+  local current_path = vim.loop.cwd()
+  return find_file_in_dir_or_parent(current_path, ".cmake-tools.lua")
+end
+
 local function get_current_path()
   local current_path = vim.loop.cwd()
   local clean_path = current_path:gsub("/", "")
@@ -39,9 +60,12 @@ local function init_cache()
 end
 
 local function init_session()
-  init_cache()
+  local path = get_local_config_path()
+  if not path then
+    init_cache()
+    path = get_current_path()
+  end
 
-  local path = get_current_path()
   if not utils.file_exists(path) then
     local file = io.open(path, "w")
     if file then
@@ -51,7 +75,10 @@ local function init_session()
 end
 
 function session.load()
-  local path = get_current_path()
+  local path = get_local_config_path()
+  if not path then
+    path = get_current_path()
+  end
 
   if utils.file_exists(path) then
     local config = dofile(path)
@@ -111,9 +138,12 @@ function session.update(config, old_config)
 end
 
 function session.save(config)
-  init_session()
+  local path = get_local_config_path()
+  if not path then
+    init_session()
+    path = get_current_path()
+  end
 
-  local path = get_current_path()
   local file = io.open(path, "w")
 
   local serialized_object = {
