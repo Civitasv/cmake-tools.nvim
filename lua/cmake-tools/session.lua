@@ -1,6 +1,22 @@
 local osys = require("cmake-tools.osys")
 local utils = require("cmake-tools.utils")
 
+local function find_file_in_dir_or_parent(dir, fname)
+  local path = dir .. "/" .. fname
+  local file = io.open(path, "r")
+  if file then
+    file:close()
+    return path
+  end
+
+  local parentDir = dir:match("(.+)/[^/]+$")
+  if not parentDir then
+    return nil
+  end
+
+  return find_file_in_dir_or_parent(parentDir, fname)
+end
+
 local session = {
   dir = {
     unix = vim.fn.expand("~") .. "/.cache/cmake_tools_nvim/",
@@ -26,6 +42,12 @@ end
 
 ---@param cwd string neovim working directory
 ---@return string
+local function get_local_config_path(cwd)
+  return find_file_in_dir_or_parent(cwd, ".cmake-tools.lua")
+end
+
+---@param cwd string neovim working directory
+---@return string
 local function get_current_path(cwd)
   local clean_path = cwd:gsub("/", "")
   clean_path = clean_path:gsub("\\", "")
@@ -42,9 +64,12 @@ end
 
 ---@param cwd string neovim working directory
 local function init_session(cwd)
-  init_cache()
+  local path = get_local_config_path(cwd)
+  if not path then
+    init_cache()
+    path = get_current_path(cwd)
+  end
 
-  local path = get_current_path(cwd)
   if not utils.file_exists(path) then
     local file = io.open(path, "w")
     if file then
@@ -56,7 +81,10 @@ end
 ---@param cwd string neovim working directory (used as cache key)
 ---@return SerializedConfig raw session data, or empty table if none exists
 function session.load(cwd)
-  local path = get_current_path(cwd)
+  local path = get_local_config_path(cwd)
+  if not path then
+    path = get_current_path(cwd)
+  end
 
   if utils.file_exists(path) then
     local config = dofile(path)
@@ -92,9 +120,12 @@ end
 ---@param cwd string neovim working directory (used as cache key)
 ---@param config Config current config to persist
 function session.save(cwd, config)
-  init_session(cwd)
+  local path = get_local_config_path()
+  if not path then
+    init_session(cwd)
+    path = get_current_path(cwd)
+  end
 
-  local path = get_current_path(cwd)
   local file = io.open(path, "w")
 
   ---@class SerializedConfig
