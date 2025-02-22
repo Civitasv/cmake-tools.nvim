@@ -17,7 +17,7 @@ The goal of this plugin is to offer a comprehensive, convenient, and powerful wo
 - Allow integerating with [overseer](https://github.com/stevearc/overseer.nvim), optional, if you want this feature, please install it firstly.
 - Allow integerating with [toggleterm](https://github.com/akinsho/toggleterm.nvim), optional, if you want this feature, please install it firstly.
 - Install it like any other Neovim plugin.
-  - [lazy.nvim](https://github.com/folke/lazy.nvim): `return { 'Civitasv/cmake-tools.nvim' }`
+  - [lazy.nvim](https://github.com/folke/lazy.nvim): `return { 'Civitasv/cmake-tools.nvim', opts = {} }`
   - [packer.nvim](https://github.com/wbthomason/packer.nvim): `use 'Civitasv/cmake-tools.nvim'`
   - [vim-plug](https://github.com/junegunn/vim-plug): `Plug 'Civitasv/cmake-tools.nvim'`
 
