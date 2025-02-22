@@ -50,9 +50,9 @@ end
 function _overseer.has_active_job(opts)
   if _overseer.job ~= nil and _overseer.job:is_running() then
     log.error(
-      "A CMake task is already running: "
-        .. _overseer.job.command
-        .. " Stop it before trying to run a new CMake task."
+      "A CMake task is already running: `"
+        .. (_overseer.job.name or _overseer.job.cmd)
+        .. "` Stop it before trying to run a new CMake task."
     )
     return true
   end
