@@ -331,7 +331,9 @@ function cmake.build(opt, callback)
     end)
   end
 
-  if opt.target == nil and config.build_target == nil then
+  local presets = Presets:parse(config.cwd)
+  local build_preset = presets:get_build_preset(config.build_preset)
+  if (not config.build_preset or config.build_preset and not build_preset.targets) and opt.target == nil and config.build_target == nil then
     return cmake.select_build_target(true, function(result)
       if result:is_ok() then
         cmake.build(opt, callback)
@@ -353,22 +355,25 @@ function cmake.build(opt, callback)
     }
   end
 
-  if opt.target ~= nil then
-    vim.list_extend(args, { "--target", opt.target })
-    vim.list_extend(args, fargs)
-  elseif config.build_target == "all" then
-    vim.list_extend(args, { "--target", "all" })
-    vim.list_extend(args, fargs)
-  else
-    vim.list_extend(args, { "--target", config.build_target })
-    vim.list_extend(args, fargs)
+  if not build_preset or build_preset and not build_preset.targets then
+    if opt.target ~= nil then
+      vim.list_extend(args, { "--target", opt.target })
+      vim.list_extend(args, fargs)
+    elseif config.build_target == "all" then
+      vim.list_extend(args, { "--target", "all" })
+      vim.list_extend(args, fargs)
+    else
+      vim.list_extend(args, { "--target", config.build_target })
+      vim.list_extend(args, fargs)
+    end
   end
 
-  if config.build_type ~= nil then
-    vim.list_extend(args, { "--config", config.build_type })
+  if not build_preset then
+    if config.build_type ~= nil then
+      vim.list_extend(args, { "--config", config.build_type })
+    end
+    vim.list_extend(args, config:build_options())
   end
-
-  vim.list_extend(args, config:build_options())
 
   local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
@@ -825,8 +830,24 @@ function cmake.select_build_preset(callback)
         if config.build_preset ~= choice then
           config.build_preset = choice
         end
+        local build_preset = presets:get_build_preset(choice)
+        if build_preset.targets then
+          if type(build_preset.targets) == string then
+            config.build_target = build_preset.targets
+          else -- build preset is an array
+            if #(build_preset.targets) == 1 then
+              config.build_target = build_preset.targets[1]
+            else
+              -- XXX: Array targets are not supported in other code paths
+              -- As a workaround, unset the current build_target if any (it is not used when using build presets)
+              config.build_target = nil
+            end
+          end
+        else -- build preset does not have a target, ask
+          config.build_target = nil
+        end
         local associated_configure_preset = presets:get_configure_preset(
-          presets:get_build_preset(choice).configurePreset,
+          build_preset.configurePreset,
           { include_hidden = true }
         )
         local associated_configure_preset_name = associated_configure_preset
