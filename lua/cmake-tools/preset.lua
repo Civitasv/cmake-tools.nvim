@@ -4,6 +4,10 @@ local osys = require("cmake-tools.osys")
 local Preset = {}
 
 local function expandMacro(self, str)
+  if type(str) == "table" and str.value ~= nil then
+    str = str.value
+  end
+
   if type(str) ~= "string" then
     return str
   end
