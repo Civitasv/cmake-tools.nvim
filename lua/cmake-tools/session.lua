@@ -1,6 +1,22 @@
 local osys = require("cmake-tools.osys")
 local utils = require("cmake-tools.utils")
 
+local function findFileInDirOrParent(dir, fname)
+  local path = dir .. "/" .. fname
+  local file = io.open(path, "r")
+  if file then
+    file:close()
+    return path
+  end
+
+  local parentDir = dir:match("(.+)/[^/]+$")
+  if not parentDir then
+    return nil
+  end
+
+  return findFileInDirOrParent(parentDir, fname)
+end
+
 local session = {
   dir = {
     unix = vim.fn.expand("~") .. "/.cache/cmake_tools_nvim/",
@@ -25,6 +41,10 @@ end
 
 local function get_current_path()
   local current_path = vim.loop.cwd()
+  local local_config = findFileInDirOrParent(current_path, ".cmake-tools.lua")
+  if local_config then
+    return local_config
+  end
   local clean_path = current_path:gsub("/", "")
   clean_path = clean_path:gsub("\\", "")
   clean_path = clean_path:gsub(":", "")
