@@ -525,7 +525,9 @@ function cmake.run(opt, callback)
 
       local launch_path = cmake.get_launch_path(opt.target)
       local env = environment.get_run_environment(config, opt.target)
-      local _args = opt.args and opt.args or config.target_settings[opt.target].args
+      local _args = opt.args and opt.args
+        or utils.get_nested(config, "target_settings", opt.target, "args")
+        or {}
       local cmd = target_path
       utils.run(cmd, config.env_script, env, _args, launch_path, config.runner, callback)
     end)
@@ -1573,7 +1575,9 @@ function cmake.register_dap_function()
             name = opt.target,
             program = result.data,
             cwd = cmake.get_launch_path(opt.target),
-            args = opt.args and opt.args or config.target_settings[opt.target].args,
+            args = opt.args and opt.args
+              or utils.get_nested(config, "target_settings", opt.target, "args")
+              or {},
             env = env,
             initCommands = initCmds,
           }

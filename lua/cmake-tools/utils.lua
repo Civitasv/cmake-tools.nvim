@@ -269,4 +269,15 @@ function utils.execute(cmd, env_script, env, args, cwd, executor, callback)
     end, notify_update_line(ntfy))
 end
 
+function utils.get_nested(tbl, ...)
+  local value = tbl
+  for _, key in ipairs({ ... }) do
+    value = value and value[key]
+    if value == nil then
+      return nil
+    end
+  end
+  return value
+end
+
 return utils
