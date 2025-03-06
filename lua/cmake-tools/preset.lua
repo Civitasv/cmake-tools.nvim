@@ -86,7 +86,7 @@ local function resolveConditions(self)
           if type(entry) ~= "string" then
             error("list field must be of type string")
           end
-          if cond.string == expandMacro(self, self, entry) then
+          if cond.string == expandMacro(self, entry) then
             return true
           end
         end
