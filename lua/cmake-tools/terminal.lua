@@ -198,6 +198,8 @@ function _terminal.send_data_to_terminal(buffer_idx, cmd, opts)
     vim.api.nvim_set_current_win(opts.win_id)
     if opts.start_insert then
       vim.cmd("startinsert")
+    else
+      vim.cmd("stopinsert!")
     end
   else
     -- We want to focus on our currently focused window and not ther cmake terminal
@@ -209,6 +211,7 @@ function _terminal.send_data_to_terminal(buffer_idx, cmd, opts)
       -- cursor out of the cmake buffer, as it can be annoying
       if opts and not opts.focus then
         vim.cmd("wincmd p") -- Goes back to previous window: Equivalent to [[ CTRL-W p ]]
+        vim.cmd("stopinsert!")
       end
     end
   end
