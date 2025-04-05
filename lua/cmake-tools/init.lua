@@ -463,6 +463,17 @@ function cmake.open_runner()
   utils.show_runner(config.runner)
 end
 
+function cmake.open_cache()
+  local path = cmake.get_build_directory() .. "/CMakeCache.txt"
+  local file = io.open(path, "r")
+  if file then
+    file:close()
+    vim.cmd("edit " .. path)
+  else
+    vim.notify("CMakeCache.txt not found", vim.log.levels.ERROR)
+  end
+end
+
 function cmake.substitute_path(path, vars)
   for key, value in pairs(vars) do
     if type(value) == "string" or type(value) == "number" then
