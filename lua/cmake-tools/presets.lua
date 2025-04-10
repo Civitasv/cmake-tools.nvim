@@ -50,6 +50,14 @@ local function decode(file)
     end
 
     local fdata = vim.fn.json_decode(f_read_data)
+    local fincludes = fdata["include"] and fdata["include"] or {}
+    for _, inc in ipairs(fincludes) do
+        local f_include_path = Path.new(inc)
+        if not f_include_path:is_absolute() then
+            f_include_path = (f_path:parent() / inc):normalize()
+        end
+        includes[#includes + 1] = f_include_path
+    end
     local thisFilePresetKeys = vim.tbl_filter(function(key)
       if string.find(key, "Presets") then
         return true
