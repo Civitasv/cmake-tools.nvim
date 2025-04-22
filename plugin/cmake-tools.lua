@@ -108,6 +108,15 @@ vim.api.nvim_create_user_command(
   }
 )
 
+--- CMake open cache
+vim.api.nvim_create_user_command(
+  "CMakeOpenCache", -- name
+  cmake_tools.open_cache, -- command
+  { -- opts
+    desc = "Open CMakeCache.txt",
+  }
+)
+
 --- CMake run
 vim.api.nvim_create_user_command(
   "CMakeRun", -- name
