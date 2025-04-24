@@ -1297,7 +1297,7 @@ function cmake.compile_commands_from_soft_link()
   end
 
   local source = config:build_directory_path() .. "/compile_commands.json"
-  local destination = vim.loop.cwd() .. "/compile_commands.json"
+  local destination = vim.fn.getcwd() .. "/compile_commands.json"
   utils.softlink(source, destination)
 end
 
@@ -1307,7 +1307,7 @@ function cmake.compile_commands_from_lsp()
   end
 
   local buf = vim.api.nvim_get_current_buf()
-  local clients = vim.lsp.get_active_clients({ name = const.lsp_type })
+  local clients = vim.lsp.get_clients({ name = const.lsp_type })
   for _, client in ipairs(clients) do
     local lspbufs = vim.lsp.get_buffers_by_client_id(client.id)
     for _, bufid in ipairs(lspbufs) do
@@ -1455,7 +1455,7 @@ function cmake.create_regenerate_on_save_autocmd()
         local buf = vim.api.nvim_get_current_buf()
         -- Check if buffer is actually modified, and only if it is modified,
         -- execute the :CMakeGenerate, otherwise return. This is to avoid unnecessary regenerattion
-        if vim.api.nvim_buf_get_option(buf, "modified") then
+        if vim.api.nvim_get_option_value("modified", { buf = buf }) then
           vim.api.nvim_create_autocmd("BufWritePost", {
             group = group,
             once = true,
