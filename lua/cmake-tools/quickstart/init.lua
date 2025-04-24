@@ -1,5 +1,6 @@
 local cmake = require("cmake-tools")
 local etlua = require("cmake-tools.quickstart.etlua")
+local config = require("cmake-tools.config")
 local locals = {
   project_version = "0.0.1",
   project_name = "project",
@@ -32,7 +33,7 @@ local generate_cmakelists_file = function()
     return
   end
   local template = etlua.compile(file:read("*a"))
-  local main_file_path = vim.fn.getcwd() .. "/CMakeLists.txt"
+  local main_file_path = config.cwd .. "/CMakeLists.txt"
   file = io.open(main_file_path, "w")
   if not file then
     error("could not create the file: " .. main_file_path)
@@ -58,7 +59,7 @@ local generate_main_file = function()
   if locals.type == "lib" then
     main_file_name = locals.project_name
   end
-  local main_file_path = vim.fn.getcwd() .. "/" .. main_file_name .. "." .. locals.language
+  local main_file_path = config.cwd .. "/" .. main_file_name .. "." .. locals.language
 
   file = io.open(main_file_path, "w")
   if not file then

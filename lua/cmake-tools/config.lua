@@ -29,7 +29,7 @@ local Config = {
   executor = nil,
   runner = nil,
   env_script = " ",
-  cwd = vim.fn.getcwd(),
+  cwd = nil,
 }
 
 function Config:new(const)

@@ -24,6 +24,9 @@ local cmake = {}
 
 --- Setup cmake-tools
 function cmake.setup(values)
+  if values and type(values.cwd) == "function" then
+    values.cwd = values.cwd()
+  end
   const = vim.tbl_deep_extend("force", const, values)
   const.cmake_executor.opts = vim.tbl_deep_extend(
     "force",
@@ -35,11 +38,12 @@ function cmake.setup(values)
     const.cmake_runner.default_opts[const.cmake_runner.name],
     const.cmake_runner.opts or {}
   )
-
   require("cmake-tools.notification").setup(const.cmake_notifications)
 
   config = Config:new(const)
 
+  config.cwd = const.cwd
+  print("Using cwd:", config.cwd)
   -- auto reload previous session
   local old_config = _session.load()
   _session.update(config, old_config)
@@ -1297,7 +1301,7 @@ function cmake.compile_commands_from_soft_link()
   end
 
   local source = config:build_directory_path() .. "/compile_commands.json"
-  local destination = vim.fn.getcwd() .. "/compile_commands.json"
+  local destination = config.cwd .. "/compile_commands.json"
   utils.softlink(source, destination)
 end
 
@@ -1565,7 +1569,7 @@ function cmake.register_dap_function()
 
       local initCmds = function()
         local commands = {}
-        local sources = { vim.env.HOME .. "/.lldbinit", vim.fn.getcwd() .. "/.lldbinit" }
+        local sources = { vim.env.HOME .. "/.lldbinit", config.cwd .. "/.lldbinit" }
         for idx, source in ipairs(sources) do
           local file = io.open(source, "r")
           if file then
