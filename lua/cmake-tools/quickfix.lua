@@ -118,7 +118,7 @@ function _quickfix.check_scroll()
     return cursor_pos[1] == line_count - 1
   end
 
-  local buffer_type = vim.api.nvim_buf_get_option(0, "buftype")
+  local buffer_type = vim.api.nvim_get_option_value("buftype", { buf = 0 })
 
   if buffer_type == "quickfix" then
     return is_cursor_at_last_line()

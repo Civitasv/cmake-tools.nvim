@@ -24,6 +24,9 @@ local cmake = {}
 
 --- Setup cmake-tools
 function cmake.setup(values)
+  if values and type(values.cwd) == "function" then
+    values.cwd = values.cwd()
+  end
   const = vim.tbl_deep_extend("force", const, values)
   const.cmake_executor.opts = vim.tbl_deep_extend(
     "force",
@@ -35,11 +38,12 @@ function cmake.setup(values)
     const.cmake_runner.default_opts[const.cmake_runner.name],
     const.cmake_runner.opts or {}
   )
-
   require("cmake-tools.notification").setup(const.cmake_notifications)
 
   config = Config:new(const)
 
+  config.cwd = const.cwd
+  print("Using cwd:", config.cwd)
   -- auto reload previous session
   local old_config = _session.load()
   _session.update(config, old_config)
@@ -1297,7 +1301,7 @@ function cmake.compile_commands_from_soft_link()
   end
 
   local source = config:build_directory_path() .. "/compile_commands.json"
-  local destination = vim.loop.cwd() .. "/compile_commands.json"
+  local destination = config.cwd .. "/compile_commands.json"
   utils.softlink(source, destination)
 end
 
@@ -1307,7 +1311,7 @@ function cmake.compile_commands_from_lsp()
   end
 
   local buf = vim.api.nvim_get_current_buf()
-  local clients = vim.lsp.get_active_clients({ name = const.lsp_type })
+  local clients = vim.lsp.get_clients({ name = const.lsp_type })
   for _, client in ipairs(clients) do
     local lspbufs = vim.lsp.get_buffers_by_client_id(client.id)
     for _, bufid in ipairs(lspbufs) do
@@ -1455,7 +1459,7 @@ function cmake.create_regenerate_on_save_autocmd()
         local buf = vim.api.nvim_get_current_buf()
         -- Check if buffer is actually modified, and only if it is modified,
         -- execute the :CMakeGenerate, otherwise return. This is to avoid unnecessary regenerattion
-        if vim.api.nvim_buf_get_option(buf, "modified") then
+        if vim.api.nvim_get_option_value("modified", { buf = buf }) then
           vim.api.nvim_create_autocmd("BufWritePost", {
             group = group,
             once = true,
@@ -1565,7 +1569,7 @@ function cmake.register_dap_function()
 
       local initCmds = function()
         local commands = {}
-        local sources = { vim.env.HOME .. "/.lldbinit", vim.fn.getcwd() .. "/.lldbinit" }
+        local sources = { vim.env.HOME .. "/.lldbinit", config.cwd .. "/.lldbinit" }
         for idx, source in ipairs(sources) do
           local file = io.open(source, "r")
           if file then

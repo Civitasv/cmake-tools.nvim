@@ -1,5 +1,6 @@
 local osys = require("cmake-tools.osys")
 local const = {
+  cwd = vim.fn.getcwd(),
   cmake_command = "cmake", -- this is used to specify cmake command path
   ctest_command = "ctest", -- this is used to specify ctest command path
   cmake_use_preset = true, -- when `false`, this is used to define if the `--preset` option should be use on cmake commands
