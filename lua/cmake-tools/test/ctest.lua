@@ -37,6 +37,9 @@ function ctest.run(ctest_command, test_name, build_dir, env, config, opt)
   opt = opt or {}
 
   local args = { "--test-dir", utils.transform_path(build_dir), "-R", test_name, opt.args }
+  for _, v in pairs(config.ctest.extra_args) do
+    table.insert(args, v)
+  end
   utils.run(
     cmd,
     config.env_script,
