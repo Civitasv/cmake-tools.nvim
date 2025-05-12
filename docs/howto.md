@@ -2,11 +2,12 @@
 
 ## Automatically set your compile_commands.json
 
-There are two ways:
+There are three ways:
 
-- Use softlink: firstly, you should set `cmake_soft_link_compile_commands` to true, then, this plugin will automatically make a softlink to compile_commands.json after generation.
+- Use softlink: Firstly, you should set `cmake_compile_commands_options.action` to `soft_link`, then, this plugin will automatically make a softlink to compile_commands.json after generation.
+- Copy compile_commands.json: Set `cmake_compile_commands_options.action` to `copy` then the plugin will automatically copy compile_commands.json to directory specified by `cmake_compile_commands_options.target` after generation.
 - Use lsp: If you're using clangd or ccls configured through [lspconfig](https://github.com/neovim/nvim-lspconfig) you can
-  set your compilation database directory to your active build directory by calling a hook in your on_new_config callback provided by lspconfig.
+  set your compilation database directory to your active build directory by calling a hook in your on_new_config callback provided by lspconfig. You need to set `cmake_compile_commands_options.action` to `none` to disable softlink and copy.
 
 ```lua
 require('lspconfig').clangd.setup{
