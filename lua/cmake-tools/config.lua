@@ -210,7 +210,12 @@ function Config:get_codemodel_targets()
   end
   local codemodel = Path:new(found_files[1])
   local codemodel_json = vim.json.decode(codemodel:read())
-  return Result:new(Types.SUCCESS, codemodel_json["configurations"][1]["targets"], "find it")
+  for _, config in ipairs(codemodel_json["configurations"]) do
+    if config["name"] == self.build_type then
+      return Result:new(Types.SUCCESS, config["targets"], "find it")
+    end
+  end
+  return Result:new(Types.CANNOT_FIND_CODEMODEL_FILE, nil, "Unable to find codemodel file")
 end
 
 function Config:get_code_model_target_info(codemodel_target)
