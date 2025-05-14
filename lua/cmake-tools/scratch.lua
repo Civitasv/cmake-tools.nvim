@@ -14,7 +14,7 @@ function scratch.create(executor, runner)
     "THIS IS A SCRATCH BUFFER FOR cmake-tools.nvim, YOU CAN SEE WHICH COMMAND THIS PLUGIN EXECUTES HERE.",
     "EXECUTOR: " .. executor .. " RUNNER: " .. runner,
   })
-  vim.api.nvim_buf_set_option(scratch.buffer, "buflisted", false)
+  vim.api.nvim_buf_set_option(scratch.buffer, "buflisted", true)
 end
 
 function scratch.append(cmd)

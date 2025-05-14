@@ -1524,7 +1524,7 @@ function cmake.register_autocmd_provided_by_users()
 end
 
 function cmake.register_scratch_buffer(executor, runner)
-  if cmake.is_cmake_project() then
+  if cmake.is_cmake_project() and const.cmake_use_scratch_buffer then
     vim.schedule(function()
       scratch.create(executor, runner)
     end)
