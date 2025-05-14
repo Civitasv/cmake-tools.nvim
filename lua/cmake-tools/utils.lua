@@ -205,9 +205,11 @@ function utils.run(cmd, env_script, env, args, cwd, runner, callback)
 
   ntfy:notify(cmd, "info")
 
-  local _mes =
-    { "[RUN]:", cmd, table.concat(args, " "), "<ENV>", table.concat(env, " "), "{CWD}", cwd }
-  scratch.append(table.concat(_mes, " "))
+  if scratch.buffer ~= nil then
+    local _mes =
+      { "[RUN]:", cmd, table.concat(args, " "), "<ENV>", table.concat(env, " "), "{CWD}", cwd }
+    scratch.append(table.concat(_mes, " "))
+  end
 
   utils.get_runner(runner.name).run(cmd, env_script, env, args, cwd, runner.opts, function(code)
     local msg = "Exited with code " .. code
@@ -244,9 +246,11 @@ function utils.execute(cmd, env_script, env, args, cwd, executor, callback)
   local ntfy = notification:new("executor")
   ntfy:notify(cmd, "info")
 
-  local _mes =
-    { "[EXECUTE]:", cmd, table.concat(args, " "), "<ENV>", table.concat(env, " "), "{CWD}", cwd }
-  scratch.append(table.concat(_mes, " "))
+  if scratch.buffer ~= nil then
+    local _mes =
+      { "[EXECUTE]:", cmd, table.concat(args, " "), "<ENV>", table.concat(env, " "), "{CWD}", cwd }
+    scratch.append(table.concat(_mes, " "))
+  end
 
   utils
     .get_executor(executor.name)
