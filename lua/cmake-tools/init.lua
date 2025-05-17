@@ -1156,7 +1156,7 @@ function cmake.run_current_file(opt)
   local file = vim.fn.expand("%:p")
   local all_targets = config:launch_targets_with_sources()
   for i, target in ipairs(all_targets.data["sources"]) do
-    if target.path == file then
+    if target.path:lower() == file:lower() then
       table.insert(targets, target.name)
       table.insert(display_targets, target.display_name)
     end
@@ -1187,7 +1187,7 @@ function cmake.build_current_file(opt)
   local file = vim.fn.expand("%:p")
   local all_targets = config:build_targets_with_sources()
   for _, target in ipairs(all_targets.data["sources"]) do
-    if target.path == file then
+    if target.path:lower() == file:lower() then
       table.insert(targets, target.name)
       table.insert(display_targets, target.display_name)
     end
@@ -1547,7 +1547,7 @@ function cmake.register_autocmd()
             and all_targets.data["sources"]
           then
             for _, target in ipairs(all_targets.data["sources"]) do
-              if target.path == file then
+              if target.path:lower() == file:lower() then
                 table.insert(targets, { name = target.name, type = target.type })
               end
             end
@@ -1722,7 +1722,7 @@ function cmake.register_dap_function()
       local file = vim.fn.expand("%:p")
       local all_targets = config:launch_targets_with_sources()
       for _, target in ipairs(all_targets.data["sources"]) do
-        if target.path == file then
+        if target.path:lower() == file:lower() then
           table.insert(targets, target.name)
           table.insert(display_targets, target.display_name)
         end
