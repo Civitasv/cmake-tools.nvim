@@ -1117,10 +1117,27 @@ function cmake.target_settings(opt)
   end
 end
 
-function cmake.run_test(opt)
+function cmake.run_test(opt, callback)
+  callback = callback or function() end
   if utils.has_active_job(config.runner, config.executor) then
     return
   end
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
+  end
+
+  local ct = config:get_codemodel_targets()
+  if not (config:has_build_directory()) or not (ct.code == Types.SUCCESS) then
+    -- configure it
+    return cmake.generate({ bang = false, fargs = {} }, function(result)
+      if result:is_ok() then
+        cmake.run_test(opt, callback)
+      else
+        callback(result)
+      end
+    end)
+  end
+
   local env = environment.get_build_environment(config)
   local all_tests = ctest.list_all_tests(config:build_directory_path())
   if #all_tests == 0 then

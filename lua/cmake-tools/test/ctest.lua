@@ -37,16 +37,7 @@ function ctest.run(ctest_command, test_name, build_dir, env, config, opt)
   opt = opt or {}
 
   local args = { "--test-dir", utils.transform_path(build_dir), "-R", test_name, opt.args }
-  utils.run(
-    cmd,
-    config.env_script,
-    env,
-    args,
-    config.cwd,
-    config.runner,
-    nil,
-    const.cmake_notifications
-  )
+  utils.run(cmd, config.env_script, env, args, config.cwd, config.runner, nil)
 end
 
 return ctest
