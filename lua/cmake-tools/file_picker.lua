@@ -97,6 +97,11 @@ function M.show_target_files(target)
   log.info(vim.inspect(target))
 
   local targets = config:get_codemodel_targets()
+  if targets.code ~= Types.SUCCESS then
+    log.warn("Target not found in CodeModel")
+    return
+  end
+
   for _, v in pairs(targets.data) do
     if v.name == target then
       pickers
