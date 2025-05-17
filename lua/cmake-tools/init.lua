@@ -115,6 +115,11 @@ function cmake.generate(opt, callback)
   if presets_exists then
     local presets = Presets:parse(config.cwd)
 
+    -- Refresh build type to use from CMakePresets
+    if config.configure_preset then
+      config.build_type = presets:get_configure_preset(config.configure_preset):get_build_type()
+    end
+
     if not config.configure_preset then
       -- try to determine the confiure preset based on the build preset
       if config.build_preset then
@@ -331,7 +336,34 @@ function cmake.build(opt, callback)
     end)
   end
 
-  if opt.target == nil and config.build_target == nil then
+  local presets_exists = config.base_settings.use_preset and Presets.exists(config.cwd)
+  if presets_exists then
+    local presets = Presets:parse(config.cwd)
+    if not config.build_preset then
+      return cmake.select_build_preset(function(result)
+        if not result:is_ok() then
+          callback(result)
+          return
+        end
+        cmake.generate({ bang = false, fargs = {} }, function(generate_result)
+          if not generate_result:is_ok() then
+            callback(generate_result)
+            return
+          end
+          cmake.build(opt, callback)
+        end)
+      end)
+    end
+    if config.build_preset then
+      local build_preset = presets:get_build_preset(config.build_preset)
+      if build_preset then
+        config.build_target = build_preset:get_build_target()
+      end
+    end
+  end
+
+  -- If presets exists, use build target from it
+  if presets_exists == false and opt.target == nil and config.build_target == nil then
     return cmake.select_build_target(true, function(result)
       if result:is_ok() then
         cmake.build(opt, callback)
@@ -342,7 +374,6 @@ function cmake.build(opt, callback)
   end
 
   local args
-  local presets_exists = config.base_settings.use_preset and Presets.exists(config.cwd)
 
   if presets_exists and config.build_preset then
     args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
@@ -356,11 +387,8 @@ function cmake.build(opt, callback)
   if opt.target ~= nil then
     vim.list_extend(args, { "--target", opt.target })
     vim.list_extend(args, fargs)
-  elseif config.build_target == "all" then
+  elseif config.build_target ~= nil then
     vim.list_extend(args, { "--target", "all" })
-    vim.list_extend(args, fargs)
-  else
-    vim.list_extend(args, { "--target", config.build_target })
     vim.list_extend(args, fargs)
   end
 
@@ -837,6 +865,7 @@ function cmake.select_build_preset(callback)
         end
         if config.build_preset ~= choice then
           config.build_preset = choice
+          config.build_target = presets:get_build_preset(choice):get_build_target()
         end
         local associated_configure_preset = presets:get_configure_preset(
           presets:get_build_preset(choice).configurePreset,

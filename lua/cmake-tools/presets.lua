@@ -1,5 +1,6 @@
 local Path = require("plenary.path")
 local Preset = require("cmake-tools.preset")
+local BuildPreset = require("cmake-tools.build_preset")
 
 -- Extends (or creates a new) key-value pair in [dest] in which the
 -- key is [key] and the value is the resulting list table of merging
@@ -105,6 +106,7 @@ function Presets:parse(cwd)
     end
   end
 
+  -- Instance extends self
   local instance = setmetatable(data, self)
   self.__index = self
 
@@ -115,8 +117,16 @@ function Presets:parse(cwd)
     return Preset:new(cwd, obj, getPreset)
   end
 
+  local function createBuildPreset(obj)
+    return BuildPreset:new(cwd, obj)
+  end
+
   for _, preset in ipairs(instance.configurePresets) do
     preset = createPreset(preset)
+  end
+
+  for _, build_preset in ipairs(instance.buildPresets) do
+    build_preset = createBuildPreset(build_preset)
   end
 
   return instance
@@ -191,7 +201,7 @@ function Presets:get_configure_preset(name, opts)
 end
 
 function Presets:get_build_preset(name, opts)
-  return get_preset(name, self.buildPresets, opts)
+  return get_preset(name, self.buildPresets, { include_hidden = true, include_disabled = true })
 end
 
 function Presets.find_preset_files(cwd)

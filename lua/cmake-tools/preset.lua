@@ -255,7 +255,7 @@ local function parseTree(self, get_preset)
 end
 
 function Preset:new(cwd, obj, get_preset)
-  local instance = setmetatable(obj or {}, self)
+  local instance = setmetatable(obj or {}, { __index = self })
   instance.__index = self
   instance.environment = instance.environment or {}
   instance.cwd = cwd
