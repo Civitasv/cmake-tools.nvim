@@ -170,7 +170,7 @@ end
 -- @return true if exists else false
 function utils.has_active_job(runner_data, executor_data)
   return utils.get_executor(executor_data.name).has_active_job(executor_data.opts)
-    or utils.get_runner(runner_data.name).has_active_job(runner_data.opts)
+  -- or utils.get_runner(runner_data.name).has_active_job(runner_data.opts)
 end
 
 local notify_update_line = function(ntfy)
