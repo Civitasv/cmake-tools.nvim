@@ -864,7 +864,7 @@ function cmake.select_build_preset(callback)
 end
 
 function cmake.select_build_target(regenerate, callback)
-  callback = type(callback) == "function" and callback or function() end
+  callback = type(callback) == "function" and callback or function(_) end
   if not (config:has_build_directory()) then
     -- configure it
     return cmake.generate({ bang = false, fargs = {} }, function(result)
