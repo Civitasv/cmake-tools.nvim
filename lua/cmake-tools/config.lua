@@ -215,7 +215,7 @@ function Config:get_codemodel_targets()
       return Result:new(Types.SUCCESS, config["targets"], "find it")
     end
   end
-  return Result:new(Types.CANNOT_FIND_CODEMODEL_FILE, nil, "Unable to find codemodel file")
+  return Result:new(Types.SUCCESS, codemodel_json["configurations"][1]["targets"], "find it") -- Return the first else
 end
 
 function Config:get_code_model_target_info(codemodel_target)
