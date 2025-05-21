@@ -329,7 +329,11 @@ function cmake.build(opt, callback)
     -- configure it
     return cmake.generate({ bang = false, fargs = {} }, function(result)
       if result:is_ok() then
-        cmake.build(opt, callback)
+        if
+          config:has_build_directory() and config:get_codemodel_targets().code == Types.SUCCESS
+        then
+          cmake.build(opt, callback)
+        end
       else
         callback(result)
       end
@@ -1131,7 +1135,11 @@ function cmake.run_test(opt, callback)
     -- configure it
     return cmake.generate({ bang = false, fargs = {} }, function(result)
       if result:is_ok() then
-        cmake.run_test(opt, callback)
+        if
+          config:has_build_directory() and config:get_codemodel_targets().code == Types.SUCCESS
+        then
+          cmake.run_test(opt, callback)
+        end
       else
         callback(result)
       end
