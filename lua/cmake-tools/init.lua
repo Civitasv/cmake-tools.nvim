@@ -367,7 +367,10 @@ function cmake.build(opt, callback)
     if config.build_preset then
       local build_preset = presets:get_build_preset(config.build_preset)
       if build_preset then
-        config.build_target = build_preset:get_build_target()
+        local build_target_from_build_preset = build_preset:get_build_target()
+        if build_target_from_build_preset ~= "" then
+          config.build_target = build_target_from_build_preset
+        end
       end
     end
   end
@@ -398,7 +401,7 @@ function cmake.build(opt, callback)
     vim.list_extend(args, { "--target", opt.target })
     vim.list_extend(args, fargs)
   elseif config.build_target ~= nil then
-    vim.list_extend(args, { "--target", "all" })
+    vim.list_extend(args, { "--target", config.build_target })
     vim.list_extend(args, fargs)
   end
 
