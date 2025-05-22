@@ -13,6 +13,9 @@ function BuildPreset:new(cwd, obj)
 end
 
 function BuildPreset:get_build_target()
+  if self.targets == nil then
+    return ""
+  end
   if type(self.targets) == "string" then
     return self.targets
   elseif type(self.targets == "table") then

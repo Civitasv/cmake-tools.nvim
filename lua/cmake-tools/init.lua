@@ -115,12 +115,18 @@ function cmake.generate(opt, callback)
   if presets_exists then
     local presets = Presets:parse(config.cwd)
 
+    local find_preset = false
     -- Refresh build type to use from CMakePresets
     if config.configure_preset then
-      config.build_type = presets:get_configure_preset(config.configure_preset):get_build_type()
+      local configure_preset =
+        presets:get_configure_preset(config.configure_preset, { include_hidden = true })
+      if configure_preset then
+        find_preset = true
+        config.build_type = configure_preset:get_build_type()
+      end
     end
 
-    if not config.configure_preset then
+    if (not config.configure_preset) or (find_preset == false) then
       -- try to determine the confiure preset based on the build preset
       if config.build_preset then
         local build_preset = presets:get_build_preset(config.build_preset)
@@ -133,7 +139,7 @@ function cmake.generate(opt, callback)
         end
       end
 
-      if not config.configure_preset then
+      if (not config.configure_preset) or (find_preset == false) then
         -- this will also set value for build type from preset.
         -- default to be "Debug"
         return cmake.select_configure_preset(function(result)
@@ -147,7 +153,7 @@ function cmake.generate(opt, callback)
       return
     end
 
-    if config.configure_preset then
+    if config.configure_preset and find_preset then
       -- if exsist preset file and set configure preset, then
       -- set build directory to the `binaryDir` option of `configurePresets`
       local preset = presets:get_configure_preset(config.configure_preset)
