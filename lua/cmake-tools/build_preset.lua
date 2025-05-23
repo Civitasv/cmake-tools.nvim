@@ -24,4 +24,11 @@ function BuildPreset:get_build_target()
   return ""
 end
 
+function BuildPreset:get_build_type()
+  if self.configuration == nil then
+    return nil
+  end
+  return self.configuration
+end
+
 return BuildPreset

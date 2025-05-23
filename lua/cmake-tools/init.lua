@@ -116,13 +116,11 @@ function cmake.generate(opt, callback)
     local presets = Presets:parse(config.cwd)
 
     local find_preset = false
-    -- Refresh build type to use from CMakePresets
     if config.configure_preset then
       local configure_preset =
         presets:get_configure_preset(config.configure_preset, { include_hidden = true })
       if configure_preset then
         find_preset = true
-        config.build_type = configure_preset:get_build_type()
       end
     end
 
@@ -167,6 +165,9 @@ function cmake.generate(opt, callback)
         end
         return
       end
+
+      cmake.update_build_type()
+
       local build_directory, no_expand_build_directory = preset.binaryDirExpanded, preset.binaryDir
       if build_directory ~= "" then
         config:update_build_dir(build_directory, no_expand_build_directory)
@@ -367,10 +368,8 @@ function cmake.build(opt, callback)
     if config.build_preset then
       local build_preset = presets:get_build_preset(config.build_preset)
       if build_preset then
-        local build_target_from_build_preset = build_preset:get_build_target()
-        if build_target_from_build_preset ~= "" then
-          config.build_target = build_target_from_build_preset
-        end
+        cmake.update_build_target(build_preset)
+        cmake.update_build_type()
       end
     end
   end
@@ -878,7 +877,11 @@ function cmake.select_build_preset(callback)
         end
         if config.build_preset ~= choice then
           config.build_preset = choice
-          config.build_target = presets:get_build_preset(choice):get_build_target()
+
+          local build_preset = presets:get_build_preset(choice)
+          if build_preset then
+            cmake.update_build_target(build_preset)
+          end
         end
         local associated_configure_preset = presets:get_configure_preset(
           presets:get_build_preset(choice).configurePreset,
@@ -1862,6 +1865,58 @@ function cmake.register_telescope_function()
         desc = "CMake show cmake model files or target",
       }
     )
+  end
+end
+
+function cmake.update_build_target(build_preset)
+  local build_target = build_preset:get_build_target()
+  if build_target ~= "" then
+    config.build_target = build_target
+  end
+end
+
+function cmake.update_build_type()
+  local presets = Presets:parse(config.cwd)
+  if not presets then
+    return
+  end
+  if not config.configure_preset then
+    return
+  end
+  local configure_preset =
+    presets:get_configure_preset(config.configure_preset, { include_hidden = true })
+  if not configure_preset then
+    return
+  end
+
+  config.build_type = configure_preset:get_build_type()
+
+  if not config.build_preset then
+    return
+  end
+  local build_preset = presets:get_build_preset(config.build_preset)
+  if not build_preset then
+    return
+  end
+  local configuration_types = configure_preset:get_build_configuration_types()
+
+  if not configuration_types then
+    return
+  end
+  local build_type_from_build_preset = build_preset:get_build_type()
+
+  if not build_type_from_build_preset then
+    return
+  end
+  local exists = false
+  for _, Item in ipairs(configuration_types) do
+    if Item == build_type_from_build_preset then
+      exists = true
+      break
+    end
+  end
+  if exists then
+    config.build_type = build_type_from_build_preset
   end
 end
 

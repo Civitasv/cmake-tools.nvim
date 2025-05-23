@@ -297,4 +297,23 @@ function utils.get_nested(tbl, ...)
   return value
 end
 
+function utils.split_string_by_delimiter(s, delimiter, item)
+  local answer = {}
+  local delimiter1 = delimiter or ";"
+  for x in string.gmatch(s, "(.-)" .. delimiter1) do
+    table.insert(answer, x)
+  end
+  if #answer == 0 then
+    return nil
+  elseif item then -- does the user want an entry verses a parsed table?
+    if #answer >= item then
+      return answer[item]
+    else
+      return nil
+    end
+  else
+    return answer
+  end
+end
+
 return utils

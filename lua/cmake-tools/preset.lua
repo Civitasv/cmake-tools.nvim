@@ -1,5 +1,6 @@
 local Path = require("plenary.path")
 local osys = require("cmake-tools.osys")
+local utils = require("cmake-tools.utils")
 
 local Preset = {}
 
@@ -272,6 +273,29 @@ end
 
 function Preset:get_build_type()
   return self.cacheVariables and self.cacheVariables.CMAKE_BUILD_TYPE or "Debug"
+end
+
+function Preset:get_build_configuration_types()
+  local generator = self.generator
+  local multi_configuration_generator = { "Visual Studio", "Xcode", "Ninja Multi-Config" }
+  local support_multi_configuration = false
+  for i, val in ipairs(multi_configuration_generator) do
+    if val == generator then
+      support_multi_configuration = true
+    end
+  end
+  if not support_multi_configuration then
+    return nil
+  end
+  if self.cacheVariables == nil then
+    return nil
+  end
+  if self.cacheVariables.CMAKE_CONFIGURATION_TYPES == nil then
+    return nil
+  end
+  local configuration_types = self.cacheVariables.CMAKE_CONFIGURATION_TYPES
+
+  return utils.split_string_by_delimiter(configuration_types, ";")
 end
 
 return Preset
