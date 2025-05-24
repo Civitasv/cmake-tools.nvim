@@ -485,6 +485,10 @@ function Config:build_targets_with_sources()
 end
 
 function Config:update_build_type()
+  local presets_exists = self.base_settings.use_preset and Presets.exists(self.cwd)
+  if not presets_exists then
+    return
+  end
   local presets = Presets:parse(self.cwd)
   if not presets then
     return
@@ -530,6 +534,11 @@ function Config:update_build_type()
 end
 
 function Config:update_build_target()
+  local presets_exists = self.base_settings.use_preset and Presets.exists(self.cwd)
+  if not presets_exists then
+    return
+  end
+
   local presets = Presets:parse(self.cwd)
   if not presets then
     return
@@ -564,6 +573,10 @@ function Config:update_build_directory()
     return
   end
 
+  local presets_exists = self.base_settings.use_preset and Presets.exists(self.cwd)
+  if not presets_exists then
+    return
+  end
   local presets = Presets:parse(self.cwd)
   if presets then
     if not self.configure_preset then
