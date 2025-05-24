@@ -166,7 +166,7 @@ function cmake.generate(opt, callback)
         return
       end
 
-      cmake.update_build_type()
+      config:update_build_type()
 
       local build_directory, no_expand_build_directory = preset.binaryDirExpanded, preset.binaryDir
       if build_directory ~= "" then
@@ -368,8 +368,8 @@ function cmake.build(opt, callback)
     if config.build_preset then
       local build_preset = presets:get_build_preset(config.build_preset)
       if build_preset then
-        cmake.update_build_target(build_preset)
-        cmake.update_build_type()
+        config:update_build_target()
+        config:update_build_type()
       end
     end
   end
@@ -880,7 +880,7 @@ function cmake.select_build_preset(callback)
 
           local build_preset = presets:get_build_preset(choice)
           if build_preset then
-            cmake.update_build_target(build_preset)
+            config:update_build_target()
           end
         end
         local associated_configure_preset = presets:get_configure_preset(
@@ -1046,8 +1046,20 @@ end
 function cmake.get_target_vars(target)
   local vars = cmake.get_base_vars()
 
-  local model = config:get_code_model_info()[target]
+  config:update_build_directory()
+
+  local codemodel = config:get_code_model_info()
+  if not codemodel then
+    return
+  end
+  local model = codemodel[target]
+  if not model then
+    return
+  end
   local result = config:get_launch_target_from_info(model)
+  if result.code ~= Types.SUCCESS then
+    return
+  end
   vars.dir.binary = utils.get_path(result.data)
   return vars
 end
@@ -1117,8 +1129,13 @@ function cmake.target_settings(opt)
       inherit_base_environment = true,
       env = {},
     })
+    local target_vars = cmake.get_target_vars(target)
+    if not target_vars then
+      log.info("Target has not been configured!")
+      return
+    end
 
-    local content = "local vars = " .. vim.inspect(cmake.get_target_vars(target))
+    local content = "local vars = " .. vim.inspect(target_vars)
     content = content .. "\nreturn " .. vim.inspect(config.target_settings[target])
 
     window.set_content(content)
@@ -1159,32 +1176,33 @@ function cmake.run_test(opt, callback)
   end
 
   local env = environment.get_build_environment(config)
-  local all_tests = ctest.list_all_tests(config:build_directory_path())
-  if #all_tests == 0 then
-    return
-  end
-  table.insert(all_tests, 1, "all")
-  vim.ui.select(
-    all_tests,
-    { prompt = "select test to run" },
-    vim.schedule_wrap(function(_, idx)
-      if not idx then
-        return
-      end
-      if idx == 1 then
-        ctest.run(const.ctest_command, "'.*'", config:build_directory_path(), env, config, opt)
-      else
-        ctest.run(
-          const.ctest_command,
-          all_tests[idx],
-          config:build_directory_path(),
-          env,
-          config,
-          opt
-        )
-      end
-    end)
-  )
+  ctest.list_all_tests(config:build_directory_path(), function(all_tests)
+    if #all_tests == 0 then
+      return
+    end
+    table.insert(all_tests, 1, "all")
+    vim.ui.select(
+      all_tests,
+      { prompt = "select test to run" },
+      vim.schedule_wrap(function(_, idx)
+        if not idx then
+          return
+        end
+        if idx == 1 then
+          ctest.run(const.ctest_command, "'.*'", config:build_directory_path(), env, config, opt)
+        else
+          ctest.run(
+            const.ctest_command,
+            all_tests[idx],
+            config:build_directory_path(),
+            env,
+            config,
+            opt
+          )
+        end
+      end)
+    )
+  end)
 end
 
 function cmake.run_current_file(opt)
@@ -1865,58 +1883,6 @@ function cmake.register_telescope_function()
         desc = "CMake show cmake model files or target",
       }
     )
-  end
-end
-
-function cmake.update_build_target(build_preset)
-  local build_target = build_preset:get_build_target()
-  if build_target ~= "" then
-    config.build_target = build_target
-  end
-end
-
-function cmake.update_build_type()
-  local presets = Presets:parse(config.cwd)
-  if not presets then
-    return
-  end
-  if not config.configure_preset then
-    return
-  end
-  local configure_preset =
-    presets:get_configure_preset(config.configure_preset, { include_hidden = true })
-  if not configure_preset then
-    return
-  end
-
-  config.build_type = configure_preset:get_build_type()
-
-  if not config.build_preset then
-    return
-  end
-  local build_preset = presets:get_build_preset(config.build_preset)
-  if not build_preset then
-    return
-  end
-  local configuration_types = configure_preset:get_build_configuration_types()
-
-  if not configuration_types then
-    return
-  end
-  local build_type_from_build_preset = build_preset:get_build_type()
-
-  if not build_type_from_build_preset then
-    return
-  end
-  local exists = false
-  for _, Item in ipairs(configuration_types) do
-    if Item == build_type_from_build_preset then
-      exists = true
-      break
-    end
-  end
-  if exists then
-    config.build_type = build_type_from_build_preset
   end
 end
 
