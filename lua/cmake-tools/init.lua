@@ -1181,27 +1181,23 @@ function cmake.run_test(opt, callback)
       return
     end
     table.insert(all_tests, 1, "all")
-    vim.ui.select(
-      all_tests,
-      { prompt = "select test to run" },
-      vim.schedule_wrap(function(_, idx)
-        if not idx then
-          return
-        end
-        if idx == 1 then
-          ctest.run(const.ctest_command, "'.*'", config:build_directory_path(), env, config, opt)
-        else
-          ctest.run(
-            const.ctest_command,
-            all_tests[idx],
-            config:build_directory_path(),
-            env,
-            config,
-            opt
-          )
-        end
-      end)
-    )
+    vim.ui.select(all_tests, { prompt = "select test to run" }, function(_, idx)
+      if not idx then
+        return
+      end
+      if idx == 1 then
+        ctest.run(const.ctest_command, "'.*'", config:build_directory_path(), env, config, opt)
+      else
+        ctest.run(
+          const.ctest_command,
+          all_tests[idx],
+          config:build_directory_path(),
+          env,
+          config,
+          opt
+        )
+      end
+    end)
   end)
 end
 
