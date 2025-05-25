@@ -1512,7 +1512,7 @@ function cmake.create_regenerate_on_save_autocmd()
     ss = ss:gsub("}", "\\}")
     ss = ss:gsub("?", "\\?")
     ss = ss:gsub(",", "\\,")
-    table.insert(pattern, ss)
+    table.insert(pattern, config.cwd .. "/" .. ss)
   end
 
   local cwd = config.cwd
