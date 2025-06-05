@@ -71,6 +71,7 @@ function Notification:notify(msg, level, opts)
   self.opts.title = "CMakeTools"
   self.opts.on_close = function(win)
     self.closed = true
+    self.spinner_idx = 1
     if on_close then
       on_close(win)
     end
@@ -85,14 +86,15 @@ function Notification:notify(msg, level, opts)
 
   render(self)
 
-  -- update the notification width when the message was updated
-  local timeDigits = 8
-  local headlineLength = (self.opts.icon and (#self.opts.icon + 1) or 0)
-    + #self.opts.title
-    + 3 -- padding between title and time
-    + timeDigits
-
-  if self.width then
+  -- We have to check for a valid window here as it seems notify invokes the on_close callback async.
+  -- Hence checking for self.closed would not work as it gets set too late
+  if vim.api.nvim_win_is_valid(self.win) and self.width then
+    -- update the notification width when the message was updated
+    local timeDigits = 8
+    local headlineLength = (self.opts.icon and (#self.opts.icon + 1) or 0)
+      + #self.opts.title
+      + 3 -- padding between title and time
+      + timeDigits
     vim.api.nvim_win_set_width(self.win, math.max(#self.msg + 1, headlineLength))
   end
 end
