@@ -15,11 +15,11 @@ local const = {
   end, -- this is used to specify generate directory for cmake
   cmake_compile_commands_options = {
     action = "soft_link", -- available options: soft_link, copy, lsp, none
-                          -- soft_link: this will automatically make a soft link from compile commands file to target
-                          -- copy:      this will automatically copy compile commands file to target
-                          -- lsp:       this will automatically set compile commands file location using lsp
-                          -- none:      this will make this option ignored
-    target = vim.loop.cwd() -- path to directory, this is used only if action == "soft_link" or action == "copy"
+    -- soft_link: this will automatically make a soft link from compile commands file to target
+    -- copy:      this will automatically copy compile commands file to target
+    -- lsp:       this will automatically set compile commands file location using lsp
+    -- none:      this will make this option ignored
+    target = vim.loop.cwd(), -- path to directory, this is used only if action == "soft_link" or action == "copy"
   },
   cmake_kits_path = nil, -- this is used to specify global cmake kits path, see CMakeKits for detailed usage
   cmake_variants_message = {
