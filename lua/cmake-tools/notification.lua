@@ -88,7 +88,7 @@ function Notification:notify(msg, level, opts)
 
   -- We have to check for a valid window here as it seems notify invokes the on_close callback async.
   -- Hence checking for self.closed would not work as it gets set too late
-  if vim.api.nvim_win_is_valid(self.win) and self.width then
+  if self.win and vim.api.nvim_win_is_valid(self.win) and self.width then
     -- update the notification width when the message was updated
     local timeDigits = 8
     local headlineLength = (self.opts.icon and (#self.opts.icon + 1) or 0)
