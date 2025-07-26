@@ -14,14 +14,14 @@ end
 
 function BuildPreset:get_build_target()
   if self.targets == nil then
-    return ""
+    return nil
   end
   if type(self.targets) == "string" then
+    return { self.targets }
+  elseif type(self.targets) == "table" then
     return self.targets
-  elseif type(self.targets == "table") then
-    return table.concat(self.targets, " ")
   end
-  return ""
+  return nil
 end
 
 function BuildPreset:get_build_type()

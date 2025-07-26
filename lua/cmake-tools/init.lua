@@ -400,7 +400,7 @@ function cmake.build(opt, callback)
     vim.list_extend(args, { "--target", opt.target })
     vim.list_extend(args, fargs)
   elseif config.build_target ~= nil then
-    vim.list_extend(args, { "--target", config.build_target })
+    vim.list_extend(args, { "--target", unpack(config.build_target) })
     vim.list_extend(args, fargs)
   end
 
@@ -947,7 +947,7 @@ function cmake.select_build_target(regenerate, callback)
         callback(Result:new_error(Types.NOT_SELECT_BUILD_TARGET, "No target selected: cancelled"))
         return
       end
-      config.build_target = targets[idx]
+      config.build_target = { targets[idx] }
       callback(Result:new(Types.SUCCESS, config.build_target, nil))
     end)
   )
