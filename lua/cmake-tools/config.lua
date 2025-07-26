@@ -560,7 +560,7 @@ function Config:update_build_target()
     return
   end
   local build_target = build_preset:get_build_target()
-  if build_target ~= "" then
+  if build_target ~= nil then
     self.build_target = build_target
   end
 end
