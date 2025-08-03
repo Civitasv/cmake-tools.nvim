@@ -228,4 +228,8 @@ function Presets.exists(cwd)
   return Presets.find_preset_files(cwd) ~= nil
 end
 
+function Presets.createEmptyBuildPreset()
+  return BuildPreset.None
+end
+
 return Presets
