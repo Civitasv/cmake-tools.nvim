@@ -129,6 +129,8 @@ function Presets:parse(cwd)
     build_preset = createBuildPreset(build_preset)
   end
 
+  table.insert(instance.buildPresets, createBuildPreset({ name = "None", valid = false }))
+
   return instance
 end
 
