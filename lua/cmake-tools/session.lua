@@ -74,6 +74,9 @@ function session.update(config, old_config)
     end
     if old_config.build_target then
       config.build_target = old_config.build_target
+      if type(config.build_target) ~= "table" then -- Backwards compatibility (could be removed after a grace period) see PR!332
+        config.build_target = { config.build_target }
+      end
     end
     if old_config.launch_target then
       config.launch_target = old_config.launch_target
