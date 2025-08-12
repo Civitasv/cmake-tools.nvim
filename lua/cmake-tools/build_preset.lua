@@ -9,6 +9,10 @@ function BuildPreset:new(cwd, obj)
   instance.environment = instance.environment or {}
   instance.cwd = cwd
 
+  if instance.valid == nil then
+    instance.valid = true
+  end
+
   return instance
 end
 
@@ -29,6 +33,10 @@ function BuildPreset:get_build_type()
     return nil
   end
   return self.configuration
+end
+
+function BuildPreset:is_valid()
+  return self.valid
 end
 
 return BuildPreset

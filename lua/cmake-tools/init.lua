@@ -856,11 +856,7 @@ function cmake.select_build_preset(callback)
     local presets = Presets:parse(config.cwd)
     local build_preset_names =
       presets:get_build_preset_names({ include_disabled = config:show_disabled_build_presets() })
-    build_preset_names = vim.list_extend(build_preset_names, { "None" })
     local format_preset_name = function(p_name)
-      if p_name == "None" then
-        return p_name
-      end
       local p = presets:get_build_preset(p_name)
       return p.displayName or p.name
     end
@@ -868,19 +864,18 @@ function cmake.select_build_preset(callback)
       build_preset_names,
       { prompt = "Select cmake build presets", format_item = format_preset_name },
       vim.schedule_wrap(function(choice)
-        if not choice or choice == "None" then
-          if choice == "None" then
-            config.build_preset = nil
-          end
+        if not choice then
           callback(Result:new_error(Types.NOT_SELECT_PRESET, "No build preset selected"))
           return
         end
         if config.build_preset ~= choice then
-          config.build_preset = choice
-
           local build_preset = presets:get_build_preset(choice)
-          if build_preset then
-            config:update_build_target()
+          if build_preset:is_valid() then
+            config.build_preset = choice
+
+            if build_preset then
+              config:update_build_target()
+            end
           end
         end
         local associated_configure_preset = presets:get_configure_preset(
@@ -892,7 +887,10 @@ function cmake.select_build_preset(callback)
           or nil
         local configure_preset_updated = false
 
-        if config.configure_preset ~= associated_configure_preset_name then
+        if
+          associated_configure_preset_name
+          and config.configure_preset ~= associated_configure_preset_name
+        then
           config.configure_preset = associated_configure_preset_name
           configure_preset_updated = true
         end
