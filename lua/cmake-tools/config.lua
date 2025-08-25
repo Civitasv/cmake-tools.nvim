@@ -84,6 +84,11 @@ function Config:update_build_dir(build_dir, no_expand_build_dir)
       "no_expand_build_dir needs to be a string or function returning string path to the build_directory"
     )
   end
+
+  if require("cmake-tools.osys").iswin32 then
+    build_dir = build_dir:gsub("/", "\\")
+  end
+
   local build_path = Path:new(build_dir)
   if build_path:is_absolute() then
     self.build_directory = Path:new(build_dir)
