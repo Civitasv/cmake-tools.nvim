@@ -624,8 +624,8 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
       .. (final_env .. (final_env ~= "" and " " or ""))
       .. final_cmd
       .. ((final_args ~= "" and " " or "") .. final_args)
-      .. (osys.iswin32 and '"' or "")
       .. exit_handler
+      .. (osys.iswin32 and '"' or "")
   else
     if osys.iswin32 then
       error("using a shell alias is currently not suported for windows")
