@@ -1,7 +1,7 @@
-local terminal = require("cmake-tools.terminal")
 local osys = require("cmake-tools.osys")
 local utils = require("cmake-tools.utils")
----@class vimux : terminal
+
+---@class vimux : executor, runner
 local _vimux = {
   id = nil,
 }
@@ -17,7 +17,9 @@ end
 function _vimux.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output)
   local full_cmd = _vimux.prepare_cmd_for_run(cmd, env, args, cwd)
   vim.fn.VimuxRunCommand(full_cmd)
-  terminal.handle_exit(opts, on_exit, opts.close_on_exit)
+  if type(on_exit) == "function" then
+    on_exit(0) -- vimux does not provide exit codes, assume success
+  end
 end
 
 function _vimux.has_active_job(opts)
