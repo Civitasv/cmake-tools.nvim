@@ -11,9 +11,6 @@ local Config = {
   build_directory = nil,
   query_directory = nil,
   reply_directory = nil,
-  ctest = {
-    extra_args = {},
-  },
   build_type = nil,
   variant = nil,
   build_target = nil,
@@ -29,6 +26,7 @@ local Config = {
     generate_options = {},
     build_options = {},
     show_disabled_build_presets = true,
+    ctest_extra_args = {},
   }, -- general config
   target_settings = {}, -- target specific config
   executor = nil,
@@ -52,7 +50,7 @@ function Config:new(const)
   obj.executor = const.cmake_executor
   obj.runner = const.cmake_runner
   for _, v in pairs(const.ctest_extra_args) do
-    table.insert(obj.ctest.extra_args, v)
+    table.insert(obj.base_settings.ctest_extra_args, v)
   end
   return obj
 end
