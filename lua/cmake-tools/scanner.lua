@@ -108,11 +108,10 @@ function scanner.find_compiler_pair(dir, c_compiler)
 end
 
 function scanner.ensure_directory(path)
-  local lfs = require("lfs")
   local pattern = "(.*/)"
   local dir = path:match(pattern)
   if dir then
-    lfs.mkdir(dir)
+    os.execute('mkdir -p "' .. dir .. '"')
   end
 end
 
