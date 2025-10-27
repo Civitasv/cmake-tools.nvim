@@ -110,6 +110,25 @@ function scanner.find_compiler_pair(dir, c_compiler)
   return nil
 end
 
+function scanner.find_linker_pair(dir, linker_name)
+  if not linker_name then
+    return nil
+  end
+  local linker_path = dir .. "/" .. linker_name
+  if scanner.file_exists(linker_path) then
+    return linker_path
+  end
+  return nil
+end
+
+function scanner.get_toolchain_file()
+  local toolchainFile = os.getenv("CMAKE_TOOLCHAIN_FILE")
+  if toolchainFile and scanner.file_exists(toolchainFile) then
+    return toolchainFile
+  end
+  return nil
+end
+
 function scanner.ensure_directory(path)
   local pattern = "(.*/)"
   local dir = path:match(pattern)
@@ -139,6 +158,11 @@ function scanner.scan_for_kits()
   local paths = scanner.split_path(path_env)
 
   for _, dir in ipairs(paths) do
+    local linker_path = scanner.find_linker_pair(dir, "lld")
+    if linker_path == nil then
+      linker_path = scanner.find_linker_pair(dir, "ld")
+    end
+    local toolchainFile = scanner.get_toolchain_file()
     local gcc_path = dir .. "/gcc"
     if scanner.file_exists(gcc_path) then
       local gcc_version = scanner.get_gcc_version(gcc_path)
@@ -150,6 +174,8 @@ function scanner.scan_for_kits()
             C = gcc_path,
             CXX = gxx_path,
           },
+          linker = (linker_path or ""),
+          toolchainFile = (toolchainFile or ""),
         }
         table.insert(kits, kit)
       end
@@ -166,6 +192,8 @@ function scanner.scan_for_kits()
             C = clang_path,
             CXX = clangxx_path,
           },
+          linker = (linker_path or ""),
+          toolchainFile = (toolchainFile or ""),
         }
         table.insert(kits, kit)
       end
