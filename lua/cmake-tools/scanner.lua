@@ -38,7 +38,7 @@ function scanner.json_encode(obj, indent)
 end
 
 function scanner.execute_command(cmd)
-  local handle = io.popen(cmd .. "2>&1")
+  local handle = io.popen(cmd .. " 2>&1")
   if handle == nil then
     return false, -1, ""
   end
@@ -46,11 +46,12 @@ function scanner.execute_command(cmd)
   if result == nil then
     result = ""
   end
-  local success, _, exit_code = handle:close()
+  local success, exit_type, exit_code = handle:close()
+  -- io.popen's close() returns: true on success, or nil, "exit", code on failure
   if success == nil then
-    success = false
+    return false, exit_code or -1, result
   end
-  return success, exit_code, result
+  return true, 0, result
 end
 
 function scanner.file_exists(path)
@@ -74,16 +75,18 @@ end
 
 function scanner.get_gcc_version(gcc_path)
   local success, exit_code, output = scanner.execute_command('"' .. gcc_path .. '" --version')
-  if not success or exit_code ~= 0 then
+  if output == nil then
     return nil
   end
-  local version_line = output:match("gcc version ([%d%.]+)")
-  return version_line
+  -- Try multiple patterns to match different gcc output formats
+  local version = output:match("gcc%s+%(GCC%)%s+([%d%.]+)") -- "gcc (GCC) 15.2.1"
+    or output:match("gcc version ([%d%.]+)") -- "gcc version 11.4.0"
+  return version
 end
 
 function scanner.get_clang_version(clang_path)
-  local success, exit_code, output = scanner.execute_command('"' .. clang_path .. '" --version')
-  if not success or exit_code ~= 0 then
+  local success, exit_code, output = scanner.execute_command('"' .. clang_path .. '" --version ')
+  if output == nil then
     return nil
   end
   local version_line = output:match("clang version ([%d%.]+)")
@@ -142,7 +145,7 @@ function scanner.scan_for_kits()
       local gxx_path = scanner.find_compiler_pair(dir, gcc_path)
       if gxx_path then
         local kit = {
-          name = "GCC " .. (gcc_version or "unknown"),
+          name = "GCC-" .. (gcc_version or "unknown"),
           compilers = {
             C = gcc_path,
             CXX = gxx_path,
@@ -158,7 +161,7 @@ function scanner.scan_for_kits()
       local clangxx_path = scanner.find_compiler_pair(dir, clang_path)
       if clangxx_path then
         local kit = {
-          name = "Clang " .. (clang_version or "unknown"),
+          name = "Clang-" .. (clang_version or "unknown"),
           compilers = {
             C = clang_path,
             CXX = clangxx_path,
