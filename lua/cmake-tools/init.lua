@@ -746,6 +746,29 @@ function cmake.select_build_type(callback)
   )
 end
 
+function cmake.scan_for_kits(callback)
+  callback = type(callback) == "function" and callback
+    or function(result)
+      if result:is_ok() then
+        cmake.generate({ bang = false, fargs = {} }, nil)
+      end
+    end
+  if check_active_job_and_notify(callback) then
+    return
+  end
+
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
+  end
+
+  local kits = scanner.scan_for_kits()
+  if kits then
+    callback(Result:new(Types.SUCCESS, nil, nil))
+  else
+    callback(Result:new_error(Types.CANNOT_FIND_CMAKE_KITS, "Cannot find CMakeKits file"))
+  end
+end
+
 function cmake.select_kit(callback)
   callback = type(callback) == "function" and callback
     or function(result)
