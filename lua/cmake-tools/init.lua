@@ -206,6 +206,9 @@ function cmake.generate(opt, callback)
   -- if exists cmake-kits.json, kit is used to set
   -- environmental variables and args.
   local kits_config = kits.parse(const.cmake_kits_path, config.cwd)
+  if not kits_config then
+    kits_config = scanner.scan_for_kits()
+  end
   if kits_config and not config.kit then
     return cmake.select_kit(function(result)
       if not result:is_ok() then
