@@ -1,7 +1,7 @@
+local const = require("cmake-tools.const")
 local scanner = {}
 -- Configuration
-scanner.HOME = os.getenv("HOME") or os.getenv("USERPROFILE")
-scanner.KITS_FILE = scanner.HOME .. "/.config/cmake-tools/cmake-kits.json"
+scanner.KITS_FILE = const.cmake_kits_path
 
 --Helper functions
 -- Simple JSON encoder
