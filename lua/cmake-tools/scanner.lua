@@ -133,7 +133,7 @@ function scanner.ensure_directory(path)
   local pattern = "(.*/)"
   local dir = path:match(pattern)
   if dir then
-    os.execute('mkdir -p "' .. dir .. '"')
+    vim.fn.mkdir(dir, "p")
   end
 end
 
