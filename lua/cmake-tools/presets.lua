@@ -125,7 +125,8 @@ function Presets:parse(cwd)
     preset = createPreset(preset)
   end
 
-  for _, build_preset in ipairs(instance.buildPresets or {}) do
+  instance.buildPresets = instance.buildPresets or {}
+  for _, build_preset in ipairs(instance.buildPresets) do
     build_preset = createBuildPreset(build_preset)
   end
 
