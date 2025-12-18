@@ -5,6 +5,7 @@ local const = require("cmake-tools.const")
 local Config = require("cmake-tools.config")
 local variants = require("cmake-tools.variants")
 local kits = require("cmake-tools.kits")
+local scanner = require("cmake-tools.scanner")
 local Presets = require("cmake-tools.presets")
 local log = require("cmake-tools.log")
 local hints = require("cmake-tools.hints")
@@ -205,6 +206,9 @@ function cmake.generate(opt, callback)
   -- if exists cmake-kits.json, kit is used to set
   -- environmental variables and args.
   local kits_config = kits.parse(const.cmake_kits_path, config.cwd)
+  if not kits_config then
+    kits_config = scanner.scan_for_kits()
+  end
   if kits_config and not config.kit then
     return cmake.select_kit(function(result)
       if not result:is_ok() then
@@ -742,6 +746,29 @@ function cmake.select_build_type(callback)
       callback(Result:new(Types.SUCCESS, nil, nil))
     end)
   )
+end
+
+function cmake.scan_for_kits(callback)
+  callback = type(callback) == "function" and callback
+    or function(result)
+      if result:is_ok() then
+        cmake.generate({ bang = false, fargs = {} }, nil)
+      end
+    end
+  if check_active_job_and_notify(callback) then
+    return
+  end
+
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
+  end
+
+  local kits = scanner.scan_for_kits()
+  if kits then
+    callback(Result:new(Types.SUCCESS, nil, nil))
+  else
+    callback(Result:new_error(Types.CANNOT_FIND_CMAKE_KITS, "Cannot find CMakeKits file"))
+  end
 end
 
 function cmake.select_kit(callback)
