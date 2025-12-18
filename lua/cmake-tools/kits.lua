@@ -123,6 +123,15 @@ function kits.build_env_and_args(kit_name, escape, cwd, global_kits_path)
   if kit.toolchainFile then
     add_args({ "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=" .. kit.toolchainFile })
   end
+  if kit.cmakeSettings then
+    for k, v in pairs(kit.cmakeSettings) do
+      if type(v) == "boolean" then
+        add_args({ "-D" .. k .. ":BOOL=" .. string.upper(string.format("%s", v)) })
+      else
+        add_args({ "-D" .. k .. ":STRING=" .. string.format("%s", v) })
+      end
+    end
+  end
 
   if kit.environmentVariables then
     for k, v in pairs(kit.environmentVariables) do
