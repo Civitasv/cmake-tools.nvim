@@ -13,6 +13,14 @@ local function merge_table_list_by_key(dst, src, key)
   vim.list_extend(dst[key], src[key])
 end
 
+local KNOWN_PRESET_KEYS = {
+  configurePresets = true,
+  buildPresets = true,
+  testPresets = true,
+  packagePresets = true,
+  workflowPresets = true,
+}
+
 -- Decodes a Cmake[User]Presets.json and its "includes", if any
 -- CMakeUserPresets.json implicitly includes CMakePresets.json if it exists
 local function decode(file, visited)
@@ -35,20 +43,22 @@ local function decode(file, visited)
     error(string.format("Could not parse %s", abs_file_path))
   end
   local includes = data.include or {}
-  local includes_is_empty = #includes == 0
-  local isUserPreset = string.find(abs_file_path:lower(), "user")
   local parentDir = vim.fs.dirname(abs_file_path)
 
-  if includes_is_empty and isUserPreset then
-    local preset = "CMakePresets.json"
-    local presetKebapCase = "cmake-presets.json"
-    local presetPath = parentDir .. "/" .. preset
-    local presetKebapCasePath = parentDir .. "/" .. presetKebapCase
+  local filename_lower = vim.fn.fnamemodify(abs_file_path, ":t"):lower()
+  local is_user_preset = filename_lower == "cmakeuserpresets.json"
+    or filename_lower == "cmake-user-presets.json"
 
-    if vim.fn.filereadable(presetPath) then
-      includes[#includes + 1] = preset
-    elseif vim.fn.filereadable(presetKebapCasePath) then
-      includes[#includes + 1] = presetKebapCase
+  if #includes == 0 and is_user_preset then
+    local preset_pascal_case = "CMakePresets.json"
+    local preset_kebab_case = "cmake-presets.json"
+    local preset_pascal_case_path = tostring(Path:new(parentDir) / preset_pascal_case)
+    local preset_kebab_case_path = tostring(Path:new(parentDir) / preset_kebab_case)
+
+    if vim.fn.filereadable(preset_pascal_case_path) > 0 then
+      includes[#includes + 1] = preset_pascal_case
+    elseif vim.fn.filereadable(preset_kebab_case_path) > 0 then
+      includes[#includes + 1] = preset_kebab_case
     end
   end
 
@@ -56,26 +66,20 @@ local function decode(file, visited)
     return data
   end
 
-  for _, f in ipairs(includes) do
-    local f_path_str
-    local f_path = Path:new(f)
+  for _, include_path in ipairs(includes) do
+    local included_file_str
+    local f_path = Path:new(include_path)
     if f_path:is_absolute() then
-      f_path_str = f
+      included_file_str = include_path
     else
-      f_path_str = tostring(Path:new(parentDir) / f)
+      included_file_str = tostring(Path:new(parentDir) / include_path)
     end
 
-    local fdata = decode(f_path_str, visited)
-    local thisFilePresetKeys = vim.tbl_filter(function(key)
-      if string.find(key, "Presets") then
-        return true
-      else
-        return false
+    local included_data = decode(included_file_str, visited)
+    for key, _ in pairs(included_data) do
+      if KNOWN_PRESET_KEYS[key] then
+        merge_table_list_by_key(data, included_data, key)
       end
-    end, vim.tbl_keys(fdata))
-
-    for _, eachPreset in ipairs(thisFilePresetKeys) do
-      merge_table_list_by_key(data, fdata, eachPreset)
     end
   end
 
