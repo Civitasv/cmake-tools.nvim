@@ -15,15 +15,30 @@ end
 
 -- Decodes a Cmake[User]Presets.json and its "includes", if any
 -- CMakeUserPresets.json implicitly includes CMakePresets.json if it exists
-local function decode(file)
-  local data = vim.fn.json_decode(vim.fn.readfile(file))
-  if not data then
-    error(string.format("Could not parse %s", file))
+local function decode(file, visited)
+  visited = visited or {}
+  local abs_file_path = vim.fn.fnamemodify(file, ":p")
+
+  if visited[abs_file_path] then
+    return {}
   end
-  local includes = data["include"] and data["include"] or {}
-  local includes_is_empty = next(includes) == nil
-  local isUserPreset = string.find(file:lower(), "user")
-  local parentDir = vim.fs.dirname(file)
+
+  local file_path = Path:new(abs_file_path)
+  if not file_path:exists() or file_path:is_dir() then
+    return {} -- Do not error on missing include
+  end
+
+  visited[abs_file_path] = true
+
+  local data = vim.fn.json_decode(file_path:read())
+  if not data then
+    error(string.format("Could not parse %s", abs_file_path))
+  end
+  local includes = data.include or {}
+  local includes_is_empty = #includes == 0
+  local isUserPreset = string.find(abs_file_path:lower(), "user")
+  local parentDir = vim.fs.dirname(abs_file_path)
+
   if includes_is_empty and isUserPreset then
     local preset = "CMakePresets.json"
     local presetKebapCase = "cmake-presets.json"
@@ -37,20 +52,20 @@ local function decode(file)
     end
   end
 
-  if includes_is_empty then
+  if #includes == 0 then
     return data
   end
 
   for _, f in ipairs(includes) do
-    local f_read_data = nil
-    local f_path = Path.new(f)
+    local f_path_str
+    local f_path = Path:new(f)
     if f_path:is_absolute() then
-      f_read_data = f_path:read()
+      f_path_str = f
     else
-      f_read_data = (Path.new(parentDir) / f):read()
+      f_path_str = tostring(Path:new(parentDir) / f)
     end
 
-    local fdata = vim.fn.json_decode(f_read_data)
+    local fdata = decode(f_path_str, visited)
     local thisFilePresetKeys = vim.tbl_filter(function(key)
       if string.find(key, "Presets") then
         return true
@@ -97,10 +112,11 @@ function Presets:parse(cwd)
 
   local userPresetFile, presetFile = self.find_preset_files(cwd)
 
-  local data = decode(userPresetFile)
+  local visited = {}
+  local data = decode(userPresetFile, visited)
 
   if presetFile then
-    local presetData = decode(presetFile)
+    local presetData = decode(presetFile, visited)
     if presetData then
       data = merge_presets(data, presetData)
     end
