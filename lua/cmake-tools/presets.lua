@@ -15,52 +15,71 @@ end
 
 -- Decodes a Cmake[User]Presets.json and its "includes", if any
 -- CMakeUserPresets.json implicitly includes CMakePresets.json if it exists
-local function decode(file)
-  local data = vim.fn.json_decode(vim.fn.readfile(file))
-  if not data then
-    error(string.format("Could not parse %s", file))
-  end
-  local includes = data["include"] and data["include"] or {}
-  local includes_is_empty = next(includes) == nil
-  local isUserPreset = string.find(file:lower(), "user")
-  local parentDir = vim.fs.dirname(file)
-  if includes_is_empty and isUserPreset then
-    local preset = "CMakePresets.json"
-    local presetKebapCase = "cmake-presets.json"
-    local presetPath = parentDir .. "/" .. preset
-    local presetKebapCasePath = parentDir .. "/" .. presetKebapCase
+local function decode(file, visited)
+  visited = visited or {}
+  local abs_file_path = vim.fn.fnamemodify(file, ":p")
 
-    if vim.fn.filereadable(presetPath) then
-      includes[#includes + 1] = preset
-    elseif vim.fn.filereadable(presetKebapCasePath) then
-      includes[#includes + 1] = presetKebapCase
+  if visited[abs_file_path] then
+    return {}
+  end
+
+  local file_path = Path:new(abs_file_path)
+  if not file_path:exists() or file_path:is_dir() then
+    return {} -- Do not error on missing include
+  end
+
+  visited[abs_file_path] = true
+
+  local data = vim.fn.json_decode(file_path:read())
+  if not data then
+    error(string.format("Could not parse %s", abs_file_path))
+  end
+  data.include = data.include or {}
+  local includes = data.include
+  local parentDir = vim.fs.dirname(abs_file_path)
+
+  local filename_lower = vim.fn.fnamemodify(abs_file_path, ":t"):lower()
+  local is_user_preset = filename_lower == "cmakeuserpresets.json" or filename_lower == "cmake-user-presets.json"
+
+  if #includes == 0 and is_user_preset then
+    local preset_pascal_case = "CMakePresets.json"
+    local preset_kebab_case = "cmake-presets.json"
+    local preset_pascal_case_path = tostring(Path:new(parentDir) / preset_pascal_case)
+    local preset_kebab_case_path = tostring(Path:new(parentDir) / preset_kebab_case)
+
+    if vim.fn.filereadable(preset_pascal_case_path) > 0 then
+      includes[#includes + 1] = preset_pascal_case
+    elseif vim.fn.filereadable(preset_kebab_case_path) > 0 then
+      includes[#includes + 1] = preset_kebab_case
     end
   end
 
-  if includes_is_empty then
+  if #includes == 0 then
     return data
   end
 
-  for _, f in ipairs(includes) do
-    local f_read_data = nil
-    local f_path = Path.new(f)
+  local KNOWN_PRESET_KEYS = {
+    configurePresets = true,
+    buildPresets = true,
+    testPresets = true,
+    packagePresets = true,
+    workflowPresets = true,
+  }
+
+  for _, include_path in ipairs(includes) do
+    local included_file_str
+    local f_path = Path:new(include_path)
     if f_path:is_absolute() then
-      f_read_data = f_path:read()
+      included_file_str = include_path
     else
-      f_read_data = (Path.new(parentDir) / f):read()
+      included_file_str = tostring(Path:new(parentDir) / include_path)
     end
 
-    local fdata = vim.fn.json_decode(f_read_data)
-    local thisFilePresetKeys = vim.tbl_filter(function(key)
-      if string.find(key, "Presets") then
-        return true
-      else
-        return false
+    local included_data = decode(included_file_str, visited)
+    for key, _ in pairs(included_data) do
+      if KNOWN_PRESET_KEYS[key] then
+        merge_table_list_by_key(data, included_data, key)
       end
-    end, vim.tbl_keys(fdata))
-
-    for _, eachPreset in ipairs(thisFilePresetKeys) do
-      merge_table_list_by_key(data, fdata, eachPreset)
     end
   end
 
@@ -97,10 +116,11 @@ function Presets:parse(cwd)
 
   local userPresetFile, presetFile = self.find_preset_files(cwd)
 
-  local data = decode(userPresetFile)
+  local visited = {}
+  local data = decode(userPresetFile, visited)
 
   if presetFile then
-    local presetData = decode(presetFile)
+    local presetData = decode(presetFile, visited)
     if presetData then
       data = merge_presets(data, presetData)
     end
