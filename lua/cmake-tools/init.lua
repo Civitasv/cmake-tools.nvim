@@ -348,6 +348,7 @@ function cmake.build(opt, callback)
   end
 
   local presets_exists = config.base_settings.use_preset and Presets.exists(config.cwd)
+  local use_build_preset = false
   if presets_exists then
     local presets = Presets:parse(config.cwd)
     if not config.build_preset then
@@ -367,9 +368,10 @@ function cmake.build(opt, callback)
     end
     if config.build_preset then
       local build_preset = presets:get_build_preset(config.build_preset)
-      if build_preset then
+      if build_preset and build_preset:is_valid() then
         config:update_build_target()
         config:update_build_type()
+        use_build_preset = true
       end
     end
   end
@@ -387,7 +389,7 @@ function cmake.build(opt, callback)
 
   local args
 
-  if presets_exists and config.build_preset then
+  if use_build_preset then
     args = { "--build", "--preset", config.build_preset } -- preset don't need define build dir.
   else
     args = {
@@ -868,31 +870,28 @@ function cmake.select_build_preset(callback)
           callback(Result:new_error(Types.NOT_SELECT_PRESET, "No build preset selected"))
           return
         end
-        if config.build_preset ~= choice then
-          local build_preset = presets:get_build_preset(choice)
-          if build_preset:is_valid() then
-            config.build_preset = choice
 
-            if build_preset then
-              config:update_build_target()
+        if config.build_preset ~= choice then
+          config.build_preset = choice
+
+          local build_preset = presets:get_build_preset(choice)
+
+          if build_preset and build_preset:is_valid() then
+            config:update_build_target()
+
+            local associated_configure_preset =
+              presets:get_configure_preset(build_preset.configurePreset, { include_hidden = true })
+            local associated_configure_preset_name = associated_configure_preset
+                and associated_configure_preset.name
+              or nil
+
+            if
+              associated_configure_preset_name
+              and config.configure_preset ~= associated_configure_preset_name
+            then
+              config.configure_preset = associated_configure_preset_name
             end
           end
-        end
-        local associated_configure_preset = presets:get_configure_preset(
-          presets:get_build_preset(choice).configurePreset,
-          { include_hidden = true }
-        )
-        local associated_configure_preset_name = associated_configure_preset
-            and associated_configure_preset.name
-          or nil
-        local configure_preset_updated = false
-
-        if
-          associated_configure_preset_name
-          and config.configure_preset ~= associated_configure_preset_name
-        then
-          config.configure_preset = associated_configure_preset_name
-          configure_preset_updated = true
         end
 
         callback(Result:new(Types.SUCCESS, nil, nil))
@@ -1184,7 +1183,7 @@ function cmake.run_test(opt, callback)
         return
       end
       if idx == 1 then
-        ctest.run(const.ctest_command, "'.*'", config:build_directory_path(), env, config, opt)
+        ctest.run(const.ctest_command, nil, config:build_directory_path(), env, config, opt)
       else
         ctest.run(
           const.ctest_command,
