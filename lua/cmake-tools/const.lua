@@ -56,9 +56,7 @@ local const = {
       },
       overseer = {
         new_task_opts = {
-          strategy = {
-            "terminal",
-          },
+          strategy = nil, -- use overseer's default for this
         }, -- options to pass into the `overseer.new_task` command
         on_new_task = function(task)
           require("overseer").open({ enter = false, direction = "right" })
