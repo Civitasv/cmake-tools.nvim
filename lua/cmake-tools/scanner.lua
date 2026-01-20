@@ -17,20 +17,6 @@ local function execute_command(cmd)
   return true, 0, result
 end
 
-local function file_exists(path)
-  if path == nil then
-    vim.notify("Path is empty", vim.log.levels.ERROR)
-    return
-  end
-  local file = io.open(path, "r")
-  if file then
-    file:close()
-    return true
-  else
-    return false
-  end
-end
-
 local function split_path(path_env)
   local paths = {}
   local sep = package.config:sub(1, 1) == "\\" and ";" or ":"
@@ -71,7 +57,7 @@ local function find_compiler_pair(dir, c_compiler)
     return nil
   end
   local cxx_path = dir .. "/" .. cxx_name
-  if file_exists(cxx_path) then
+  if vim.fn.filereadable(cxx_path) then
     return cxx_path
   end
   return nil
@@ -82,7 +68,7 @@ local function find_linker_pair(dir, linker_name)
     return nil
   end
   local linker_path = dir .. "/" .. linker_name
-  if file_exists(linker_path) then
+  if vim.fn.filereadable(linker_path) then
     return linker_path
   end
   return nil
@@ -90,7 +76,7 @@ end
 
 local function get_toolchain_file()
   local toolchainFile = os.getenv("CMAKE_TOOLCHAIN_FILE")
-  if toolchainFile and file_exists(toolchainFile) then
+  if toolchainFile and vim.fn.filereadable(toolchainFile) then
     return toolchainFile
   end
   return nil
@@ -139,7 +125,7 @@ function scanner.scan_for_kits()
     end
     local toolchainFile = get_toolchain_file()
     local gcc_path = dir .. "/gcc"
-    if file_exists(gcc_path) then
+    if vim.fn.filereadable(gcc_path) then
       local gcc_version = get_gcc_version(gcc_path)
       local gxx_path = find_compiler_pair(dir, gcc_path)
       if gxx_path then
@@ -157,7 +143,7 @@ function scanner.scan_for_kits()
     end
 
     local clang_path = dir .. "/clang"
-    if file_exists(clang_path) then
+    if vim.fn.filereadable(clang_path) then
       local clang_version = get_clang_version(clang_path)
       local clangxx_path = find_compiler_pair(dir, clang_path)
       if clangxx_path then
