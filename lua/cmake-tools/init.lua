@@ -1183,7 +1183,7 @@ function cmake.run_test(opt, callback)
         return
       end
       if idx == 1 then
-        ctest.run(const.ctest_command, "'.*'", config:build_directory_path(), env, config, opt)
+        ctest.run(const.ctest_command, nil, config:build_directory_path(), env, config, opt)
       else
         ctest.run(
           const.ctest_command,
