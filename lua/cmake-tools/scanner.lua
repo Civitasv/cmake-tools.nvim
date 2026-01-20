@@ -1,43 +1,7 @@
-local const = require("cmake-tools.const")
 local scanner = {}
--- Configuration
-scanner.KITS_FILE = const.cmake_kits_path
 
 --Helper functions
--- Simple JSON encoder
-function scanner.json_encode(obj, indent)
-  indent = indent or 0
-  local spaces = string.rep("  ", indent)
-
-  if type(obj) == "table" then
-    local is_array = #obj > 0
-    local result = "{\n"
-    local first = true
-
-    for k, v in pairs(obj) do
-      if not first then
-        result = result .. ",\n"
-      end
-      first = false
-
-      if is_array then
-        result = result .. spaces .. "  " .. scanner.json_encode(v, indent + 1)
-      else
-        result = result .. spaces .. '  "' .. k .. '": ' .. scanner.json_encode(v, indent + 1)
-      end
-    end
-
-    return result .. "\n" .. spaces .. "}"
-  elseif type(obj) == "string" then
-    return '"' .. obj:gsub("\\", "\\\\"):gsub('"', '\\"') .. '"'
-  elseif type(obj) == "number" or type(obj) == "boolean" then
-    return tostring(obj)
-  elseif obj == nil then
-    return "null"
-  end
-end
-
-function scanner.execute_command(cmd)
+local function execute_command(cmd)
   local handle = io.popen(cmd .. " 2>&1")
   if handle == nil then
     return false, -1, ""
@@ -46,15 +10,18 @@ function scanner.execute_command(cmd)
   if result == nil then
     result = ""
   end
-  local success, exit_type, exit_code = handle:close()
-  -- io.popen's close() returns: true on success, or nil, "exit", code on failure
+  local success, exit_code = handle:close()
   if success == nil then
     return false, exit_code or -1, result
   end
   return true, 0, result
 end
 
-function scanner.file_exists(path)
+local function file_exists(path)
+  if path == nil then
+    vim.notify("Path is empty", vim.log.levels.ERROR)
+    return
+  end
   local file = io.open(path, "r")
   if file then
     file:close()
@@ -64,7 +31,7 @@ function scanner.file_exists(path)
   end
 end
 
-function scanner.split_path(path_env)
+local function split_path(path_env)
   local paths = {}
   local sep = package.config:sub(1, 1) == "\\" and ";" or ":"
   for path in string.gmatch(path_env, "([^" .. sep .. "]+)") do
@@ -73,8 +40,8 @@ function scanner.split_path(path_env)
   return paths
 end
 
-function scanner.get_gcc_version(gcc_path)
-  local success, exit_code, output = scanner.execute_command('"' .. gcc_path .. '" --version')
+local function get_gcc_version(gcc_path)
+  local success, exit_code, output = execute_command('"' .. gcc_path .. '" --version')
   if output == nil then
     return nil
   end
@@ -84,8 +51,8 @@ function scanner.get_gcc_version(gcc_path)
   return version
 end
 
-function scanner.get_clang_version(clang_path)
-  local success, exit_code, output = scanner.execute_command('"' .. clang_path .. '" --version ')
+local function get_clang_version(clang_path)
+  local success, exit_code, output = execute_command('"' .. clang_path .. '" --version ')
   if output == nil then
     return nil
   end
@@ -93,7 +60,7 @@ function scanner.get_clang_version(clang_path)
   return version_line
 end
 
-function scanner.find_compiler_pair(dir, c_compiler)
+local function find_compiler_pair(dir, c_compiler)
   local base_name = c_compiler:match("([^/\\]+)$")
   local cxx_name
   if base_name:match("gcc") then
@@ -104,32 +71,36 @@ function scanner.find_compiler_pair(dir, c_compiler)
     return nil
   end
   local cxx_path = dir .. "/" .. cxx_name
-  if scanner.file_exists(cxx_path) then
+  if file_exists(cxx_path) then
     return cxx_path
   end
   return nil
 end
 
-function scanner.find_linker_pair(dir, linker_name)
+local function find_linker_pair(dir, linker_name)
   if not linker_name then
     return nil
   end
   local linker_path = dir .. "/" .. linker_name
-  if scanner.file_exists(linker_path) then
+  if file_exists(linker_path) then
     return linker_path
   end
   return nil
 end
 
-function scanner.get_toolchain_file()
+local function get_toolchain_file()
   local toolchainFile = os.getenv("CMAKE_TOOLCHAIN_FILE")
-  if toolchainFile and scanner.file_exists(toolchainFile) then
+  if toolchainFile and file_exists(toolchainFile) then
     return toolchainFile
   end
   return nil
 end
 
-function scanner.ensure_directory(path)
+local function ensure_directory(path)
+  if not path then
+    vim.notify("Path is empty", vim.log.levels.ERROR)
+    return
+  end
   local pattern = "(.*/)"
   local dir = path:match(pattern)
   if dir then
@@ -137,36 +108,40 @@ function scanner.ensure_directory(path)
   end
 end
 
-function scanner.save_kits(kits, filepath)
-  scanner.ensure_directory(filepath)
+local function save_kits(kits, filepath)
+  ensure_directory(filepath)
   local file = io.open(filepath, "w")
   if not file then
-    error("Failed to open file for writing: " .. filepath)
+    vim.notify("Failed to open file for writing: " .. filepath, vim.log.levels.ERROR)
     return false
   end
-  local json_content = scanner.json_encode(kits)
+  if not kits then
+    vim.notify("Can not encode data to json because it is nil", vim.log.levels.ERROR)
+    return false
+  end
+  local json_content = vim.json.encode(kits)
   file:write(json_content)
   file:close()
   return true
 end
 
--- Main fucntion to scan for kits
+-- Main function to scan for kits
 function scanner.scan_for_kits()
   local kits = {}
-
+  local const = require("cmake-tools.const")
   local path_env = os.getenv("PATH") or ""
-  local paths = scanner.split_path(path_env)
+  local paths = split_path(path_env)
 
   for _, dir in ipairs(paths) do
-    local linker_path = scanner.find_linker_pair(dir, "lld")
+    local linker_path = find_linker_pair(dir, "lld")
     if linker_path == nil then
-      linker_path = scanner.find_linker_pair(dir, "ld")
+      linker_path = find_linker_pair(dir, "ld")
     end
-    local toolchainFile = scanner.get_toolchain_file()
+    local toolchainFile = get_toolchain_file()
     local gcc_path = dir .. "/gcc"
-    if scanner.file_exists(gcc_path) then
-      local gcc_version = scanner.get_gcc_version(gcc_path)
-      local gxx_path = scanner.find_compiler_pair(dir, gcc_path)
+    if file_exists(gcc_path) then
+      local gcc_version = get_gcc_version(gcc_path)
+      local gxx_path = find_compiler_pair(dir, gcc_path)
       if gxx_path then
         local kit = {
           name = "GCC-" .. (gcc_version or "unknown"),
@@ -182,9 +157,9 @@ function scanner.scan_for_kits()
     end
 
     local clang_path = dir .. "/clang"
-    if scanner.file_exists(clang_path) then
-      local clang_version = scanner.get_clang_version(clang_path)
-      local clangxx_path = scanner.find_compiler_pair(dir, clang_path)
+    if file_exists(clang_path) then
+      local clang_version = get_clang_version(clang_path)
+      local clangxx_path = find_compiler_pair(dir, clang_path)
       if clangxx_path then
         local kit = {
           name = "Clang-" .. (clang_version or "unknown"),
@@ -201,10 +176,18 @@ function scanner.scan_for_kits()
   end
 
   if #kits == 0 then
-    print("No compilers found in PATH.")
+    vim.notify("No compilers found in PATH.", vim.log.levels.WARN)
     return {}
   end
-  scanner.save_kits(kits, scanner.KITS_FILE)
+  vim.notify("Found kits", vim.log.levels.INFO)
+  if const.cmake_kits_path == nil then
+    vim.notify(
+      "local const variable is nil, it seems that the required module could not be loaded",
+      vim.log.levels.ERROR
+    )
+    return {}
+  end
+  save_kits(kits, const.cmake_kits_path)
   return kits
 end
 
