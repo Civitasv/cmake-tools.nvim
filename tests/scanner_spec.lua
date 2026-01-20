@@ -1,0 +1,17 @@
+-- tests/scanner_spec.lua
+describe("scanner", function()
+  it("scan for kits", function()
+    local scanner = require("cmake-tools.scanner")
+    local kits = scanner.scan_for_kits()
+    assert(#kits > 0)
+  end)
+end)
+
+describe("kits", function()
+  it("parse from global file", function()
+    local kit = require("cmake-tools.kits")
+    local const = require("cmake-tools.const")
+    local kits = kit.get(const.cmake_kits_path, vim.loop.cwd())
+    assert(#kits > 0)
+  end)
+end)
