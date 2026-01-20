@@ -46,7 +46,7 @@ local function get_gcc_version(gcc_path)
     return nil
   end
   -- Try multiple patterns to match different gcc output formats
-  local version = output:match("gcc%s+%(GCC%)%s+([%d%.]+)") -- "gcc (GCC) 15.2.1"
+  local version = output:match("gcc[%s%a]([%d%.]+)") -- "gcc (GCC) 15.2.1"
     or output:match("gcc version ([%d%.]+)") -- "gcc version 11.4.0"
   return version
 end
