@@ -126,9 +126,17 @@ function kits.build_env_and_args(kit_name, escape, cwd, global_kits_path)
   if kit.cmakeSettings then
     for k, v in pairs(kit.cmakeSettings) do
       if type(v) == "boolean" then
-        add_args({ "-D" .. k .. ":BOOL=" .. string.upper(string.format("%s", v)) })
+        if escape then
+          add_args({ "-D" .. k .. ":BOOL=" .. '"' .. string.upper(tostring(v)) .. '"' })
+        else
+          add_args({ "-D" .. k .. ":BOOL=" .. string.upper(tostring(v)) })
+        end
       else
-        add_args({ "-D" .. k .. ":STRING=" .. string.format("%s", v) })
+        if escape then
+          add_args({ "-D" .. k .. ":STRING=" .. '"' .. v '"' })
+        else
+          add_args({ "-D" .. k .. ":STRING=" .. v })
+        end
       end
     end
   end
