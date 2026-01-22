@@ -159,6 +159,7 @@ require("cmake-tools").setup {
         start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
         focus = false, -- Focus on terminal when cmake task is launched.
         do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
+        use_shell_alias = false, -- Hide the verbose command wrapper by using a shell alias, showing only the program's output (currently not supported on Windows)
       },
     },
   },
