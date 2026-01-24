@@ -249,9 +249,12 @@ vim.api.nvim_create_user_command(
 --- CMake select cwd (source dir)
 vim.api.nvim_create_user_command(
   "CMakeSelectCwd", -- name
-  cmake_tools.select_cwd, -- command
+  function(opts)
+    cmake_tools.select_cwd({ args = opts.args }, false)
+  end, -- command
   { -- opts
     nargs = "?",
+    complete = "dir",
     desc = "CMake select cwd",
   }
 )
@@ -259,9 +262,12 @@ vim.api.nvim_create_user_command(
 --- CMake select build dir
 vim.api.nvim_create_user_command(
   "CMakeSelectBuildDir", -- name
-  cmake_tools.select_build_dir, -- command
+  function(opts)
+    cmake_tools.select_build_dir({ args = opts.args })
+  end, -- command
   { -- opts
     nargs = "?",
+    complete = "dir",
     desc = "CMake select build dir",
   }
 )

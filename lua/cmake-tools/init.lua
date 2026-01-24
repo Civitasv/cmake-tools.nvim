@@ -1427,7 +1427,8 @@ function cmake.ccls_on_new_config(new_config)
   new_config.init_options.compilationDatabaseDirectory = config:build_directory_path()
 end
 
-function cmake.select_cwd(cwd_path)
+function cmake.select_cwd(cwd_path, generate)
+  vim.notify("Select CMake Project Root Directory" .. cwd_path.args, vim.log.levels.INFO)
   if cwd_path.args == "" then
     vim.ui.input(
       {
@@ -1445,8 +1446,10 @@ function cmake.select_cwd(cwd_path)
         cmake.register_autocmd()
         cmake.register_autocmd_provided_by_users()
         cmake.register_scratch_buffer(config.executor.name, config.runner.name)
-        --	end
-        cmake.generate({ bang = false, fargs = {} }, nil)
+
+        if generate then
+          cmake.generate({ bang = false, fargs = {} }, nil)
+        end
       end)
     )
   elseif cwd_path.args then
@@ -1454,11 +1457,13 @@ function cmake.select_cwd(cwd_path)
     cmake.register_autocmd()
     cmake.register_autocmd_provided_by_users()
     cmake.register_scratch_buffer(config.executor.name, config.runner.name)
-    cmake.generate({ bang = false, fargs = {} }, nil)
+    if generate then
+      cmake.generate({ bang = false, fargs = {} }, nil)
+    end
   end
 end
 
-function cmake.select_build_dir(cwd_path)
+function cmake.select_build_dir(cwd_path, generate)
   if cwd_path.args == "" then
     vim.ui.input(
       {
@@ -1474,7 +1479,9 @@ function cmake.select_build_dir(cwd_path)
         --if new_path:is_dir() then
         config:update_build_dir(vim.fn.resolve(input), vim.fn.resolve(input))
         --	end
-        cmake.generate({ bang = false, fargs = {} }, nil)
+        if generate then
+          cmake.generate({ bang = false, fargs = {} }, nil)
+        end
       end)
     )
   elseif cwd_path.args then
