@@ -133,7 +133,7 @@ function kits.build_env_and_args(kit_name, escape, cwd, global_kits_path)
         end
       else
         if escape then
-          add_args({ "-D" .. k .. ":STRING=" .. '"' .. v '"' })
+          add_args({ "-D" .. k .. ":STRING=" .. '"' .. v .. '"' })
         else
           add_args({ "-D" .. k .. ":STRING=" .. v })
         end
