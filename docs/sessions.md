@@ -39,3 +39,5 @@ local session = {
 ```
 
 per project.
+
+Alternatively, cmake-tools will search for a file ".cmake-tools.lua" in the current working directory. If it is found, the configuration in this file will be used. If no configuration is found in the current working directory, it will continue looking in the parent directory. If no config can be found, it will use the sessions mentioned above.
