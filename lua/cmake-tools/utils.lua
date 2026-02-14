@@ -99,7 +99,7 @@ end
 function utils.softlink(src, target)
   if utils.file_exists(src) and not utils.file_exists(target) then
     -- if we don't always use terminal
-    local cmd = "exec "
+    local cmd = "silent exec "
       .. "'!cmake -E create_symlink "
       .. utils.transform_path(src)
       .. " "
