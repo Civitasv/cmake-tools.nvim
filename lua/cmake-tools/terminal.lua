@@ -553,7 +553,7 @@ local get_command_handling_on_exit = function()
     elseif is_cmd() then
       exit_code_file_path = exit_code_file_path:gsub("/", "\\")
       lock_file_path = lock_file_path:gsub("/", "\\")
-      return "echo %errorlevel% > " .. exit_code_file_path .. " && del /Q " .. lock_file_path
+      return "echo !errorlevel! > " .. exit_code_file_path .. " && del /Q " .. lock_file_path
     else
       -- bash-like on windows
       exit_code_file_path = exit_code_file_path:gsub("\\", "/")
@@ -643,9 +643,9 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
         shell_prefix = vim.o.shell .. ' -Command "'
         cd_sep = is_pwsh() and " && " or "; " -- 5.1 vs pwsh 7+
       else
-        shell_prefix = 'cmd /C "'
+        shell_prefix = 'cmd /V:ON /C "'
         cd_sep = " && "
-        chain_symb = "& "
+        chain_symb = " & "
       end
       shell_suffix = '"'
     end
