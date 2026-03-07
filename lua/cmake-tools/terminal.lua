@@ -580,7 +580,9 @@ local get_last_exit_code = function()
     print("Could not find last tmp file conaining exit code")
     return nil
   end
-  return tonumber(file:read("*n"))
+  local code = tonumber(file:read("*n"))
+  file:close()
+  return code
 end
 
 ---
