@@ -212,6 +212,7 @@ function utils.run(cmd, env_script, env, args, cwd, runner, callback)
   end
 
   utils.get_runner(runner.name).run(cmd, env_script, env, args, cwd, runner.opts, function(code)
+    ntfy:stopSpinner()
     local msg = "Exited with code " .. code
     local icon = ""
     local level = nil -- use the previously defined level
