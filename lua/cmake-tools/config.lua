@@ -7,39 +7,57 @@ local variants = require("cmake-tools.variants")
 local Presets = require("cmake-tools.presets")
 local kits = require("cmake-tools.kits")
 
-local Config = {
-  build_directory = nil,
-  query_directory = nil,
-  reply_directory = nil,
-  build_type = nil,
-  variant = nil,
-  build_target = nil,
-  launch_target = nil,
-  kit = nil,
-  configure_preset = nil,
-  build_preset = nil,
-  test_preset = nil,
-  selected_test = nil,
-  base_settings = {
-    env = {},
-    build_dir = "",
-    working_dir = "${dir.binary}",
-    use_preset = true,
-    generate_options = {},
-    build_options = {},
-    show_disabled_build_presets = true,
-    ctest_show_labels = false,
-  }, -- general config
-  target_settings = {}, -- target specific config
-  executor = nil,
-  runner = nil,
-  env_script = " ",
-  cwd = vim.loop.cwd(),
-}
+---@class Config.BaseSettings
+---@field env table
+---@field build_dir string
+---@field working_dir string
+---@field use_preset boolean
+---@field generate_options string[]
+---@field build_options string[]
+---@field show_disabled_build_presets boolean
+---@field ctest_show_labels boolean
 
+---@class Config
+---@field build_directory Path?
+---@field query_directory Path?
+---@field reply_directory Path?
+---@field build_type string?
+---@field variant table?
+---@field build_target string|string[]|nil
+---@field launch_target string?
+---@field kit string?
+---@field configure_preset string?
+---@field build_preset string?
+---@field test_preset string?
+---@field selected_test string?
+---@field base_settings Config.BaseSettings
+---@field target_settings table
+---@field executor table?
+---@field runner table?
+---@field env_script string
+---@field cwd string
+local Config = {}
+Config.__index = Config
+
+---@param const Const
+---@return Config
 function Config:new(const)
-  local obj = {}
-  setmetatable(obj, { __index = self }) -- when obj cannot find key in its table, it will try to find it from its __index value
+  local obj = {
+    base_settings = {
+      env = {},
+      build_dir = "",
+      working_dir = "${dir.binary}",
+      use_preset = true,
+      generate_options = {},
+      build_options = {},
+      show_disabled_build_presets = true,
+      ctest_show_labels = false,
+    }, -- general config
+    target_settings = {}, -- target specific config
+    env_script = " ",
+    cwd = vim.loop.cwd(),
+  }
+  setmetatable(obj, Config)
 
   obj:update_build_dir(const.cmake_build_directory, const.cmake_build_directory)
 
@@ -56,21 +74,22 @@ function Config:new(const)
   return obj
 end
 
+---@return string
 function Config:build_directory_path()
   return self.build_directory.filename
 end
 
+---@return boolean
 function Config:has_build_directory()
   return self.build_directory and self.build_directory:exists()
 end
 
----comment
 ---The reason for storing no expand build directory is to make cwd selecting easier
+---@return string
 function Config:no_expand_build_directory_path()
   return self.base_settings.build_dir
 end
 
----comment
 ---@param build_dir string|function string or a function returning string containing path to the build dir
 ---@param no_expand_build_dir string|function
 function Config:update_build_dir(build_dir, no_expand_build_dir)
@@ -107,8 +126,9 @@ function Config:update_build_dir(build_dir, no_expand_build_dir)
   self.base_settings.build_dir = Path:new(no_expand_build_dir):absolute()
 end
 
----Prepare build directory. Which allows macro expansion.
+---Prepare build directory with macro expansion
 ---@param kit_list table all the kits
+---@return string
 function Config:prepare_build_directory(kit_list)
   -- macro expansion:
   --       ${kit}
@@ -140,22 +160,27 @@ function Config:prepare_build_directory(kit_list)
   return build_dir
 end
 
+---@return string[]
 function Config:generate_options()
   return self.base_settings.generate_options and self.base_settings.generate_options or {}
 end
 
+---@return string[]
 function Config:build_options()
   return self.base_settings.build_options and self.base_settings.build_options or {}
 end
 
+---@return boolean
 function Config:show_disabled_build_presets()
   return self.base_settings.show_disabled_build_presets
 end
 
+---@return boolean
 function Config:ctest_show_labels()
   return self.base_settings.ctest_show_labels
 end
 
+---@return cmake.Result
 function Config:generate_build_directory()
   local build_directory = Path:new(self.build_directory)
 
@@ -165,6 +190,7 @@ function Config:generate_build_directory()
   return self:generate_query_files()
 end
 
+---@return cmake.Result
 function Config:generate_query_files()
   local query_directory = Path:new(self.query_directory)
   if not query_directory:mkdir({ parents = true }) then
@@ -196,6 +222,7 @@ function Config:generate_query_files()
   return Result:new(Types.SUCCESS, true, "yeah, that could be")
 end
 
+---@return cmake.Result
 function Config:get_cmake_files()
   -- if reply_directory exists
   local reply_directory = Path:new(self.reply_directory)
@@ -212,6 +239,7 @@ function Config:get_cmake_files()
   return Result:new(Types.SUCCESS, codemodel_json["inputs"], "find it")
 end
 
+---@return cmake.Result
 function Config:get_codemodel_targets()
   -- if reply_directory exists
   local reply_directory = Path:new(self.reply_directory)
@@ -233,12 +261,15 @@ function Config:get_codemodel_targets()
   return Result:new(Types.SUCCESS, codemodel_json["configurations"][1]["targets"], "find it") -- Return the first else
 end
 
+---@param codemodel_target table
+---@return table
 function Config:get_code_model_target_info(codemodel_target)
   local reply_directory = Path:new(self.reply_directory)
   return vim.json.decode((reply_directory / codemodel_target["jsonFile"]):read())
 end
 
--- Check if launch target is built
+---Check if launch target is built
+---@return cmake.Result
 function Config:check_launch_target()
   -- 1. not configured
   local build_directory = Path:new(self.build_directory)
@@ -276,6 +307,8 @@ function Config:check_launch_target()
   )
 end
 
+---@param target_info table
+---@return cmake.Result
 function Config:get_launch_target_from_info(target_info)
   local target_path = target_info["artifacts"][1]["path"]
   if require("cmake-tools.osys").iswin32 then
@@ -300,8 +333,8 @@ function Config:get_launch_target_from_info(target_info)
   return Result:new(Types.SUCCESS, target_path.filename, "yeah, that's good")
 end
 
--- Retrieve launch target path: self.launch_target
--- it will first check if this launch target is built
+---Retrieve launch target path
+---@return cmake.Result
 function Config:get_launch_target()
   local check_result = self:check_launch_target()
   if check_result.code ~= Types.SUCCESS then
@@ -312,7 +345,8 @@ function Config:get_launch_target()
   return self:get_launch_target_from_info(target_info)
 end
 
--- Check if build target exists
+---Check if build target exists
+---@return cmake.Result
 function Config:check_build_target()
   -- 1. not configured
   local build_directory = Path:new(self.build_directory)
@@ -346,8 +380,8 @@ function Config:check_build_target()
   )
 end
 
--- Retrieve launch target path: self.launch_target
--- it will first check if this launch target is built
+---Retrieve build target path
+---@return cmake.Result
 function Config:get_build_target()
   local check_result = self:check_build_target()
   if check_result.code ~= Types.SUCCESS then
@@ -374,8 +408,8 @@ function Config:get_build_target()
   return Result:new(Types.SUCCESS, target_path.filename, "yeah, that's good")
 end
 
--- Check if this launch target is debuggable
--- use variants.debuggable
+---Check if this launch target is debuggable using variants.debuggable
+---@return cmake.Result
 function Config:validate_for_debugging()
   local build_type = self.build_type
 
@@ -385,6 +419,9 @@ function Config:validate_for_debugging()
   return Result:new(Types.SUCCESS, true, "Yeah, it may be")
 end
 
+---@param config Config
+---@param opt { has_all: boolean, only_executable: boolean, query_sources: boolean? }
+---@return cmake.Result
 local function get_targets(config, opt)
   local targets, display_targets, paths, abs_paths = {}, {}, {}, {}
   local sources = {}
@@ -455,6 +492,7 @@ local function get_targets(config, opt)
   end
 end
 
+---@return table
 function Config:get_code_model_info()
   local codemodel_targets = self:get_codemodel_targets()
   if codemodel_targets.code ~= Types.SUCCESS then
@@ -472,24 +510,29 @@ function Config:get_code_model_info()
   return result
 end
 
+---@return cmake.Result
 function Config:launch_targets()
   return get_targets(self, { has_all = false, only_executable = true })
 end
 
+---@return cmake.Result
 function Config:build_targets()
   return get_targets(self, { has_all = true, only_executable = false })
 end
 
+---@return cmake.Result
 function Config:launch_targets_with_sources()
   return get_targets(self, { has_all = false, only_executable = true, query_sources = true })
 end
 
 local _virtual_targets = nil
+
 function Config:update_targets()
   _virtual_targets =
     get_targets(self, { has_all = false, only_executable = false, query_sources = true })
 end
 
+---@return cmake.Result?
 function Config:build_targets_with_sources()
   if not _virtual_targets then
     self:update_targets()
@@ -497,6 +540,7 @@ function Config:build_targets_with_sources()
   return _virtual_targets
 end
 
+---Update build type from configure and build presets
 function Config:update_build_type()
   local presets_exists = self.base_settings.use_preset and Presets.exists(self.cwd)
   if not presets_exists then
@@ -546,6 +590,7 @@ function Config:update_build_type()
   end
 end
 
+---Update build target from build preset
 function Config:update_build_target()
   local presets_exists = self.base_settings.use_preset and Presets.exists(self.cwd)
   if not presets_exists then
@@ -578,6 +623,7 @@ function Config:update_build_target()
   end
 end
 
+---Update build directory from kits or configure preset
 function Config:update_build_directory()
   local kits_config = kits.parse(self.cmake_kits_path, self.cwd)
   if kits_config then

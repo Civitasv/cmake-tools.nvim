@@ -1,4 +1,5 @@
 local osys = require("cmake-tools.osys")
+---@class Const
 local const = {
   cmake_command = "cmake", -- this is used to specify cmake command path
   ctest_command = "ctest", -- this is used to specify ctest command path
