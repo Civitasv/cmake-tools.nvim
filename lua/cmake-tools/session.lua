@@ -9,6 +9,7 @@ local session = {
   },
 }
 
+---@return string
 local function get_cache_path()
   if osys.islinux then
     return session.dir.unix
@@ -23,6 +24,8 @@ local function get_cache_path()
   end
 end
 
+---@param cwd string neovim working directory
+---@return string
 local function get_current_path(cwd)
   local clean_path = cwd:gsub("/", "")
   clean_path = clean_path:gsub("\\", "")
@@ -37,6 +40,7 @@ local function init_cache()
   end
 end
 
+---@param cwd string neovim working directory
 local function init_session(cwd)
   init_cache()
 
@@ -49,6 +53,8 @@ local function init_session(cwd)
   end
 end
 
+---@param cwd string neovim working directory (used as cache key)
+---@return SerializedConfig raw session data, or empty table if none exists
 function session.load(cwd)
   local path = get_current_path(cwd)
 
@@ -60,64 +66,38 @@ function session.load(cwd)
   return {}
 end
 
+---@param config Config
+---@param old_config SerializedConfig
+---@return Config merged config with session state applied
 function session.update(config, old_config)
-  if next(old_config) ~= nil then
-    if old_config.build_directory and old_config.base_settings.build_dir then
-      config:update_build_dir(old_config.build_directory, old_config.base_settings.build_dir)
-    end
-    if old_config.build_type then
-      config.build_type = old_config.build_type
-    end
-    if old_config.variant then
-      config.variant = old_config.variant
-    end
-    if old_config.build_target then
-      config.build_target = old_config.build_target
-      if type(config.build_target) ~= "table" then -- Backwards compatibility (could be removed after a grace period) see PR!332
-        config.build_target = { config.build_target }
-      end
-    end
-    if old_config.launch_target then
-      config.launch_target = old_config.launch_target
-    end
-    if old_config.kit then
-      config.kit = old_config.kit
-    end
-    if old_config.configure_preset then
-      config.configure_preset = old_config.configure_preset
-    end
-    if old_config.build_preset then
-      config.build_preset = old_config.build_preset
-    end
-    if old_config.selected_test then
-      config.selected_test = old_config.selected_test
-    end
-    if old_config.env_script then
-      config.env_script = old_config.env_script
-    end
-    if old_config.cwd then
-      config.cwd = old_config.cwd
-    end
-
-    config.base_settings =
-      vim.tbl_deep_extend("keep", old_config.base_settings, config.base_settings)
-    config.target_settings = old_config.target_settings or {}
-
-    -- migrate old launch args to new config
-    if old_config.launch_args then
-      for k, v in pairs(old_config.launch_args) do
-        config.target_settings[k].args = v
-      end
-    end
+  if next(old_config) == nil then
+    return config
   end
+
+  local mt = getmetatable(config)
+  local build_directory = old_config.build_directory
+  local old_build_dir = old_config.base_settings and old_config.base_settings.build_dir
+  old_config.build_directory = nil
+
+  config = vim.tbl_deep_extend("force", config, old_config)
+  setmetatable(config, mt)
+
+  if build_directory and old_build_dir then
+    config:update_build_dir(build_directory, old_build_dir)
+  end
+
+  return config
 end
 
+---@param cwd string neovim working directory (used as cache key)
+---@param config Config current config to persist
 function session.save(cwd, config)
   init_session(cwd)
 
   local path = get_current_path(cwd)
   local file = io.open(path, "w")
 
+  ---@class SerializedConfig
   local serialized_object = {
     build_directory = config:build_directory_path(),
     build_type = config.build_type,
