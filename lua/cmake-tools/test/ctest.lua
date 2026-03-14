@@ -5,12 +5,19 @@ local ctest = {
   job = nil,
 }
 
-function ctest.list_all_tests(build_dir, callback)
+function ctest.list_all_tests(build_dir, preset_name, callback)
   local result = {}
+
+  local args
+  if preset_name then
+    args = { "--preset", preset_name, "--show-only=json-v1" }
+  else
+    args = { "--test-dir", build_dir, "--show-only=json-v1" }
+  end
 
   ctest.job = Job:new({
     command = "ctest",
-    args = { "--test-dir", build_dir, "--show-only=json-v1" },
+    args = args,
     on_exit = function(j, _, _)
       vim.schedule(function()
         local json_data = ""
@@ -63,22 +70,27 @@ function ctest.get_all_labels(tests)
   return labels
 end
 
-function ctest.run(ctest_command, test_name, build_dir, env, config, opt)
-  local cmd = ctest_command
+function ctest.run(ctest_command, env, config, opt)
   opt = opt or {}
 
-  local args = { "--test-dir", utils.transform_path(build_dir) }
-  if opt.label then
-    table.insert(args, "-L")
-    table.insert(args, opt.label)
-  elseif test_name then
-    table.insert(args, "-R")
-    table.insert(args, test_name)
+  local args = {}
+  if opt.preset then
+    vim.list_extend(args, { "--preset", opt.preset })
+  else
+    vim.list_extend(args, { "--test-dir", utils.transform_path(opt.build_dir) })
   end
+
+  if opt.label then
+    vim.list_extend(args, { "-L", opt.label })
+  elseif opt.test_name then
+    vim.list_extend(args, { "-R", opt.test_name })
+  end
+
   if opt.args then
     table.insert(args, opt.args)
   end
-  utils.run(cmd, config.env_script, env, args, config.cwd, config.runner, nil)
+
+  utils.run(ctest_command, config.env_script, env, args, config.cwd, config.runner, nil)
 end
 
 function ctest.stop()

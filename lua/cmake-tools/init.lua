@@ -838,6 +838,54 @@ function cmake.select_configure_preset(callback)
   end
 end
 
+function cmake.select_test_preset(callback)
+  callback = type(callback) == "function" and callback
+    or function(result)
+      if result:is_ok() then
+        cmake.generate({ bang = false, fargs = {} }, nil)
+      end
+    end
+  if check_active_job_and_notify(callback) then
+    return
+  end
+
+  if get_cmake_configuration_or_notify(callback) == nil then
+    return
+  end
+
+  -- if exists presets
+  if Presets.exists(config.cwd) then
+    local presets = Presets:parse(config.cwd)
+    local test_preset_names = presets:get_test_preset_names()
+    local format_preset_name = function(p_name)
+      local p = presets:get_test_preset(p_name)
+      return p.displayName or p.name
+    end
+    vim.ui.select(
+      test_preset_names,
+      {
+        prompt = "Select cmake test preset",
+        format_item = format_preset_name,
+      },
+      vim.schedule_wrap(function(choice)
+        if not choice then
+          callback(Result:new_error(Types.NOT_SELECT_PRESET, "No test preset selected"))
+          return
+        end
+        if config.test_preset ~= choice then
+          config.test_preset = choice
+        end
+        callback(Result:new(Types.SUCCESS, nil, nil))
+      end)
+    )
+  else
+    callback(
+      Result:new_error(Types.CANNOT_FIND_PRESETS_FILE, "Cannot find CMake[User]Presets file")
+    )
+    log.error("Cannot find CMake[User]Presets.json at Root (" .. config.cwd .. ") !!")
+  end
+end
+
 function cmake.select_build_preset(callback)
   callback = type(callback) == "function" and callback
     or function(result)
@@ -1173,7 +1221,17 @@ function cmake.run_test(opt, callback)
   end
 
   local env = environment.get_build_environment(config)
-  ctest.list_all_tests(config:build_directory_path(), function(all_tests)
+  local preset_name = nil
+  if config.test_preset and Presets.exists(config.cwd) then
+    local presets = Presets:parse(config.cwd)
+    local test_preset = presets:get_test_preset(config.test_preset)
+    if test_preset and test_preset:isValid() then
+      preset_name = config.test_preset
+    end
+  end
+  local build_dir = config:build_directory_path()
+
+  ctest.list_all_tests(build_dir, preset_name, function(all_tests)
     if #all_tests == 0 then
       return
     end
@@ -1211,27 +1269,18 @@ function cmake.run_test(opt, callback)
         return
       end
       local selected = items[idx]
-      if selected.type == Type.ALL then
-        ctest.run(const.ctest_command, nil, config:build_directory_path(), env, config, opt)
-      elseif selected.type == Type.LABEL then
-        ctest.run(
-          const.ctest_command,
-          nil,
-          config:build_directory_path(),
-          env,
-          config,
-          vim.tbl_extend("force", opt, { label = selected.label })
-        )
-      else
-        ctest.run(
-          const.ctest_command,
-          selected.name,
-          config:build_directory_path(),
-          env,
-          config,
-          opt
-        )
+      local run_opt = vim.tbl_extend("force", opt, {
+        preset = preset_name,
+        build_dir = build_dir,
+      })
+
+      if selected.type == Type.LABEL then
+        run_opt.label = selected.label
+      elseif selected.type == Type.TEST then
+        run_opt.test_name = selected.name
       end
+
+      ctest.run(const.ctest_command, env, config, run_opt)
     end)
   end)
 end
@@ -1365,6 +1414,10 @@ end
 
 function cmake.get_build_preset()
   return config.build_preset
+end
+
+function cmake.get_test_preset()
+  return config.test_preset
 end
 
 function cmake.get_build_directory()
