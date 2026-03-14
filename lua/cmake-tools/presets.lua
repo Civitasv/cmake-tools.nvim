@@ -1,6 +1,7 @@
 local Path = require("plenary.path")
 local Preset = require("cmake-tools.preset")
 local BuildPreset = require("cmake-tools.build_preset")
+local TestPreset = require("cmake-tools.test_preset")
 
 -- Extends (or creates a new) key-value pair in [dest] in which the
 -- key is [key] and the value is the resulting list table of merging
@@ -138,23 +139,26 @@ function Presets:parse(cwd)
     local function getPreset(name)
       return instance:get_configure_preset(name, { include_hidden = true, include_disabled = true })
     end
-    return Preset:new(cwd, obj, getPreset)
-  end
-
-  local function createBuildPreset(obj)
-    return BuildPreset:new(cwd, obj)
+    Preset:new(cwd, obj, getPreset)
   end
 
   for _, preset in ipairs(instance.configurePresets) do
-    preset = createPreset(preset)
+    createPreset(preset)
   end
+
+  instance.testPresets = instance.testPresets or {}
+  for _, test_preset in ipairs(instance.testPresets) do
+    TestPreset.new(cwd, test_preset)
+  end
+
+  table.insert(instance.testPresets, TestPreset.new(cwd, { name = "None", valid = false }))
 
   instance.buildPresets = instance.buildPresets or {}
   for _, build_preset in ipairs(instance.buildPresets) do
-    build_preset = createBuildPreset(build_preset)
+    BuildPreset:new(cwd, build_preset)
   end
 
-  table.insert(instance.buildPresets, createBuildPreset({ name = "None", valid = false }))
+  table.insert(instance.buildPresets, BuildPreset:new(cwd, { name = "None", valid = false }))
 
   return instance
 end
@@ -183,6 +187,10 @@ end
 
 function Presets:get_configure_preset_names(opts)
   return get_preset_names(self.configurePresets, opts)
+end
+
+function Presets:get_test_preset_names(opts)
+  return get_preset_names(self.testPresets, opts)
 end
 
 function Presets:get_build_preset_names(opts)
@@ -225,6 +233,10 @@ end
 
 function Presets:get_configure_preset(name, opts)
   return get_preset(name, self.configurePresets, opts)
+end
+
+function Presets:get_test_preset(name, opts)
+  return get_preset(name, self.testPresets, opts)
 end
 
 function Presets:get_build_preset(name, opts)
