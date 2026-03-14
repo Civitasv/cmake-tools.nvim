@@ -26,6 +26,7 @@ local Config = {
     generate_options = {},
     build_options = {},
     show_disabled_build_presets = true,
+    ctest_show_labels = false,
   }, -- general config
   target_settings = {}, -- target specific config
   executor = nil,
@@ -45,6 +46,7 @@ function Config:new(const)
   obj.base_settings.use_preset = const.cmake_use_preset
 
   obj.base_settings.show_disabled_build_presets = const.cmake_show_disabled_build_presets
+  obj.base_settings.ctest_show_labels = const.ctest_show_labels
 
   obj.executor = const.cmake_executor
   obj.runner = const.cmake_runner
@@ -146,6 +148,10 @@ end
 
 function Config:show_disabled_build_presets()
   return self.base_settings.show_disabled_build_presets
+end
+
+function Config:ctest_show_labels()
+  return self.base_settings.ctest_show_labels
 end
 
 function Config:generate_build_directory()

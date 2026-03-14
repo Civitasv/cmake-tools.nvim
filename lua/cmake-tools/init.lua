@@ -1177,17 +1177,55 @@ function cmake.run_test(opt, callback)
     if #all_tests == 0 then
       return
     end
-    table.insert(all_tests, 1, "all")
-    vim.ui.select(all_tests, { prompt = "select test to run" }, function(_, idx)
+
+    local items = {}
+    local display = {}
+
+    local Type = {
+      ALL = 1,
+      LABEL = 2,
+      TEST = 3,
+    }
+
+    table.insert(items, { type = Type.ALL })
+    table.insert(display, "all")
+
+    if config:ctest_show_labels() then
+      local labels = ctest.get_all_labels(all_tests)
+      for _, entry in ipairs(labels) do
+        table.insert(items, { type = Type.LABEL, label = entry.label })
+        table.insert(
+          display,
+          table.concat({ "[label]", entry.label, "(" .. entry.count, "tests)" }, " ")
+        )
+      end
+    end
+
+    for _, test in ipairs(all_tests) do
+      table.insert(items, { type = Type.TEST, name = test.name })
+      table.insert(display, test.name)
+    end
+
+    vim.ui.select(display, { prompt = "select test to run" }, function(_, idx)
       if not idx then
         return
       end
-      if idx == 1 then
+      local selected = items[idx]
+      if selected.type == Type.ALL then
         ctest.run(const.ctest_command, nil, config:build_directory_path(), env, config, opt)
+      elseif selected.type == Type.LABEL then
+        ctest.run(
+          const.ctest_command,
+          nil,
+          config:build_directory_path(),
+          env,
+          config,
+          vim.tbl_extend("force", opt, { label = selected.label })
+        )
       else
         ctest.run(
           const.ctest_command,
-          all_tests[idx],
+          selected.name,
           config:build_directory_path(),
           env,
           config,
