@@ -90,6 +90,9 @@ function session.update(config, old_config)
     if old_config.build_preset then
       config.build_preset = old_config.build_preset
     end
+    if old_config.selected_test then
+      config.selected_test = old_config.selected_test
+    end
     if old_config.env_script then
       config.env_script = old_config.env_script
     end
@@ -126,6 +129,7 @@ function session.save(config)
     configure_preset = config.configure_preset,
     env_script = config.env_script,
     build_preset = config.build_preset,
+    selected_test = config.selected_test,
     base_settings = config.base_settings,
     target_settings = config.target_settings,
     cwd = config.cwd,

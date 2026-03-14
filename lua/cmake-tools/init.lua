@@ -1264,10 +1264,22 @@ function cmake.run_test(opt, callback)
       table.insert(display, test.name)
     end
 
-    vim.ui.select(display, { prompt = "select test to run" }, function(_, idx)
+    -- Move last selected test to front of picker list
+    if config.selected_test then
+      for idx = 1, #display do
+        if display[idx] == config.selected_test then
+          table.insert(items, 1, table.remove(items, idx))
+          table.insert(display, 1, table.remove(display, idx))
+          break
+        end
+      end
+    end
+
+    vim.ui.select(display, { prompt = "select test to run" }, function(choice, idx)
       if not idx then
         return
       end
+      config.selected_test = choice
       local selected = items[idx]
       local run_opt = vim.tbl_extend("force", opt, {
         preset = preset_name,

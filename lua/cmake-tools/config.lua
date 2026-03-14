@@ -19,6 +19,7 @@ local Config = {
   configure_preset = nil,
   build_preset = nil,
   test_preset = nil,
+  selected_test = nil,
   base_settings = {
     env = {},
     build_dir = "",
