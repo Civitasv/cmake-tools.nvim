@@ -60,7 +60,6 @@
 
 ---@class CMakeTestPreset
 ---@field name string
----@field valid boolean
 ---@field hidden boolean?
 ---@field inherits string|string[]?
 ---@field condition CMakeCondition?
@@ -76,4 +75,3 @@
 ---@field filter CMakeTestPresetFilter?
 ---@field execution CMakeTestPresetExecution?
 ---@field disabled boolean?
----@field cwd string
