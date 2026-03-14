@@ -19,6 +19,7 @@ local Path = require("plenary.path")
 local ctest = require("cmake-tools.test.ctest")
 
 local config = Config:new(const)
+local cwd = vim.loop.cwd()
 
 local cmake = {}
 
@@ -39,10 +40,11 @@ function cmake.setup(values)
   require("cmake-tools.notification").setup(const.cmake_notifications)
 
   config = Config:new(const)
+  cwd = vim.loop.cwd()
 
   -- auto reload previous session
-  local old_config = _session.load()
-  _session.update(config, old_config)
+  local old_config = _session.load(cwd)
+  config = _session.update(config, old_config)
 
   local is_executor_installed = utils.get_executor(config.executor.name).is_installed()
   local is_runner_installed = utils.get_runner(config.runner.name).is_installed()
@@ -1588,6 +1590,7 @@ end
 local regenerate_id = nil
 local termclose_id = nil
 local vim_leave_pre_id = nil
+local cwd_changed_id = nil
 
 local group = vim.api.nvim_create_augroup("cmaketools", { clear = true })
 
@@ -1665,6 +1668,36 @@ function cmake.create_regenerate_on_save_autocmd()
 end
 
 function cmake.register_autocmd()
+  if cwd_changed_id then
+    vim.api.nvim_del_autocmd(cwd_changed_id)
+  end
+  cwd_changed_id = vim.api.nvim_create_autocmd("DirChanged", {
+    group = group,
+    callback = function()
+      local current_cwd = vim.loop.cwd()
+      if current_cwd == cwd then
+        return
+      end
+
+      -- Save session for the project we're leaving
+      _session.save(cwd, config)
+      cwd = current_cwd
+      config = Config:new(const)
+
+      if not cmake.is_cmake_project() then
+        return
+      end
+
+      -- Load and apply session for the new cwd
+      config = _session.update(config, _session.load(cwd))
+
+      -- Re-register cwd-dependent autocmds for the new project
+      cmake.create_regenerate_on_save_autocmd()
+      cmake.register_autocmd_provided_by_users()
+      cmake.register_scratch_buffer(config.executor.name, config.runner.name)
+    end,
+  })
+
   -- preload the autocmd if the following option is true. only saves cmakelists.txt files
   if cmake.is_cmake_project() then
     if termclose_id then
@@ -1679,7 +1712,7 @@ function cmake.register_autocmd()
     vim_leave_pre_id = vim.api.nvim_create_autocmd("VimLeavePre", {
       group = group,
       callback = function()
-        _session.save(config)
+        _session.save(cwd, config)
         vim.api.nvim_del_augroup_by_id(group)
       end,
     })
