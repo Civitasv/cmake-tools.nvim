@@ -91,8 +91,14 @@ local function decode(file, visited)
   return data
 end
 
+---@class Presets
+---@field configurePresets ConfigurePreset[]
+---@field buildPresets BuildPreset[]
+---@field testPresets TestPreset[]
 local Presets = {}
 
+---@param cwd string
+---@return Presets
 function Presets:parse(cwd)
   local function merge_presets(lhs, rhs)
     local ret = vim.deepcopy(lhs)
@@ -185,14 +191,20 @@ local function get_preset_names(presets, opts)
   return options
 end
 
+---@param opts table?
+---@return string[]
 function Presets:get_configure_preset_names(opts)
   return get_preset_names(self.configurePresets, opts)
 end
 
+---@param opts table?
+---@return string[]
 function Presets:get_test_preset_names(opts)
   return get_preset_names(self.testPresets, opts)
 end
 
+---@param opts table
+---@return string[]
 function Presets:get_build_preset_names(opts)
   local presets = get_preset_names(self.buildPresets, opts)
   local ret = {}
@@ -231,18 +243,29 @@ local function get_preset(name, tbl, opts)
   end
 end
 
+---@param name string
+---@param opts table?
+---@return ConfigurePreset?
 function Presets:get_configure_preset(name, opts)
   return get_preset(name, self.configurePresets, opts)
 end
 
+---@param name string
+---@param opts table?
+---@return TestPreset?
 function Presets:get_test_preset(name, opts)
   return get_preset(name, self.testPresets, opts)
 end
 
+---@param name string
+---@param opts table?
+---@return BuildPreset?
 function Presets:get_build_preset(name, opts)
   return get_preset(name, self.buildPresets, { include_hidden = true, include_disabled = true })
 end
 
+---@param cwd string
+---@return string?, string?
 function Presets.find_preset_files(cwd)
   local files = vim.fn.readdir(cwd)
   local presetFiles = {}
@@ -263,6 +286,8 @@ function Presets.find_preset_files(cwd)
   return unpack(presetFiles)
 end
 
+---@param cwd string
+---@return boolean
 function Presets.exists(cwd)
   return Presets.find_preset_files(cwd) ~= nil
 end
