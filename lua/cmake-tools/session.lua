@@ -108,6 +108,7 @@ function session.save(cwd, config)
     configure_preset = config.configure_preset,
     env_script = config.env_script,
     build_preset = config.build_preset,
+    test_preset = config.test_preset,
     selected_test = config.selected_test,
     base_settings = config.base_settings,
     target_settings = config.target_settings,
