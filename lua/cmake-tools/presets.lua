@@ -38,7 +38,7 @@ local function decode(file, visited)
 
   visited[abs_file_path] = true
 
-  local data = vim.fn.json_decode(file_path:read())
+  local data = vim.fn.json_decode(vim.fn.readfile(abs_file_path))
   if not data then
     error(string.format("Could not parse %s", abs_file_path))
   end
