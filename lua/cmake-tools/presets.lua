@@ -67,6 +67,10 @@ local function decode(file, visited)
   end
 
   for _, include_path in ipairs(includes) do
+    include_path = include_path:gsub("%$penv{(.-)}", function(envVar)
+      return vim.env[envVar] or ""
+    end)
+
     local included_file_str
     local f_path = Path:new(include_path)
     if f_path:is_absolute() then
