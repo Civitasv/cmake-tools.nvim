@@ -1,2 +1,5 @@
 .luarc.json
 *.DS_Store
+
+# Artifact from 'make test'
+deps/
