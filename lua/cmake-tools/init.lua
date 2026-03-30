@@ -1482,7 +1482,11 @@ function cmake.copy_compile_commands()
   end
 
   local source = config:build_directory_path() .. "/compile_commands.json"
-  local destination = const.cmake_compile_commands_options.target .. "/compile_commands.json"
+  local target = const.cmake_compile_commands_options.target
+  if type(target) == "function" then
+    target = target()
+  end
+  local destination = target .. "/compile_commands.json"
   utils.copyfile(source, destination)
 end
 
@@ -1492,7 +1496,11 @@ function cmake.compile_commands_from_soft_link()
   end
 
   local source = config:build_directory_path() .. "/compile_commands.json"
-  local destination = const.cmake_compile_commands_options.target .. "/compile_commands.json"
+  local target = const.cmake_compile_commands_options.target
+  if type(target) == "function" then
+    target = target()
+  end
+  local destination = target .. "/compile_commands.json"
   utils.softlink(source, destination)
 end
 
