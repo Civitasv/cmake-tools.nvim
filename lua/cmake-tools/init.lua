@@ -1890,7 +1890,10 @@ function cmake.register_dap_function()
 
       if opt.target then
         -- explicit target requested. use that instead of the configured one
-        return cmake.build({ target = opt.target }, function()
+        return cmake.build({ target = opt.target }, function(build_result)
+          if not build_result:is_ok() then
+            return
+          end
           local model = config:get_code_model_info()[opt.target]
           local result = config:get_launch_target_from_info(model)
           local dap_config = {
@@ -1932,7 +1935,10 @@ function cmake.register_dap_function()
           -- Build select launch target every time
           return cmake.build(
             { target = config.launch_target, fargs = utils.deepcopy(opt.fargs) },
-            function()
+            function(build_result)
+              if not build_result:is_ok() then
+                return
+              end
               result = config:get_launch_target()
               local target_path = result.data
               local dap_config = {
