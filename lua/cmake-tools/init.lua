@@ -257,7 +257,7 @@ function cmake.generate(opt, callback)
 
   local args = {
     "-B",
-    utils.transform_path(config:build_directory_path(), config.executor.name == "quickfix"),
+    config:build_directory_path(),
     "-S",
     ".",
   }
@@ -298,9 +298,7 @@ function cmake.clean(callback)
     return
   end
 
-  local path = Path:new(
-    utils.transform_path(config:build_directory_path(), config.executor.name == "quickfix")
-  )
+  local path = Path:new(config:build_directory_path())
   if not (path / "CMakeCache.txt"):exists() then
     -- no need to clean up as we do not have a cache
     return
@@ -407,7 +405,7 @@ function cmake.build(opt, callback)
   else
     args = {
       "--build",
-      utils.transform_path(config:build_directory_path(), config.executor.name == "quickfix"),
+      config:build_directory_path(),
     }
   end
 

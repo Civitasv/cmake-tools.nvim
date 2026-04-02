@@ -77,7 +77,7 @@ function ctest.run(ctest_command, env, config, opt)
   if opt.preset then
     vim.list_extend(args, { "--preset", opt.preset })
   else
-    vim.list_extend(args, { "--test-dir", utils.transform_path(opt.build_dir) })
+    vim.list_extend(args, { "--test-dir", opt.build_dir })
   end
 
   if opt.label then
