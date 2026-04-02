@@ -602,14 +602,14 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
     if osys.iswin32 and not is_windows_shell() then
       cwd = cwd:gsub("\\", "/")
     end
-    cwd = utils.transform_path(cwd)
+    cwd = utils.shell_quote(cwd)
     local envTbl = {}
     local fmtStr = osys.iswin32 and "set %s=%s" or "%s=%s"
     for k, v in pairs(env) do
       table.insert(envTbl, string.format(fmtStr, k, v))
     end
     env = table.concat(envTbl, " ")
-    args = table.concat(args, " ")
+    args = table.concat(vim.tbl_map(utils.shell_quote, args), " ")
 
     return cmd, env, args, cwd
   end
