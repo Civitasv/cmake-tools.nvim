@@ -1,6 +1,8 @@
 local osys = require("cmake-tools.osys")
 local utils = require("cmake-tools.utils")
 
+local default_config
+
 local session = {
   dir = {
     unix = vim.fn.expand("~") .. "/.cache/cmake_tools_nvim/",
@@ -89,6 +91,32 @@ function session.update(config, old_config)
   return config
 end
 
+---@param const Const
+function session.setup(const)
+  local Config = require("cmake-tools.config")
+  default_config = Config:new(const)
+end
+
+--- Build a table containing only the fields that differ from the defaults
+---@param current table
+---@param default table
+---@return table|nil dirty only modified fields, or nil if none
+local function get_dirty_fields(current, default)
+  local dirty = {}
+  for key, current_value in pairs(current) do
+    local default_value = default[key]
+    if type(current_value) == "table" and type(default_value) == "table" then
+      local dirty_sub = get_dirty_fields(current_value, default_value)
+      if dirty_sub then
+        dirty[key] = dirty_sub
+      end
+    elseif current_value ~= default_value then
+      dirty[key] = current_value
+    end
+  end
+  return next(dirty) and dirty or nil
+end
+
 ---@param cwd string neovim working directory (used as cache key)
 ---@param config Config current config to persist
 function session.save(cwd, config)
@@ -97,9 +125,14 @@ function session.save(cwd, config)
   local path = get_current_path(cwd)
   local file = io.open(path, "w")
 
+  local dirty_base_settings = get_dirty_fields(config.base_settings, default_config.base_settings)
+
+  local current_build_dir = config:build_directory_path()
+  local default_build_dir = default_config:build_directory_path()
+
   ---@class SerializedConfig
   local serialized_object = {
-    build_directory = config:build_directory_path(),
+    build_directory = (current_build_dir ~= default_build_dir) and current_build_dir or nil,
     build_type = config.build_type,
     variant = config.variant,
     build_target = config.build_target,
@@ -110,7 +143,7 @@ function session.save(cwd, config)
     build_preset = config.build_preset,
     test_preset = config.test_preset,
     selected_test = config.selected_test,
-    base_settings = config.base_settings,
+    base_settings = dirty_base_settings,
     target_settings = config.target_settings,
     cwd = config.cwd,
   }
