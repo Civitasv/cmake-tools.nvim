@@ -144,4 +144,27 @@ local const = {
   cmake_use_scratch_buffer = false, -- A buffer that shows what cmake-tools has done
 }
 
-return const
+local const_mt = {}
+const_mt.__index = const_mt
+
+--- Setup const with user-provided values
+---@param values Const user configuration overrides
+function const_mt.setup(values)
+  local merged = vim.tbl_deep_extend("force", const, values)
+  for k, v in pairs(merged) do
+    const[k] = v
+  end
+
+  const.cmake_executor.opts = vim.tbl_deep_extend(
+    "force",
+    const.cmake_executor.default_opts[const.cmake_executor.name],
+    const.cmake_executor.opts or {}
+  )
+  const.cmake_runner.opts = vim.tbl_deep_extend(
+    "force",
+    const.cmake_runner.default_opts[const.cmake_runner.name],
+    const.cmake_runner.opts or {}
+  )
+end
+
+return setmetatable(const, const_mt)

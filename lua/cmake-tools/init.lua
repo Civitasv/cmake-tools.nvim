@@ -18,8 +18,8 @@ local Path = require("plenary.path")
 
 local ctest = require("cmake-tools.test.ctest")
 
-local config = Config:new(const)
-local cwd = vim.loop.cwd()
+local config
+local cwd
 
 local cmake = {}
 
@@ -30,17 +30,8 @@ local cmake = {}
 --- Setup cmake-tools
 ---@param values table
 function cmake.setup(values)
-  const = vim.tbl_deep_extend("force", const, values)
-  const.cmake_executor.opts = vim.tbl_deep_extend(
-    "force",
-    const.cmake_executor.default_opts[const.cmake_executor.name],
-    const.cmake_executor.opts or {}
-  )
-  const.cmake_runner.opts = vim.tbl_deep_extend(
-    "force",
-    const.cmake_runner.default_opts[const.cmake_runner.name],
-    const.cmake_runner.opts or {}
-  )
+  const.setup(values)
+  _session.setup(const)
 
   require("cmake-tools.notification").setup(const.cmake_notifications)
 
