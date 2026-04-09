@@ -86,27 +86,40 @@ end
 function utils.copyfile(src, target)
   if utils.file_exists(src) then
     -- if we don't always use terminal
-    local cmd = "exec "
-      .. "'!cmake -E copy "
-      .. utils.shell_quote(src)
-      .. " "
-      .. utils.shell_quote(target)
-      .. "'"
+    local cmd = table.concat({
+      "exec",
+      "'!cmake -E copy",
+      utils.shell_quote(src),
+      utils.shell_quote(target) .. "'",
+    }, " ")
     vim.cmd(cmd)
   end
 end
 
 function utils.softlink(src, target)
-  if utils.file_exists(src) and not utils.file_exists(target) then
-    -- if we don't always use terminal
-    local cmd = "exec "
-      .. "'!cmake -E create_symlink "
-      .. utils.shell_quote(src)
-      .. " "
-      .. utils.shell_quote(target)
-      .. "'"
-    vim.cmd(cmd)
+  if not utils.file_exists(src) then
+    return
   end
+
+  local stat = vim.loop.fs_lstat(target)
+  if stat then
+    if stat.type == "link" then
+      if vim.loop.fs_readlink(target) == src then
+        return
+      end
+    else
+      -- target is a regular file, remove it first
+      os.remove(target)
+    end
+  end
+
+  local cmd = table.concat({
+    "exec",
+    "'!cmake -E create_symlink",
+    utils.shell_quote(src),
+    utils.shell_quote(target) .. "'",
+  }, " ")
+  vim.cmd(cmd)
 end
 
 function utils.shell_quote(str)
