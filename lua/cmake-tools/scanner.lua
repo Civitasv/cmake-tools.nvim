@@ -2,19 +2,17 @@ local scanner = {}
 
 --Helper functions
 local function execute_command(cmd)
-  local handle = io.popen(cmd .. " 2>&1")
-  if handle == nil then
-    return false, -1, ""
+  print(cmd)
+
+  if cmd == nil then
+    return false, -1, nil
   end
-  local result = handle:read("*a")
+  local result = vim.system(cmd, { text = true }):wait()
   if result == nil then
-    result = ""
+    return false, -1, nil
   end
-  local success, exit_code = handle:close()
-  if success == nil then
-    return false, exit_code or -1, result
-  end
-  return true, 0, result
+  print(result.stdout)
+  return true, result.code, result.stdout
 end
 
 local function split_path(path_env)
@@ -27,7 +25,7 @@ local function split_path(path_env)
 end
 
 local function get_gcc_version(gcc_path)
-  local success, exit_code, output = execute_command('"' .. gcc_path .. '" --version')
+  local success, exit_code, output = execute_command({ "gcc", "--version" })
   if output == nil then
     return nil
   end
@@ -38,7 +36,8 @@ local function get_gcc_version(gcc_path)
 end
 
 local function get_clang_version(clang_path)
-  local success, exit_code, output = execute_command('"' .. clang_path .. '" --version ')
+  local success, exit_code, output = execute_command({ "clang", "--version" })
+
   if output == nil then
     return nil
   end
