@@ -1,178 +1,193 @@
+local constants = require("cmake-tools.const")
 local scanner = {}
 
---Helper functions
-local function execute_command(cmd)
-  print(cmd)
+local C_COMPILERS = { "gcc", "clang" }
+local TOOLCHAIN_SEARCH_PATHS = {
+  vim.fn.expand("~/.cmake/toolchains"),
+  "/usr/share/cmake/toolchains",
+  "/usr/local/share/cmake/toolchains",
+  "/etc/cmake/toolchains",
+}
 
-  if cmd == nil then
-    return false, -1, nil
+local function toolchain_candidates(prefix)
+  if prefix == "" then
+    return {}
   end
-  local result = vim.system(cmd, { text = true }):wait()
-  if result == nil then
-    return false, -1, nil
-  end
-  print(result.stdout)
-  return true, result.code, result.stdout
+
+  -- strip trailing dash for the filename
+  local triplet = prefix:gsub("%-$", "")
+
+  return {
+    triplet .. ".cmake",
+    triplet .. "-toolchain.cmake",
+    "toolchain-" .. triplet .. ".cmake",
+  }
 end
 
-local function split_path(path_env)
-  local paths = {}
-  local sep = package.config:sub(1, 1) == "\\" and ";" or ":"
-  for path in string.gmatch(path_env, "([^" .. sep .. "]+)") do
-    table.insert(paths, path)
-  end
-  return paths
-end
-
-local function get_gcc_version(gcc_path)
-  local success, exit_code, output = execute_command({ "gcc", "--version" })
-  if output == nil then
+local function find_toolchain_file(prefix)
+  local candidates = toolchain_candidates(prefix)
+  if #candidates == 0 then
     return nil
   end
-  -- Try multiple patterns to match different gcc output formats
-  local version = output:match("gcc[%s%a]([%d%.]+)") -- "gcc (GCC) 15.2.1"
-    or output:match("gcc version ([%d%.]+)") -- "gcc version 11.4.0"
+
+  for _, search_dir in ipairs(TOOLCHAIN_SEARCH_PATHS) do
+    for _, filename in ipairs(candidates) do
+      local full_path = search_dir .. "/" .. filename
+      if vim.fn.filereadable(full_path) == 1 then
+        return full_path
+      end
+    end
+  end
+
+  return nil
+end
+local function match_c_compiler(exe)
+  for _, c_name in ipairs(C_COMPILERS) do
+    local prefix = exe:match("^(.+%-)" .. c_name .. "$")
+    if prefix then
+      return prefix, c_name
+    end
+    -- Without prefix: "gcc"
+    if exe == c_name then
+      return "", c_name
+    end
+  end
+  return nil, nil
+end
+local function derive_toolchain(prefix, c_name)
+  local map = {
+    gcc = { cxx = "g++", linker = "ld" },
+    clang = { cxx = "clang++", linker = "lld" },
+  }
+  local companions = map[c_name]
+  if not companions then
+    return nil
+  end
+
+  return {
+    c = (prefix or "") .. c_name,
+    cxx = (prefix or "") .. companions.cxx,
+    linker = (prefix or "") .. companions.linker,
+    -- preserve prefix so we can use it in the kit name
+    prefix = prefix or "",
+  }
+end
+
+local function get_path_executables()
+  local path_dirs = vim.split(vim.env.PATH or "", ":", { plain = true })
+  local executables = {}
+  for _, dir in ipairs(path_dirs) do
+    local entries = vim.fn.readdir(dir) -- returns {} on error / missing dir
+    for _, entry in ipairs(entries) do
+      local full = dir .. "/" .. entry
+      if vim.fn.executable(full) == 1 then
+        executables[entry] = true -- deduplicate by name
+      end
+    end
+  end
+  return executables
+end
+local function discover_toolchains(executables)
+  local seen = {}
+  local chains = {}
+
+  for exe in pairs(executables) do
+    local prefix, c_name = match_c_compiler(exe)
+    if c_name then
+      local key = prefix .. c_name
+      if not seen[key] then
+        seen[key] = true
+        local chain = derive_toolchain(prefix, c_name)
+        if chain then
+          table.insert(chains, chain)
+        end
+      end
+    end
+  end
+  vim.notify("Discovered toolchains: " .. vim.inspect(chains))
+  return chains
+end
+
+local function check_executable_exists(compiler)
+  if not compiler or compiler == "" then
+    return nil
+  end
+  local exists = vim.fn.executable(compiler) == 1
+  return exists
+end
+
+local function get_executable_path(compiler)
+  if not compiler or compiler == "" then
+    return nil
+  end
+  local path = vim.fn.exepath(compiler)
+  return path
+end
+
+local function get_compiler_version(compiler)
+  if not compiler or compiler == "" then
+    return nil
+  end
+  local version_output = vim.fn.system({ compiler, "--version" })
+  local version = version_output:match("%d+%.%d+%.%d+")
   return version
-end
-
-local function get_clang_version(clang_path)
-  local success, exit_code, output = execute_command({ "clang", "--version" })
-
-  if output == nil then
-    return nil
-  end
-  local version_line = output:match("clang version ([%d%.]+)")
-  return version_line
-end
-
-local function find_compiler_pair(dir, c_compiler)
-  local base_name = c_compiler:match("([^/\\]+)$")
-  local cxx_name
-  if base_name:match("gcc") then
-    cxx_name = base_name:gsub("gcc", "g++")
-  elseif base_name:match("clang") then
-    cxx_name = base_name:gsub("clang", "clang++")
-  else
-    return nil
-  end
-  local cxx_path = dir .. "/" .. cxx_name
-  if vim.fn.filereadable(cxx_path) then
-    return cxx_path
-  end
-  return nil
-end
-
-local function find_linker_pair(dir, linker_name)
-  if not linker_name then
-    return nil
-  end
-  local linker_path = dir .. "/" .. linker_name
-  if vim.fn.filereadable(linker_path) then
-    return linker_path
-  end
-  return nil
-end
-
-local function get_toolchain_file()
-  local toolchainFile = os.getenv("CMAKE_TOOLCHAIN_FILE")
-  if toolchainFile and vim.fn.filereadable(toolchainFile) then
-    return toolchainFile
-  end
-  return nil
-end
-
-local function ensure_directory(path)
-  if not path then
-    vim.notify("Path is empty", vim.log.levels.ERROR)
-    return
-  end
-  local pattern = "(.*/)"
-  local dir = path:match(pattern)
-  if dir then
-    vim.fn.mkdir(dir, "p")
-  end
-end
-
-local function save_kits(kits, filepath)
-  ensure_directory(filepath)
-  local file = io.open(filepath, "w")
-  if not file then
-    vim.notify("Failed to open file for writing: " .. filepath, vim.log.levels.ERROR)
-    return false
-  end
-  if not kits then
-    vim.notify("Can not encode data to json because it is nil", vim.log.levels.ERROR)
-    return false
-  end
-  local json_content = vim.json.encode(kits)
-  file:write(json_content)
-  file:close()
-  return true
 end
 
 -- Main function to scan for kits
 function scanner.scan_for_kits()
+  vim.notify("Scanning for kits…")
+
+  local executables = get_path_executables()
+  local toolchains = discover_toolchains(executables)
   local kits = {}
-  local const = require("cmake-tools.const")
-  local path_env = os.getenv("PATH") or ""
-  local paths = split_path(path_env)
 
-  for _, dir in ipairs(paths) do
-    local linker_path = find_linker_pair(dir, "lld")
-    if linker_path == nil then
-      linker_path = find_linker_pair(dir, "ld")
-    end
-    local toolchainFile = get_toolchain_file()
-    local gcc_path = dir .. "/gcc"
-    if vim.fn.filereadable(gcc_path) then
-      local gcc_version = get_gcc_version(gcc_path)
-      local gxx_path = find_compiler_pair(dir, gcc_path)
-      if gxx_path then
-        local kit = {
-          name = "GCC-" .. (gcc_version or "unknown"),
-          compilers = {
-            C = gcc_path,
-            CXX = gxx_path,
-          },
-          linker = (linker_path or ""),
-          toolchainFile = (toolchainFile or ""),
-        }
-        table.insert(kits, kit)
+  for _, tc in ipairs(toolchains) do
+    local has_c = check_executable_exists(tc.c)
+    local has_cxx = check_executable_exists(tc.cxx)
+
+    if has_c then
+      local kit = { compilers = {} }
+
+      local version = get_compiler_version(tc.c)
+      local prefix_label = tc.prefix ~= "" and (tc.prefix:gsub("%-$", "") .. " ") or ""
+      kit.name = prefix_label .. tc.c .. " " .. (version or "Unknown")
+
+      kit.compilers.C = get_executable_path(tc.c)
+
+      if has_cxx then
+        kit.compilers.CXX = get_executable_path(tc.cxx)
+      else
+        vim.notify("No C++ compiler found for: " .. tc.c)
       end
-    end
 
-    local clang_path = dir .. "/clang"
-    if vim.fn.filereadable(clang_path) then
-      local clang_version = get_clang_version(clang_path)
-      local clangxx_path = find_compiler_pair(dir, clang_path)
-      if clangxx_path then
-        local kit = {
-          name = "Clang-" .. (clang_version or "unknown"),
-          compilers = {
-            C = clang_path,
-            CXX = clangxx_path,
-          },
-          linker = (linker_path or ""),
-          toolchainFile = (toolchainFile or ""),
-        }
-        table.insert(kits, kit)
+      if check_executable_exists(tc.linker) then
+        kit.linker = get_executable_path(tc.linker)
+      else
+        vim.notify("No linker found for: " .. tc.c)
       end
+      local toolchain_file = find_toolchain_file(tc.prefix)
+      if toolchain_file then
+        kit.toolchainFile = toolchain_file
+        vim.notify("Toolchain file found: " .. toolchain_file)
+      else
+        if tc.prefix ~= "" then
+          vim.notify("No toolchain file found for prefix: " .. tc.prefix, vim.log.levels.WARN)
+        end
+      end
+
+      table.insert(kits, kit)
+    else
+      vim.notify("Skipping toolchain – C compiler not found: " .. tc.c)
     end
   end
-
-  if #kits == 0 then
-    vim.notify("No compilers found in PATH.", vim.log.levels.WARN)
-    return {}
+  local json_kits = vim.fn.json_encode(kits)
+  if json_kits then
+    vim.fn.writefile({ json_kits }, constants.cmake_kits_path)
+    vim.notify("Kits saved to: " .. constants.cmake_kits_path)
+  else
+    vim.notify("Failed to encode kits to JSON.", vim.log.levels.ERROR)
   end
-  vim.notify("Found kits", vim.log.levels.INFO)
-  if const.cmake_kits_path == nil then
-    vim.notify(
-      "local const variable is nil, it seems that the required module could not be loaded",
-      vim.log.levels.ERROR
-    )
-    return {}
-  end
-  save_kits(kits, const.cmake_kits_path)
+  vim.notify("Scanning complete.")
   return kits
 end
 
