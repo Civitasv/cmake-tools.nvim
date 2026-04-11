@@ -1,7 +1,9 @@
 local osys = require("cmake-tools.osys")
+---@class Const
 local const = {
   cmake_command = "cmake", -- this is used to specify cmake command path
   ctest_command = "ctest", -- this is used to specify ctest command path
+  ctest_show_labels = false, -- show test labels in the test picker (when true, labels from ctest are shown as filterable entries)
   cmake_use_preset = true, -- when `false`, this is used to define if the `--preset` option should be use on cmake commands
   cmake_regenerate_on_save = true, -- auto generate when save CMakeLists.txt
   cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" }, -- this will be passed when invoke `CMakeGenerate`
@@ -19,7 +21,8 @@ local const = {
     -- copy:      this will automatically copy compile commands file to target
     -- lsp:       this will automatically set compile commands file location using lsp
     -- none:      this will make this option ignored
-    target = vim.loop.cwd(), -- path to directory, this is used only if action == "soft_link" or action == "copy"
+    ---@type string|fun(): string
+    target = vim.loop.cwd, -- path or function returning path to directory, this is used only if action == "soft_link" or action == "copy"
   },
   cmake_kits_path = nil, -- this is used to specify global cmake kits path, see CMakeKits for detailed usage
   cmake_variants_message = {
@@ -56,9 +59,7 @@ local const = {
       },
       overseer = {
         new_task_opts = {
-          strategy = {
-            "terminal",
-          },
+          strategy = nil, -- use overseer's default for this
         }, -- options to pass into the `overseer.new_task` command
         on_new_task = function(task)
           require("overseer").open({ enter = false, direction = "right" })
@@ -106,11 +107,11 @@ local const = {
       },
       overseer = {
         new_task_opts = {
-          strategy = {
-            "terminal",
-          },
+          strategy = nil,
         }, -- options to pass into the `overseer.new_task` command
-        on_new_task = function(task) end, -- a function that gets overseer.Task when it is created, before calling `task:start`
+        on_new_task = function(task)
+          require("overseer").open({ enter = false, direction = "right" })
+        end, -- a function that gets overseer.Task when it is created, before calling `task:start`
       },
       vimux = {},
       terminal = {

@@ -520,8 +520,20 @@ local is_fish_shell = function()
   return string.find(shell, "fish")
 end
 
+local is_cmd = function()
+  return string.find(vim.o.shell, "cmd") ~= nil
+end
+
 local is_power_shell = function()
-  return vim.o.shell == "pwsh" or vim.o.shell == "powershell"
+  return string.find(vim.o.shell, "powershell") ~= nil
+end
+
+local is_pwsh = function()
+  return string.find(vim.o.shell, "pwsh") ~= nil
+end
+
+local is_windows_shell = function()
+  return (is_pwsh() or is_cmd() or is_power_shell())
 end
 
 ---creates command that handles all of our post command stuff for on_exit handling
@@ -530,21 +542,31 @@ local get_command_handling_on_exit = function()
   local exit_code_file_path = get_last_exit_code_file_path()
   local lock_file_path = get_lock_file_path()
 
+  if osys.iswin32 then
+    if is_power_shell() or is_pwsh() then
+      exit_code_file_path = exit_code_file_path:gsub("/", "\\")
+      lock_file_path = lock_file_path:gsub("/", "\\")
+      return "`$ec = `$LASTEXITCODE; Set-Content -Path "
+        .. exit_code_file_path
+        .. " -Value `$ec; Remove-Item "
+        .. lock_file_path
+    elseif is_cmd() then
+      exit_code_file_path = exit_code_file_path:gsub("/", "\\")
+      lock_file_path = lock_file_path:gsub("/", "\\")
+      return "echo !errorlevel! > " .. exit_code_file_path .. " && del /Q " .. lock_file_path
+    else
+      -- bash-like on windows
+      exit_code_file_path = exit_code_file_path:gsub("\\", "/")
+      lock_file_path = lock_file_path:gsub("\\", "/")
+    end
+  end
+
   local exit_op = "$?"
   local escape_rm = " \\rm -f "
   local and_op = " &&"
-
   if is_fish_shell() then
     exit_op = "$status"
     escape_rm = " command rm -f "
-  end
-
-  if osys.iswin32 then
-    exit_op = is_power_shell() and "$LASTEXITCODE" or "%errorlevel%"
-    and_op = is_power_shell() and " -and" or " &&"
-    escape_rm = is_power_shell() and " Remove-Item " or " del /Q "
-    exit_code_file_path = exit_code_file_path:gsub("/", "\\")
-    lock_file_path = lock_file_path:gsub("/", "\\")
   end
 
   return "echo " .. exit_op .. " > " .. exit_code_file_path .. and_op .. escape_rm .. lock_file_path
@@ -558,7 +580,9 @@ local get_last_exit_code = function()
     print("Could not find last tmp file conaining exit code")
     return nil
   end
-  return tonumber(file:read("*n"))
+  local code = tonumber(file:read("*n"))
+  file:close()
+  return code
 end
 
 ---
@@ -574,15 +598,18 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   local function prepare_run(cmd, env, args, cwd)
     -- Escape all special pattern characters
     local escapedCwd = cwd:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
-    cmd = cmd:gsub(escapedCwd, osys.iswin32 and ".\\" or "./")
-    cwd = utils.transform_path(cwd)
+    cmd = cmd:gsub(escapedCwd, (osys.iswin32 and is_windows_shell()) and ".\\" or "./")
+    if osys.iswin32 and not is_windows_shell() then
+      cwd = cwd:gsub("\\", "/")
+    end
+    cwd = utils.shell_quote(cwd)
     local envTbl = {}
     local fmtStr = osys.iswin32 and "set %s=%s" or "%s=%s"
     for k, v in pairs(env) do
       table.insert(envTbl, string.format(fmtStr, k, v))
     end
     env = table.concat(envTbl, " ")
-    args = table.concat(args, " ")
+    args = table.concat(vim.tbl_map(utils.shell_quote, args), " ")
 
     return cmd, env, args, cwd
   end
@@ -597,11 +624,6 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   -- Reposition the terminal buffer, before sending commands
   local final_win_id = _terminal.reposition(opts)
 
-  local chain_symb = (osys.iswin32 and "& " or "; ")
-  if is_power_shell() then
-    chain_symb = "; "
-  end
-  local exit_handler = chain_symb .. get_command_handling_on_exit()
   local final_cmd, final_env, final_args, build_dir = prepare_run(cmd, env, args, cwd)
   local full_cmd
   local call_update
@@ -617,20 +639,36 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
   }
 
   if not opts.use_shell_alias then
-    full_cmd = (osys.iswin32 and 'cmd /C "' or "")
+    local shell_prefix, cd_sep, shell_suffix, chain_symb = "", " && ", "", "; "
+    if osys.iswin32 and is_windows_shell() then
+      if is_pwsh() or is_power_shell() then
+        shell_prefix = vim.o.shell .. ' -Command "'
+        cd_sep = is_pwsh() and " && " or "; " -- 5.1 vs pwsh 7+
+      else
+        shell_prefix = 'cmd /V:ON /C "'
+        cd_sep = " && "
+        chain_symb = " & "
+      end
+      shell_suffix = '"'
+    end
+
+    local exit_handler = chain_symb .. get_command_handling_on_exit()
+
+    full_cmd = shell_prefix
       .. "cd "
       .. build_dir
-      .. " && "
+      .. cd_sep
       .. (final_env .. (final_env ~= "" and " " or ""))
       .. final_cmd
       .. ((final_args ~= "" and " " or "") .. final_args)
       .. exit_handler
-      .. (osys.iswin32 and '"' or "")
+      .. shell_suffix
   else
-    if osys.iswin32 then
+    if osys.iswin32 and is_windows_shell() then
       error("using a shell alias is currently not suported for windows")
     end
 
+    local exit_handler = "; " .. get_command_handling_on_exit()
     local alias_name = "cmake_run_target"
     local update_function = "cmake_update_target"
 

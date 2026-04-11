@@ -1,0 +1,21 @@
+---@meta _
+
+---@class CMakeBuildPreset
+---@field name string
+---@field hidden boolean?
+---@field inherits string|string[]?
+---@field condition CMakeCondition?
+---@field vendor table?
+---@field displayName string?
+---@field description string?
+---@field environment table<string, string?>?
+---@field configurePreset string?
+---@field inheritConfigureEnvironment boolean?
+---@field jobs integer?
+---@field targets string|string[]?
+---@field configuration string?
+---@field cleanFirst boolean?
+---@field resolvePackageReferences ("on"|"off"|"only")?
+---@field verbose boolean?
+---@field nativeToolOptions string[]?
+---@field disabled boolean?
