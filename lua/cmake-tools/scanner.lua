@@ -14,7 +14,6 @@ local function toolchain_candidates(prefix)
     return {}
   end
 
-  -- strip trailing dash for the filename
   local triplet = prefix:gsub("%-$", "")
 
   return {
@@ -47,7 +46,6 @@ local function match_c_compiler(exe)
     if prefix then
       return prefix, c_name
     end
-    -- Without prefix: "gcc"
     if exe == c_name then
       return "", c_name
     end
@@ -68,7 +66,6 @@ local function derive_toolchain(prefix, c_name)
     c = (prefix or "") .. c_name,
     cxx = (prefix or "") .. companions.cxx,
     linker = (prefix or "") .. companions.linker,
-    -- preserve prefix so we can use it in the kit name
     prefix = prefix or "",
   }
 end
@@ -77,11 +74,11 @@ local function get_path_executables()
   local path_dirs = vim.split(vim.env.PATH or "", ":", { plain = true })
   local executables = {}
   for _, dir in ipairs(path_dirs) do
-    local entries = vim.fn.readdir(dir) -- returns {} on error / missing dir
+    local entries = vim.fn.readdir(dir)
     for _, entry in ipairs(entries) do
       local full = dir .. "/" .. entry
       if vim.fn.executable(full) == 1 then
-        executables[entry] = true -- deduplicate by name
+        executables[entry] = true
       end
     end
   end
@@ -104,7 +101,6 @@ local function discover_toolchains(executables)
       end
     end
   end
-  vim.notify("Discovered toolchains: " .. vim.inspect(chains))
   return chains
 end
 
@@ -156,14 +152,10 @@ function scanner.scan_for_kits()
 
       if has_cxx then
         kit.compilers.CXX = get_executable_path(tc.cxx)
-      else
-        vim.notify("No C++ compiler found for: " .. tc.c)
       end
 
       if check_executable_exists(tc.linker) then
         kit.linker = get_executable_path(tc.linker)
-      else
-        vim.notify("No linker found for: " .. tc.c)
       end
       local toolchain_file = find_toolchain_file(tc.prefix)
       if toolchain_file then
@@ -174,10 +166,7 @@ function scanner.scan_for_kits()
           vim.notify("No toolchain file found for prefix: " .. tc.prefix, vim.log.levels.WARN)
         end
       end
-
       table.insert(kits, kit)
-    else
-      vim.notify("Skipping toolchain – C compiler not found: " .. tc.c)
     end
   end
   local json_kits = vim.fn.json_encode(kits)
