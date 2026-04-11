@@ -774,6 +774,10 @@ function cmake.select_build_type(callback)
   )
 end
 
+function cmake.scan_for_kits()
+  scanner.scan_for_kits()
+end
+
 ---@param callback? fun(result: cmake.Result)
 function cmake.select_kit(callback)
   callback = type(callback) == "function" and callback
