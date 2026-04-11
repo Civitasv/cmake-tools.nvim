@@ -169,6 +169,9 @@ function scanner.scan_for_kits()
       table.insert(kits, kit)
     end
   end
+  if vim.fn.isdirectory(constants.cmake_config_path) == 0 then
+    vim.fn.mkdir(constants.cmake_config_path, "p")
+  end
   local json_kits = vim.fn.json_encode(kits)
   if json_kits then
     vim.fn.writefile({ json_kits }, constants.cmake_kits_path)
