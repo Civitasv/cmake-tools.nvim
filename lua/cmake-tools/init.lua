@@ -66,6 +66,9 @@ function cmake.setup(values)
   cmake.register_autocmd()
   cmake.register_autocmd_provided_by_users()
   cmake.register_scratch_buffer(config.executor.name, config.runner.name)
+  if not vim.uv.fs_stat(const.cmake_kits_path) then
+    scanner.scan_for_kits()
+  end
 end
 
 ---@param callback fun(result: cmake.Result)
@@ -215,10 +218,7 @@ function cmake.generate(opt, callback)
 
   -- if exists cmake-kits.json, kit is used to set
   -- environmental variables and args.
-  local kits_config = kits.parse(const.cmake_kits_path, config.cwd)
-  if not kits_config then
-    kits_config = scanner.scan_for_kits()
-  end
+  local kits_config = kits.parse(const.cmake_config_path, config.cwd)
   if kits_config and not config.kit then
     return cmake.select_kit(function(result)
       if not result:is_ok() then
