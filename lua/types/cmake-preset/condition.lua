@@ -1,0 +1,12 @@
+---@meta _
+
+---@class CMakeCondition
+---@field type "const"|"equals"|"notEquals"|"inList"|"notInList"|"matches"|"notMatches"|"anyOf"|"allOf"|"not"
+---@field value boolean?
+---@field lhs string?
+---@field rhs string?
+---@field string string?
+---@field list string[]?
+---@field regex string?
+---@field conditions CMakeCondition[]?
+---@field condition CMakeCondition?

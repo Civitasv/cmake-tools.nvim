@@ -2,6 +2,7 @@ local Path = require("plenary.path")
 local osys = require("cmake-tools.osys")
 local utils = require("cmake-tools.utils")
 
+---@class ConfigurePreset: CMakeConfigurePreset
 local Preset = {}
 
 local function expandMacro(self, str)
@@ -255,6 +256,10 @@ local function parseTree(self, get_preset)
   end
 end
 
+---@param cwd string
+---@param obj CMakeConfigurePreset?
+---@param get_preset fun(name: string): CMakeConfigurePreset?
+---@return ConfigurePreset
 function Preset:new(cwd, obj, get_preset)
   local instance = setmetatable(obj or {}, self)
   instance.__index = self
@@ -271,10 +276,12 @@ function Preset:new(cwd, obj, get_preset)
   return instance
 end
 
+---@return string
 function Preset:get_build_type()
   return self.cacheVariables and self.cacheVariables.CMAKE_BUILD_TYPE or "Debug"
 end
 
+---@return string[]|nil
 function Preset:get_build_configuration_types()
   local generator = self.generator
   local multi_configuration_generator = { "Visual Studio", "Xcode", "Ninja Multi-Config" }

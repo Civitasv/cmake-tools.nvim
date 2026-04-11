@@ -224,19 +224,14 @@ function variants.build_arglist(variant, cwd)
   local function build_simple(build_type)
     return { "-D", "CMAKE_BUILD_TYPE:STRING=" .. build_type }
   end
-
-  -- start building arglist
-
-  -- check if the chosen variants is one of the defaults
-  for _, defaultvar in pairs(DEFAULT_VARIANTS) do
-    if variant == defaultvar then
-      return build_simple(variant) -- if so, build the simple arglist and return
-    end
-  end
-
-  -- otherwise, find the config file to parse
   local config = variants.parse(cwd)
   if not config then
+    -- check if the chosen variants is one of the defaults
+    for _, defaultvar in pairs(DEFAULT_VARIANTS) do
+      if variant == defaultvar then
+        return build_simple(variant) -- if so, build the simple arglist and return
+      end
+    end
     return {} -- silent error (empty arglist) if no config file found
   end
 

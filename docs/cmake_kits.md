@@ -51,5 +51,4 @@ You can also define general global kits in somewhere. To do this, you will have 
 1. Kits scan is not supported.
 2. Option `visualStudio` and `visualStudioArchitecture` is not supported.
 3. Option `preferredGenerator` is not supported.
-4. Option `cmakeSettings` is not supported.
-5. Option `environmentSetupScript` is only supported in the experimental terminal mode.
+4. Option `environmentSetupScript` is only supported in the experimental terminal mode.

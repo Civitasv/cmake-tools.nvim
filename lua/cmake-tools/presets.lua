@@ -1,6 +1,7 @@
 local Path = require("plenary.path")
 local Preset = require("cmake-tools.preset")
 local BuildPreset = require("cmake-tools.build_preset")
+local TestPreset = require("cmake-tools.test_preset")
 
 -- Extends (or creates a new) key-value pair in [dest] in which the
 -- key is [key] and the value is the resulting list table of merging
@@ -13,62 +14,91 @@ local function merge_table_list_by_key(dst, src, key)
   vim.list_extend(dst[key], src[key])
 end
 
+local KNOWN_PRESET_KEYS = {
+  configurePresets = true,
+  buildPresets = true,
+  testPresets = true,
+  packagePresets = true,
+  workflowPresets = true,
+}
+
 -- Decodes a Cmake[User]Presets.json and its "includes", if any
 -- CMakeUserPresets.json implicitly includes CMakePresets.json if it exists
-local function decode(file)
-  local data = vim.fn.json_decode(vim.fn.readfile(file))
-  if not data then
-    error(string.format("Could not parse %s", file))
-  end
-  local includes = data["include"] and data["include"] or {}
-  local includes_is_empty = next(includes) == nil
-  local isUserPreset = string.find(file:lower(), "user")
-  local parentDir = vim.fs.dirname(file)
-  if includes_is_empty and isUserPreset then
-    local preset = "CMakePresets.json"
-    local presetKebapCase = "cmake-presets.json"
-    local presetPath = parentDir .. "/" .. preset
-    local presetKebapCasePath = parentDir .. "/" .. presetKebapCase
+local function decode(file, visited)
+  visited = visited or {}
+  local abs_file_path = vim.fn.fnamemodify(file, ":p")
 
-    if vim.fn.filereadable(presetPath) then
-      includes[#includes + 1] = preset
-    elseif vim.fn.filereadable(presetKebapCasePath) then
-      includes[#includes + 1] = presetKebapCase
+  if visited[abs_file_path] then
+    return {}
+  end
+
+  local file_path = Path:new(abs_file_path)
+  if not file_path:exists() or file_path:is_dir() then
+    return {} -- Do not error on missing include
+  end
+
+  visited[abs_file_path] = true
+
+  local data = vim.fn.json_decode(vim.fn.readfile(abs_file_path))
+  if not data then
+    error(string.format("Could not parse %s", abs_file_path))
+  end
+  local includes = data.include or {}
+  local parentDir = vim.fs.dirname(abs_file_path)
+
+  local filename_lower = vim.fn.fnamemodify(abs_file_path, ":t"):lower()
+  local is_user_preset = filename_lower == "cmakeuserpresets.json"
+    or filename_lower == "cmake-user-presets.json"
+
+  if #includes == 0 and is_user_preset then
+    local preset_pascal_case = "CMakePresets.json"
+    local preset_kebab_case = "cmake-presets.json"
+    local preset_pascal_case_path = tostring(Path:new(parentDir) / preset_pascal_case)
+    local preset_kebab_case_path = tostring(Path:new(parentDir) / preset_kebab_case)
+
+    if vim.fn.filereadable(preset_pascal_case_path) > 0 then
+      includes[#includes + 1] = preset_pascal_case
+    elseif vim.fn.filereadable(preset_kebab_case_path) > 0 then
+      includes[#includes + 1] = preset_kebab_case
     end
   end
 
-  if includes_is_empty then
+  if #includes == 0 then
     return data
   end
 
-  for _, f in ipairs(includes) do
-    local f_read_data = nil
-    local f_path = Path.new(f)
+  for _, include_path in ipairs(includes) do
+    include_path = include_path:gsub("%$penv{(.-)}", function(envVar)
+      return vim.env[envVar] or ""
+    end)
+
+    local included_file_str
+    local f_path = Path:new(include_path)
     if f_path:is_absolute() then
-      f_read_data = f_path:read()
+      included_file_str = include_path
     else
-      f_read_data = (Path.new(parentDir) / f):read()
+      included_file_str = tostring(Path:new(parentDir) / include_path)
     end
 
-    local fdata = vim.fn.json_decode(f_read_data)
-    local thisFilePresetKeys = vim.tbl_filter(function(key)
-      if string.find(key, "Presets") then
-        return true
-      else
-        return false
+    local included_data = decode(included_file_str, visited)
+    for key, _ in pairs(included_data) do
+      if KNOWN_PRESET_KEYS[key] then
+        merge_table_list_by_key(data, included_data, key)
       end
-    end, vim.tbl_keys(fdata))
-
-    for _, eachPreset in ipairs(thisFilePresetKeys) do
-      merge_table_list_by_key(data, fdata, eachPreset)
     end
   end
 
   return data
 end
 
+---@class Presets
+---@field configurePresets ConfigurePreset[]
+---@field buildPresets BuildPreset[]
+---@field testPresets TestPreset[]
 local Presets = {}
 
+---@param cwd string
+---@return Presets
 function Presets:parse(cwd)
   local function merge_presets(lhs, rhs)
     local ret = vim.deepcopy(lhs)
@@ -97,10 +127,11 @@ function Presets:parse(cwd)
 
   local userPresetFile, presetFile = self.find_preset_files(cwd)
 
-  local data = decode(userPresetFile)
+  local visited = {}
+  local data = decode(userPresetFile, visited)
 
   if presetFile then
-    local presetData = decode(presetFile)
+    local presetData = decode(presetFile, visited)
     if presetData then
       data = merge_presets(data, presetData)
     end
@@ -114,23 +145,26 @@ function Presets:parse(cwd)
     local function getPreset(name)
       return instance:get_configure_preset(name, { include_hidden = true, include_disabled = true })
     end
-    return Preset:new(cwd, obj, getPreset)
-  end
-
-  local function createBuildPreset(obj)
-    return BuildPreset:new(cwd, obj)
+    Preset:new(cwd, obj, getPreset)
   end
 
   for _, preset in ipairs(instance.configurePresets) do
-    preset = createPreset(preset)
+    createPreset(preset)
   end
+
+  instance.testPresets = instance.testPresets or {}
+  for _, test_preset in ipairs(instance.testPresets) do
+    TestPreset.new(cwd, test_preset)
+  end
+
+  table.insert(instance.testPresets, TestPreset.new(cwd, { name = "None", valid = false }))
 
   instance.buildPresets = instance.buildPresets or {}
   for _, build_preset in ipairs(instance.buildPresets) do
-    build_preset = createBuildPreset(build_preset)
+    BuildPreset:new(cwd, build_preset)
   end
 
-  table.insert(instance.buildPresets, createBuildPreset({ name = "None", valid = false }))
+  table.insert(instance.buildPresets, BuildPreset:new(cwd, { name = "None", valid = false }))
 
   return instance
 end
@@ -157,10 +191,20 @@ local function get_preset_names(presets, opts)
   return options
 end
 
+---@param opts table?
+---@return string[]
 function Presets:get_configure_preset_names(opts)
   return get_preset_names(self.configurePresets, opts)
 end
 
+---@param opts table?
+---@return string[]
+function Presets:get_test_preset_names(opts)
+  return get_preset_names(self.testPresets, opts)
+end
+
+---@param opts table
+---@return string[]
 function Presets:get_build_preset_names(opts)
   local presets = get_preset_names(self.buildPresets, opts)
   local ret = {}
@@ -199,14 +243,29 @@ local function get_preset(name, tbl, opts)
   end
 end
 
+---@param name string
+---@param opts table?
+---@return ConfigurePreset?
 function Presets:get_configure_preset(name, opts)
   return get_preset(name, self.configurePresets, opts)
 end
 
+---@param name string
+---@param opts table?
+---@return TestPreset?
+function Presets:get_test_preset(name, opts)
+  return get_preset(name, self.testPresets, opts)
+end
+
+---@param name string
+---@param opts table?
+---@return BuildPreset?
 function Presets:get_build_preset(name, opts)
   return get_preset(name, self.buildPresets, { include_hidden = true, include_disabled = true })
 end
 
+---@param cwd string
+---@return string?, string?
 function Presets.find_preset_files(cwd)
   local files = vim.fn.readdir(cwd)
   local presetFiles = {}
@@ -227,6 +286,8 @@ function Presets.find_preset_files(cwd)
   return unpack(presetFiles)
 end
 
+---@param cwd string
+---@return boolean
 function Presets.exists(cwd)
   return Presets.find_preset_files(cwd) ~= nil
 end

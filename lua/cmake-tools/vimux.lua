@@ -43,7 +43,7 @@ function _vimux.prepare_cmd_for_run(cmd, env, args, cwd)
   local full_cmd = ""
 
   -- Launch form executable's build directory by default
-  full_cmd = "cd " .. utils.transform_path(cwd) .. " &&"
+  full_cmd = "cd " .. utils.shell_quote(cwd) .. " &&"
 
   if osys.iswin32 then
     for k, v in pairs(env) do
@@ -55,7 +55,7 @@ function _vimux.prepare_cmd_for_run(cmd, env, args, cwd)
     end
   end
 
-  full_cmd = full_cmd .. " " .. utils.transform_path(cmd)
+  full_cmd = full_cmd .. " " .. utils.shell_quote(cmd)
 
   if osys.islinux or osys.iswsl or osys.ismac then
     full_cmd = " " .. full_cmd -- adding a space in front of the command prevents bash from recording the command in the history (if configured)
@@ -63,7 +63,7 @@ function _vimux.prepare_cmd_for_run(cmd, env, args, cwd)
 
   -- Add args to the cmd
   for _, arg in ipairs(args) do
-    full_cmd = full_cmd .. " " .. arg
+    full_cmd = full_cmd .. " " .. utils.shell_quote(arg)
   end
 
   if osys.iswin32 then -- wrap in sub process to prevent env vars from being persited
