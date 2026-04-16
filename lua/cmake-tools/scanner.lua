@@ -140,28 +140,24 @@ function scanner.scan_for_kits()
     local has_c = check_executable_exists(tc.c)
     local has_cxx = check_executable_exists(tc.cxx)
 
-    if has_c then
-      local kit = { compilers = {} }
+    local kit = { compilers = {} }
 
-      local version = get_compiler_version(tc.c)
-      local prefix_label = tc.prefix ~= "" and (tc.prefix:gsub("%-$", "") .. " ") or ""
-      kit.name = prefix_label .. tc.c .. " " .. (version or "Unknown")
+    local version = get_compiler_version(tc.c)
+    local prefix_label = tc.prefix ~= "" and (tc.prefix:gsub("%-$", "") .. " ") or ""
+    kit.name = prefix_label .. tc.c .. " " .. (version or "Unknown")
 
-      kit.compilers.C = get_executable_path(tc.c)
+    kit.compilers.C = get_executable_path(tc.c)
 
-      if has_cxx then
-        kit.compilers.CXX = get_executable_path(tc.cxx)
-      end
+    kit.compilers.CXX = get_executable_path(tc.cxx)
 
-      if check_executable_exists(tc.linker) then
-        kit.linker = get_executable_path(tc.linker)
-      end
-      local toolchain_file = find_toolchain_file(tc.prefix)
-      if toolchain_file then
-        kit.toolchainFile = toolchain_file
-      end
-      table.insert(kits, kit)
+    if check_executable_exists(tc.linker) then
+      kit.linker = get_executable_path(tc.linker)
     end
+    local toolchain_file = find_toolchain_file(tc.prefix)
+    if toolchain_file then
+      kit.toolchainFile = toolchain_file
+    end
+    table.insert(kits, kit)
   end
   if vim.fn.isdirectory(constants.cmake_config_path) == 0 then
     vim.fn.mkdir(constants.cmake_config_path, "p")
