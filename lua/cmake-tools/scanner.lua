@@ -71,7 +71,8 @@ local function derive_toolchain(prefix, c_name)
 end
 
 local function get_path_executables()
-  local path_dirs = vim.split(vim.env.PATH or "", ":", { plain = true })
+  local separator = vim.uv.os_uname().sysname == "Windows_NT" and ";" or ":"
+  local path_dirs = vim.split(vim.env.PATH or "", separator, { plain = true })
   local executables = {}
   for _, dir in ipairs(path_dirs) do
     local entries = vim.fn.readdir(dir)
