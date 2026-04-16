@@ -131,8 +131,6 @@ end
 
 -- Main function to scan for kits
 function scanner.scan_for_kits()
-  vim.notify("Scanning for kits…")
-
   local executables = get_path_executables()
   local toolchains = discover_toolchains(executables)
   local kits = {}
@@ -160,11 +158,6 @@ function scanner.scan_for_kits()
       local toolchain_file = find_toolchain_file(tc.prefix)
       if toolchain_file then
         kit.toolchainFile = toolchain_file
-        vim.notify("Toolchain file found: " .. toolchain_file)
-      else
-        if tc.prefix ~= "" then
-          vim.notify("No toolchain file found for prefix: " .. tc.prefix, vim.log.levels.WARN)
-        end
       end
       table.insert(kits, kit)
     end
@@ -175,11 +168,7 @@ function scanner.scan_for_kits()
   local json_kits = vim.fn.json_encode(kits)
   if json_kits then
     vim.fn.writefile({ json_kits }, constants.cmake_kits_path)
-    vim.notify("Kits saved to: " .. constants.cmake_kits_path)
-  else
-    vim.notify("Failed to encode kits to JSON.", vim.log.levels.ERROR)
   end
-  vim.notify("Scanning complete.")
   return kits
 end
 
