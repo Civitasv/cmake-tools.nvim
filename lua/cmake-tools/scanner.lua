@@ -41,13 +41,13 @@ local function find_toolchain_file(prefix)
   return nil
 end
 local function match_c_compiler(exe)
-  for _, c_name in ipairs(C_COMPILERS) do
-    local prefix = exe:match("^(.+%-)" .. c_name .. "$")
+  for _, compiler_name in ipairs(C_COMPILERS) do
+    local prefix = exe:match("^(.+%-)" .. compiler_name .. "$")
     if prefix then
-      return prefix, c_name
+      return prefix, compiler_name
     end
-    if exe == c_name then
-      return "", c_name
+    if exe == compiler_name then
+      return "", compiler_name
     end
   end
   return nil, nil
