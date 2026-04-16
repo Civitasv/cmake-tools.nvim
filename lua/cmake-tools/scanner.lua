@@ -130,9 +130,9 @@ local function get_compiler_version(compiler)
   return version
 end
 
--- Main function to scan for kits
+local executables = get_path_executables()
+
 function scanner.scan_for_kits()
-  local executables = get_path_executables()
   local toolchains = discover_toolchains(executables)
   local kits = {}
 
