@@ -107,7 +107,7 @@ end
 
 local function check_executable_exists(compiler)
   if not compiler or compiler == "" then
-    return nil
+    return false
   end
   local exists = vim.fn.executable(compiler) == 1
   return exists
