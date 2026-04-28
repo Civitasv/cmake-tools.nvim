@@ -5,6 +5,7 @@ local const = require("cmake-tools.const")
 local Config = require("cmake-tools.config")
 local variants = require("cmake-tools.variants")
 local kits = require("cmake-tools.kits")
+local scanner = require("cmake-tools.scanner")
 local Presets = require("cmake-tools.presets")
 local log = require("cmake-tools.log")
 local hints = require("cmake-tools.hints")
@@ -56,6 +57,9 @@ function cmake.setup(values)
   cmake.register_autocmd()
   cmake.register_autocmd_provided_by_users()
   cmake.register_scratch_buffer(config.executor.name, config.runner.name)
+  if not vim.uv.fs_stat(const.cmake_kits_path) then
+    scanner.scan_for_kits()
+  end
 end
 
 ---@param callback fun(result: cmake.Result)
@@ -205,7 +209,7 @@ function cmake.generate(opt, callback)
 
   -- if exists cmake-kits.json, kit is used to set
   -- environmental variables and args.
-  local kits_config = kits.parse(const.cmake_kits_path, config.cwd)
+  local kits_config = kits.parse(const.cmake_config_path, config.cwd)
   if kits_config and not config.kit then
     return cmake.select_kit(function(result)
       if not result:is_ok() then
@@ -759,6 +763,10 @@ function cmake.select_build_type(callback)
       callback(Result:new(Types.SUCCESS, nil, nil))
     end)
   )
+end
+
+function cmake.scan_for_kits()
+  scanner.scan_for_kits()
 end
 
 ---@param callback? fun(result: cmake.Result)

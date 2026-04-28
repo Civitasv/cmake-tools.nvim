@@ -24,6 +24,7 @@ local const = {
     ---@type string|fun(): string
     target = vim.loop.cwd, -- path or function returning path to directory, this is used only if action == "soft_link" or action == "copy"
   },
+  cmake_config_path = vim.fn.stdpath("config") .. "/cmake-tools/", -- this is used to specify global cmake config path
   cmake_kits_path = nil, -- this is used to specify global cmake kits path, see CMakeKits for detailed usage
   cmake_variants_message = {
     short = { show = true }, -- whether to show short message
