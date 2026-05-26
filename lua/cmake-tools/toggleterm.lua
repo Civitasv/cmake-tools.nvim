@@ -30,6 +30,11 @@ function _toggleterm.run(cmd, env_script, env, args, cwd, opts, on_exit, on_outp
   -- Launch form executable's build directory by default
   full_cmd = "cd " .. utils.shell_quote(cwd) .. " &&"
 
+  if env_script and env_script:match("^%s*$") == nil then
+    local cleaned = env_script:gsub("%s*$", "")
+    full_cmd = full_cmd .. " " .. cleaned .. " &&"
+  end
+
   if osys.iswin32 then
     for k, v in pairs(env) do
       full_cmd = full_cmd .. " set " .. k .. "=" .. v .. "&&"
