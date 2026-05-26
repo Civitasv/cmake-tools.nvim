@@ -654,10 +654,17 @@ function _terminal.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
 
     local exit_handler = chain_symb .. get_command_handling_on_exit()
 
+    local env_script_part = ""
+    if env_script and env_script:match("^%s*$") == nil then
+      local cleaned = env_script:gsub("%s*$", "")
+      env_script_part = cleaned .. cd_sep
+    end
+
     full_cmd = shell_prefix
       .. "cd "
       .. build_dir
       .. cd_sep
+      .. env_script_part
       .. (final_env .. (final_env ~= "" and " " or ""))
       .. final_cmd
       .. ((final_args ~= "" and " " or "") .. final_args)
