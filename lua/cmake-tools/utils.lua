@@ -10,6 +10,22 @@ local scratch = require("cmake-tools.scratch")
 
 local utils = {}
 
+---Save all named, modified, normal buffers
+function utils.save_all_named_buffers()
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if
+      vim.api.nvim_buf_is_loaded(buf)
+      and vim.bo[buf].modified
+      and vim.bo[buf].buftype == ""
+      and vim.api.nvim_buf_get_name(buf) ~= ""
+    then
+      vim.api.nvim_buf_call(buf, function()
+        vim.cmd("silent! write")
+      end)
+    end
+  end
+end
+
 function utils.get_cmake_configuration(cwd)
   local cmakelists = Path:new(cwd, "CMakeLists.txt")
   if not cmakelists:is_file() then
@@ -210,7 +226,7 @@ end
 ---@return nil
 function utils.run(cmd, env_script, env, args, cwd, runner, callback)
   -- save all
-  vim.cmd("silent exec " .. '"wall"')
+  utils.save_all_named_buffers()
 
   local ntfy = notification:new("runner")
 
@@ -253,7 +269,7 @@ end
 ---@return nil
 function utils.execute(cmd, env_script, env, args, cwd, executor, callback)
   -- save all
-  vim.cmd("silent exec " .. '"wall"')
+  utils.save_all_named_buffers()
 
   local ntfy = notification:new("executor")
   ntfy:notify(cmd, "info")
