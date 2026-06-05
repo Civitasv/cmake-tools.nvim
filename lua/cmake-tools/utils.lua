@@ -123,7 +123,8 @@ function utils.softlink(src, target)
 end
 
 function utils.shell_quote(str)
-  if str[1] ~= '"' and string.find(str, " ") then
+  -- If the string already contains a double quote, assume the caller has handled quoting/escaping and leave it untouched
+  if not string.find(str, '"') and string.find(str, " ") then
     return '"' .. str .. '"'
   else
     return str
