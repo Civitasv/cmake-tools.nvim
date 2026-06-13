@@ -1,4 +1,4 @@
-﻿# How to
+# How to
 
 ## Automatically set your compile_commands.json
 
@@ -496,6 +496,54 @@ If you want to use overseer to run cmake operations, set `cmake_executor={name="
 ### Always use terminal
 
 If you want to always use terminal(for example, you want to record all commands and corresponding output), there is a way. You need set `cmake_executor` to `{name="terminal"}`, then, all commands will be executed in the terminal.
+
+---
+
+## Wrapping run/build/install calls with external tools
+
+`cmake.run`, `cmake.build` and `cmake.install` support a `wrap_call` option that prepends an external tool and its arguments to the command. This is useful for running your executables under profiling or analysis tools like `perf`, `valgrind` or `strace` or for installing with elevated permissions via `sudo`.
+
+The `wrap_call` option takes a table of strings where the first element is the tool executable and the remaining elements are its arguments.
+
+### Examples
+
+Run the current launch target under `perf`:
+
+```lua
+function RunPerf()
+  local cmake = require("cmake-tools")
+  cmake.run({ wrap_call = { "perf", "record", "--call-graph", "dwarf" } })
+end
+```
+
+Calling `:lua RunPerf()` will run: `perf record --call-graph dwarf <target> <launch_args>`
+
+Run under `valgrind`:
+
+```lua
+function RunValgrind()
+  local cmake = require("cmake-tools")
+  cmake.run({ wrap_call = { "valgrind", "--leak-check=full" } })
+end
+```
+
+Time the build process:
+
+```lua
+function TimeBuild()
+  local cmake = require("cmake-tools")
+  cmake.build({ wrap_call = { "time" } })
+end
+```
+
+Install with `sudo`:
+
+```lua
+function SudoInstall()
+  local cmake = require("cmake-tools")
+  cmake.install({ wrap_call = { "sudo" } })
+end
+```
 
 ---
 

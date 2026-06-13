@@ -215,6 +215,26 @@ local notify_update_line = function(ntfy)
   end
 end
 
+---Apply wrap_call to a command, prepending the wrapper command and its arguments
+---@param wrap_call string[]|nil table of wrapper command and its arguments
+---@param cmd string the original command
+---@param args table the original arguments
+---@return string cmd the new command
+---@return table args the new arguments
+function utils.apply_wrap_call(wrap_call, cmd, args)
+  if not wrap_call or #wrap_call == 0 then
+    return cmd, args
+  end
+  local new_cmd = wrap_call[1]
+  local new_args = {}
+  for i = 2, #wrap_call do
+    table.insert(new_args, wrap_call[i])
+  end
+  table.insert(new_args, cmd)
+  vim.list_extend(new_args, args)
+  return new_cmd, new_args
+end
+
 ---Run a command using specified executor, this is used by generate, build, clean, install, etc.
 ---@param cmd string the executable to execute
 ---@param env_script string environment setup script

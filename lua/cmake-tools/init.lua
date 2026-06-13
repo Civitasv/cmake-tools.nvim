@@ -307,9 +307,12 @@ function cmake.clean(callback)
   return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, callback)
 end
 
+---@class cmake.BuildOpts:cmake.CommandOpts
+---@field wrap_call string[]?
+
 --- Build this project using the make toolchain of target platform
 --- think it as `cmake --build .`
----@param opt cmake.CommandOpts
+---@param opt? cmake.BuildOpts
 ---@param callback? fun(result: cmake.Result)
 function cmake.build(opt, callback)
   callback = callback or function() end
@@ -321,7 +324,8 @@ function cmake.build(opt, callback)
     return
   end
 
-  local clean = opt.bang
+  opt = opt or {}
+  local clean = opt.bang or false
   local fargs = opt.fargs or {}
   if clean then
     return cmake.clean(function(result)
@@ -416,6 +420,7 @@ function cmake.build(opt, callback)
 
   local env = environment.get_build_environment(config)
   local cmd = const.cmake_command
+  cmd, args = utils.apply_wrap_call(opt.wrap_call, cmd, args)
   return utils.execute(cmd, config.env_script, env, args, config.cwd, config.executor, callback)
 end
 
@@ -467,8 +472,11 @@ function cmake.stop_runner()
   utils.stop_runner(config.runner)
 end
 
+---@class cmake.InstallOpts: cmake.CommandOpts
+---@field wrap_call string[]?
+
 --- CMake install targets
----@param opt vim.api.keyset.create_user_command.command_args
+---@param opt? cmake.InstallOpts
 ---@param callback? fun(result: cmake.Result)
 function cmake.install(opt, callback)
   callback = callback or function() end
@@ -480,19 +488,16 @@ function cmake.install(opt, callback)
     return
   end
 
-  local fargs = opt.fargs
+  opt = opt or {}
+  local fargs = opt.fargs or {}
 
-  local args = { "--install", config:build_directory_path() }
-  vim.list_extend(args, fargs)
-  return utils.execute(
+  local cmd, args = utils.apply_wrap_call(
+    opt.wrap_call,
     const.cmake_command,
-    config.env_script,
-    {},
-    args,
-    config.cwd,
-    config.executor,
-    callback
+    { "--install", config:build_directory_path() }
   )
+  vim.list_extend(args, fargs)
+  return utils.execute(cmd, config.env_script, {}, args, config.cwd, config.executor, callback)
 end
 
 function cmake.close_executor()
@@ -570,14 +575,20 @@ function cmake.get_launch_path(target)
   return launch_path
 end
 
+---@class cmake.RunOpts:cmake.CommandOpts
+---@field wrap_call string[]?
+
 -- Run executable targets
----@param opt cmake.CommandOpts
+---@param opt? cmake.RunOpts
 ---@param callback? fun(result: cmake.Result)
 function cmake.run(opt, callback)
   callback = callback or function() end
   if check_active_job_and_notify(callback) then
     return
   end
+  opt = opt or {}
+  opt.fargs = opt.fargs or {}
+
   if opt.target then
     -- explicit target requested. use that instead of the configured one
     return cmake.build({ target = opt.target }, function(build_result)
@@ -595,6 +606,7 @@ function cmake.run(opt, callback)
         or utils.get_nested(config, "target_settings", opt.target, "args")
         or {}
       local cmd = target_path
+      cmd, _args = utils.apply_wrap_call(opt.wrap_call, cmd, _args)
       utils.run(cmd, config.env_script, env, _args, launch_path, config.runner, callback)
     end)
   else
@@ -641,16 +653,9 @@ function cmake.run(opt, callback)
           local launch_path = cmake.get_launch_path(cmake.get_launch_target())
 
           local env = environment.get_run_environment(config, config.launch_target)
-          local cmd = target_path
-          utils.run(
-            cmd,
-            config.env_script,
-            env,
-            cmake:get_launch_args(),
-            launch_path,
-            config.runner,
-            callback
-          )
+          local cmd, args =
+            utils.apply_wrap_call(opt.wrap_call, target_path, cmake:get_launch_args())
+          utils.run(cmd, config.env_script, env, args, launch_path, config.runner, callback)
         end
       )
     end
