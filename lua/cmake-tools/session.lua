@@ -1,29 +1,87 @@
 local osys = require("cmake-tools.osys")
 local utils = require("cmake-tools.utils")
+local log = require("cmake-tools.log")
 
 local default_config
+local migrated = false
 
-local session = {
-  dir = {
-    unix = vim.fn.expand("~") .. "/.cache/cmake_tools_nvim/",
-    mac = vim.fn.expand("~") .. "/.cache/cmake_tools_nvim/",
-    win = vim.fn.expand("~") .. "/AppData/Local/cmake_tools_nvim/",
-  },
-}
-
+---@param path string
 ---@return string
-local function get_cache_path()
-  if osys.islinux then
-    return session.dir.unix
-  elseif osys.ismac then
-    return session.dir.mac
-  elseif osys.iswsl then
-    return session.dir.unix
-  elseif osys.isbsd then
-    return session.dir.unix
-  elseif osys.iswin32 then
-    return session.dir.win
+local function normalize(path)
+  if osys.iswin32 then
+    return (path:gsub("/", "\\"))
   end
+  return path
+end
+
+local session_dir = normalize(vim.fn.stdpath("data") .. "/cmake_tools_nvim/")
+
+local session = {}
+
+--- Move a file, falling back to copy when rename cannot cross filesystems
+---@param src string
+---@param dst string
+---@return boolean success
+local function move_file(src, dst)
+  if vim.fn.rename(src, dst) == 0 then
+    return true
+  end
+
+  local input = io.open(src, "rb")
+  if not input then
+    return false
+  end
+  local contents = input:read("*a")
+  input:close()
+
+  local output = io.open(dst, "wb")
+  if not output then
+    return false
+  end
+  output:write(contents)
+  output:close()
+
+  return true
+end
+
+--- Migrate session files from the legacy cache directory to the new stdpath location
+local function migrate_legacy_cache()
+  -- TODO: this can be dropped after a grace period, maybe
+  local old_dir
+  if osys.iswin32 then
+    old_dir = normalize(vim.fn.expand("~") .. "/AppData/Local/cmake_tools_nvim/")
+  else
+    old_dir = normalize(vim.fn.expand("~") .. "/.cache/cmake_tools_nvim/")
+  end
+
+  if not utils.file_exists(old_dir) then
+    return
+  end
+
+  if not utils.file_exists(session_dir) then
+    utils.mkdir(session_dir)
+  end
+
+  local failed = 0
+  local files = vim.fn.glob(old_dir .. "*", false, true)
+  for _, file in ipairs(files) do
+    local filename = vim.fn.fnamemodify(normalize(file), ":t")
+    local new_path = session_dir .. filename
+    -- a file already present in the new location wins, the legacy one is dropped
+    if utils.file_exists(new_path) or move_file(file, new_path) then
+      vim.fn.delete(file)
+    else
+      failed = failed + 1
+    end
+  end
+
+  if failed > 0 then
+    log.warn(
+      failed .. " session file(s) could not be moved from " .. old_dir .. " to " .. session_dir
+    )
+  end
+
+  vim.fn.delete(old_dir, "d")
 end
 
 ---@param cwd string neovim working directory
@@ -32,13 +90,17 @@ local function get_current_path(cwd)
   local clean_path = cwd:gsub("/", "")
   clean_path = clean_path:gsub("\\", "")
   clean_path = clean_path:gsub(":", "")
-  return get_cache_path() .. clean_path .. ".lua"
+  return session_dir .. clean_path .. ".lua"
 end
 
 local function init_cache()
-  local cache_path = get_cache_path()
-  if not utils.file_exists(cache_path) then
-    utils.mkdir(cache_path)
+  if not migrated then
+    migrated = true
+    migrate_legacy_cache()
+  end
+
+  if not utils.file_exists(session_dir) then
+    utils.mkdir(session_dir)
   end
 end
 
@@ -58,6 +120,8 @@ end
 ---@param cwd string neovim working directory (used as cache key)
 ---@return SerializedConfig raw session data, or empty table if none exists
 function session.load(cwd)
+  init_cache()
+
   local path = get_current_path(cwd)
 
   if utils.file_exists(path) then

@@ -26,16 +26,12 @@ return {
 }
 ```
 
-For Linux, macOS, Windows, WSL, it will save cache files to:
+On every platform (Linux, macOS, Windows, WSL, BSD) it saves one session file
+per project to:
 
 ```lua
-local session = {
-  dir = {
-    unix = vim.fn.expand("~") .. "/.cache/cmake_tools_nvim/",
-    mac = vim.fn.expand("~") .. "/.cache/cmake_tools_nvim/",
-    win = vim.fn.expand("~") .. "/AppData/Local/cmake_tools_nvim/"
-  }
-}
+local session_dir = vim.fn.stdpath("data") .. "/cmake_tools_nvim/"
 ```
 
-per project.
+Run `:echo stdpath("data")` to see the resolved location, e.g.
+`~/.local/share/nvim` on Linux or `~/AppData/Local/nvim-data` on Windows.
