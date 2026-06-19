@@ -1338,7 +1338,7 @@ function cmake.run_test(opt, callback)
   end)
 end
 
----@param opt vim.api.keyset.create_user_command.command_args
+---@param opt cmake.RunOpts
 function cmake.run_current_file(opt)
   local targets = {}
   local display_targets = {}
@@ -1354,8 +1354,11 @@ function cmake.run_current_file(opt)
     return log.error("Current file is not belong to any executable.")
   end
 
+  opt = opt or {}
+  opt.args, opt.fargs = opt.fargs, nil
   if #targets == 1 then
-    return cmake.run({ target = targets[1], args = opt.fargs })
+    opt.target = targets[1]
+    return cmake.run(opt)
   else
     vim.ui.select(
       display_targets,
@@ -1364,7 +1367,8 @@ function cmake.run_current_file(opt)
         if not idx then
           return
         end
-        return cmake.run({ target = targets[idx], args = opt.fargs })
+        opt.target = targets[idx]
+        return cmake.run(opt)
       end)
     )
   end
