@@ -186,6 +186,15 @@ vim.api.nvim_create_user_command(
     desc = "CMake select cmake kit",
   }
 )
+--- CMake scan for kits
+vim.api.nvim_create_user_command(
+  "CMakeScanForKits", -- name
+  cmake_tools.scan_for_kits, -- command
+  { -- opts
+    nargs = 0,
+    desc = "CMake scan for cmake kits",
+  }
+)
 
 --- CMake select configure preset
 vim.api.nvim_create_user_command(
