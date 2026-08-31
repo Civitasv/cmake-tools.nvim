@@ -22,22 +22,28 @@ function _overseer.run(cmd, env_script, env, args, cwd, opts, on_exit, on_output
     env = env,
     cwd = cwd,
   }, opts.new_task_opts)
-  _overseer.job = overseer.new_task(new_task_opts)
+
+  local ok, task = pcall(overseer.new_task, new_task_opts)
+  if not ok then
+    return log.error("Cannot create the overseer task: " .. tostring(task))
+  end
+  _overseer.job = task
+
   if on_exit ~= nil then
     _overseer.job:subscribe(
-      "on_exit",
-      vim.schedule_wrap(function(out)
-        on_exit(out.exit_code)
+      "on_complete",
+      vim.schedule_wrap(function(task_, status)
+        on_exit(task_.exit_code or (status == "SUCCESS" and 0 or 1))
       end)
     )
   end
   if on_output ~= nil then
     _overseer.job:subscribe(
-      "on_output",
-      vim.schedule_wrap(function(_, data)
-        local stdout = data[0]
-        local stderr = data[1]
-        on_output(stdout, stderr)
+      "on_output_lines",
+      vim.schedule_wrap(function(_, lines)
+        for _, line in ipairs(lines) do
+          on_output(line, nil)
+        end
       end)
     )
   end
@@ -49,9 +55,11 @@ end
 
 function _overseer.has_active_job(opts)
   if _overseer.job ~= nil and _overseer.job:is_running() then
+    local cmd = _overseer.job.cmd
+    local name = _overseer.job.name or (type(cmd) == "table" and table.concat(cmd, " ") or cmd)
     log.error(
       "A CMake task is already running: `"
-        .. (_overseer.job.name or _overseer.job.cmd)
+        .. name
         .. "` Stop it before trying to run a new CMake task."
     )
     return true
