@@ -83,12 +83,7 @@ require("cmake-tools").setup {
       },
       overseer = {
         new_task_opts = {
-            strategy = {
-                "toggleterm",
-                direction = "horizontal",
-                auto_scroll = true,
-                quit_on_exit = "success"
-            }
+            strategy = nil, -- use overseer's default strategy, see [executor and runner](./docs/executor_and_runner.md)
         }, -- options to pass into the `overseer.new_task` command
         on_new_task = function(task)
             require("overseer").open(
@@ -134,12 +129,7 @@ require("cmake-tools").setup {
       },
       overseer = {
         new_task_opts = {
-            strategy = {
-                "toggleterm",
-                direction = "horizontal",
-                autos_croll = true,
-                quit_on_exit = "success"
-            }
+            strategy = nil, -- use overseer's default strategy, see [executor and runner](./docs/executor_and_runner.md)
         }, -- options to pass into the `overseer.new_task` command
         on_new_task = function(task)
         end,   -- a function that gets overseer.Task when it is created, before calling `task:start`
