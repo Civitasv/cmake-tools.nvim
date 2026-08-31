@@ -106,9 +106,15 @@ local function get_dirty_fields(current, default)
   for key, current_value in pairs(current) do
     local default_value = default[key]
     if type(current_value) == "table" and type(default_value) == "table" then
-      local dirty_sub = get_dirty_fields(current_value, default_value)
-      if dirty_sub then
-        dirty[key] = dirty_sub
+      if vim.islist(current_value) or vim.islist(default_value) then
+        if not vim.deep_equal(current_value, default_value) then
+          dirty[key] = current_value
+        end
+      else
+        local dirty_sub = get_dirty_fields(current_value, default_value)
+        if dirty_sub then
+          dirty[key] = dirty_sub
+        end
       end
     elseif current_value ~= default_value then
       dirty[key] = current_value
