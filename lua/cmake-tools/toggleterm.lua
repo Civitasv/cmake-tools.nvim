@@ -1,13 +1,12 @@
-local has_toggleterm, toggleterm = pcall(require, "toggleterm")
+local has_toggleterm = pcall(require, "toggleterm")
 local osys = require("cmake-tools.osys")
 local log = require("cmake-tools.log")
 local utils = require("cmake-tools.utils")
 
-if not has_toggleterm then
-  return
+local _terminal
+if has_toggleterm then
+  _terminal = require("toggleterm.terminal")
 end
-
-local _terminal = require("toggleterm.terminal")
 
 ---@class _toggleterm : executor, runner
 local _toggleterm = {
