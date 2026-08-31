@@ -4,6 +4,7 @@ local Result = require("cmake-tools.result")
 local Types = require("cmake-tools.types")
 local notification = require("cmake-tools.notification")
 local scratch = require("cmake-tools.scratch")
+local log = require("cmake-tools.log")
 
 ---@alias executor_conf {name:string, opts:table}
 ---@alias runner_conf {name:string, opts:table}
@@ -99,16 +100,29 @@ function utils.deepcopy(orig, copies)
   return copy
 end
 
+---@param path string path of the file
+---@return boolean success
+local function create_parent_directory(path)
+  local dir = vim.fs.dirname(path)
+  local ok, err = pcall(utils.mkdir, dir)
+  if not ok then
+    log.error("Cannot create directory " .. dir .. ": " .. tostring(err))
+  end
+  return ok
+end
+
 function utils.copyfile(src, target)
-  if utils.file_exists(src) then
-    -- if we don't always use terminal
-    local cmd = table.concat({
-      "exec",
-      "'!cmake -E copy",
-      utils.shell_quote(src),
-      utils.shell_quote(target) .. "'",
-    }, " ")
-    vim.cmd(cmd)
+  if not utils.file_exists(src) then
+    return
+  end
+
+  if not create_parent_directory(target) then
+    return
+  end
+
+  local ok, err = vim.loop.fs_copyfile(src, target)
+  if not ok then
+    log.error("Cannot copy " .. src .. " to " .. target .. ": " .. tostring(err))
   end
 end
 
@@ -129,13 +143,14 @@ function utils.softlink(src, target)
     end
   end
 
-  local cmd = table.concat({
-    "exec",
-    "'!cmake -E create_symlink",
-    utils.shell_quote(src),
-    utils.shell_quote(target) .. "'",
-  }, " ")
-  vim.cmd(cmd)
+  if not create_parent_directory(target) then
+    return
+  end
+
+  local ok, err = vim.loop.fs_symlink(src, target)
+  if not ok then
+    log.error("Cannot link " .. target .. " to " .. src .. ": " .. tostring(err))
+  end
 end
 
 function utils.shell_quote(str)
