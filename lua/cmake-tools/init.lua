@@ -169,9 +169,9 @@ function cmake.generate(opt, callback)
 
       config:update_build_type()
 
-      local build_directory, no_expand_build_directory = preset.binaryDirExpanded, preset.binaryDir
-      if build_directory ~= "" then
-        config:update_build_dir(build_directory, no_expand_build_directory)
+      local build_directory = preset.binaryDirExpanded
+      if build_directory and build_directory ~= "" then
+        config:update_build_dir(build_directory)
       end
       config:generate_build_directory()
 

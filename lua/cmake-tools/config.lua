@@ -91,7 +91,7 @@ function Config:no_expand_build_directory_path()
 end
 
 ---@param build_dir string|function string or a function returning string containing path to the build dir
----@param no_expand_build_dir string|function
+---@param no_expand_build_dir? string|function when nil, the stored no-expand build dir is left untouched
 function Config:update_build_dir(build_dir, no_expand_build_dir)
   if type(build_dir) == "function" then
     build_dir = build_dir()
@@ -102,7 +102,7 @@ function Config:update_build_dir(build_dir, no_expand_build_dir)
   if type(no_expand_build_dir) == "function" then
     no_expand_build_dir = no_expand_build_dir()
   end
-  if type(no_expand_build_dir) ~= "string" then
+  if no_expand_build_dir ~= nil and type(no_expand_build_dir) ~= "string" then
     error(
       "no_expand_build_dir needs to be a string or function returning string path to the build_directory"
     )
@@ -123,7 +123,9 @@ function Config:update_build_dir(build_dir, no_expand_build_dir)
     self.reply_directory = Path:new(self.cwd, build_dir, ".cmake", "api", "v1", "reply")
   end
 
-  self.base_settings.build_dir = Path:new(no_expand_build_dir):absolute()
+  if no_expand_build_dir then
+    self.base_settings.build_dir = Path:new(no_expand_build_dir):absolute()
+  end
 end
 
 ---Prepare build directory with macro expansion
@@ -647,10 +649,11 @@ function Config:update_build_directory()
       return
     end
 
-    local build_directory, no_expand_build_directory =
-      configure_preset.binaryDirExpanded, configure_preset.binaryDir
-    if build_directory ~= "" then
-      self:update_build_dir(build_directory, no_expand_build_directory)
+    -- binaryDir still contains preset macros, so keep it out of the stored
+    -- no-expand build dir, which is only expanded for kits and variants
+    local build_directory = configure_preset.binaryDirExpanded
+    if build_directory and build_directory ~= "" then
+      self:update_build_dir(build_directory)
     end
   end
 end
